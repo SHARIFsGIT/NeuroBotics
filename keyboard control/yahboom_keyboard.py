@@ -2,187 +2,241 @@
 # encoding: utf-8
 
 # --- IMPORTING TOOLS ---
-from geometry_msgs.msg import Twist  # The ROS 2 message for movement (speed and turning)
-import sys, select, termios, tty     # Secret terminal tools! These let Python read your keypresses INSTANTLY, without waiting for you to press 'Enter'.
+import sys
+import select
+import termios
+import tty
+import time
 
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from arm_msgs.msg import ArmJoint, ArmJoints
 
-# This is just a fancy text menu printed to the screen so you know what buttons to press.
+# --- PROFESSIONAL CONTROL PANEL MENU ---
 msg = """
-Control Your SLAM-Bot!
----------------------------
-Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
+====================================
+ TELEOPERATION (Mecanum & 6-DOF Arm)
+====================================
 
-q/z : increase/decrease max speeds by 10%
-w/x : increase/decrease only linear speed by 10%
-e/c : increase/decrease only angular speed by 10%
-t/T : x and y speed switch
-s/S : stop keyboard control
-space key, k : force stop
-anything else : stop smoothly
+ [ BASE MOTION ]
+   i / ,       : Forward / Backward
+   j / l       : Rotate Left / Right (in-place)
+   a / d       : Strafe Left / Right (Mecanum)
+   u / o / m /.: Diagonal Movements
 
-CTRL-C to quit
+ [ ARM MOTION (5 deg / press) ]
+   1 / 2       : Joint 1 (Base)      Down / Up
+   3 / 4       : Joint 2 (Shoulder)  Down / Up
+   5 / 6       : Joint 3 (Elbow)      Down / Up
+   7 / 8       : Joint 4 (Wrist)     Down / Up
+   9 / 0       : Joint 5 (Wrist Rot) Down / Up
+   g / h       : Joint 6 (Gripper)   Close / Open
+
+ [ SYSTEM ]
+   SPACE       : EMERGENCY STOP (Base + Arm)
+   s           : PAUSE ALL CONTROLS (Press 's' again to resume)
+   r           : Reset Arm to Home Position
+   q / z       : Increase / Decrease overall speed by 10%
+   w / x       : Increase / Decrease linear speed by 10%
+   e / c       : Increase / Decrease angular speed by 10%
+   CTRL + C    : Quit
+============================================================
 """
 
-# --- THE MOVEMENT DICTIONARY ---
-# This maps a keyboard key to a (forward direction, turn direction).
-# 1 means full speed ahead/right, -1 means full reverse/left, 0 means stop.
+# Maps keys to (forward_back, strafe_left_right, rotate_left_right)
 moveBindings = {
-    'i': (1, 0),    # Forward
-    'o': (1, -1),   # Forward & Turn Right
-    'j': (0, 1),    # Turn Left in place
-    'l': (0, -1),   # Turn Right in place
-    'u': (1, 1),    # Forward & Turn Left
-    ',': (-1, 0),   # Backward
-    '.': (-1, 1),   # Backward & Turn Right
-    'm': (-1, -1),  # Backward & Turn Left
-    # ... (capital letters do the same thing, in case you have capslock on)
-    'I': (1, 0),
-    'O': (1, -1),
-    'J': (0, 1),
-    'L': (0, -1),
-    'U': (1, 1),
-    'M': (-1, -1),
+    'i': (1, 0, 0),     'I': (1, 0, 0),
+    ',': (-1, 0, 0),    'M': (-1, 0, 0),
+    'a': (0, 1, 0),     'A': (0, 1, 0),
+    'd': (0, -1, 0),    'D': (0, -1, 0),
+    'j': (0, 0, 1),     'J': (0, 0, 1),
+    'l': (0, 0, -1),    'L': (0, 0, -1),
+    'u': (1, 1, 0),     'U': (1, 1, 0),
+    'o': (1, -1, 0),    'O': (1, -1, 0),
+    'm': (-1, 1, 0),     '.': (-1, -1, 0),
 }
 
-# --- THE SPEED DICTIONARY ---
-# This maps keys to multipliers. 1.1 means "add 10% speed". .9 means "subtract 10% speed".
 speedBindings = {
-    'Q': (1.1, 1.1), # Speed up both
-    'Z': (.9, .9),   # Slow down both
-    'W': (1.1, 1),   # Speed up forward only
-    'X': (.9, 1),    # Slow down forward only
-    'E': (1, 1.1),   # Speed up turning only
-    'C': (1, .9),    # Slow down turning only
-    # ... (lowercase letters do the same thing)
-    'q': (1.1, 1.1),
-    'z': (.9, .9),
-    'w': (1.1, 1),
-    'x': (.9, 1),
-    'e': (1, 1.1),
-    'c': (1, .9),
+    'Q': (1.1, 1.1), 'Z': (.9, .9), 'W': (1.1, 1), 'X': (.9, 1),
+    'E': (1, 1.1), 'C': (1, .9), 'q': (1.1, 1.1), 'z': (.9, .9),
+    'w': (1.1, 1), 'x': (.9, 1), 'e': (1, 1.1), 'c': (1, .9),
 }
 
-
-class Yahboom_Keybord(Node):
+class YahboomKeyboard(Node):
     def __init__(self, name):
-        super().__init__(name)  # Name this ROS 2 Node
+        super().__init__(name)
         
-        # Create a publisher to send movement commands to the wheels on the 'cmd_vel' channel
-        self.pub = self.create_publisher(Twist, 'cmd_vel', 1)
+        # Publishers
+        self.pub_cmd_vel = self.create_publisher(Twist, 'cmd_vel', 1)
+        self.pub_arm_single = self.create_publisher(ArmJoint, "arm_joint", 100)
+        self.pub_arm_all = self.create_publisher(ArmJoints, "arm6_joints", 100)
         
-        # Load safety speed limits from the ROS 2 parameter server
+        # Parameters (Safety Speed Limits)
         self.declare_parameter("linear_speed_limit", 1.0)
         self.declare_parameter("angular_speed_limit", 5.0)
-        self.linenar_speed_limit = self.get_parameter("linear_speed_limit").get_parameter_value().double_value
+        self.linear_speed_limit = self.get_parameter("linear_speed_limit").get_parameter_value().double_value
         self.angular_speed_limit = self.get_parameter("angular_speed_limit").get_parameter_value().double_value
         
-        # Save the current terminal settings so we can restore them when the program ends
+        # State Trackers
+        self.arm_joints = [90, 90, 0, 0, 90, 90]
         self.settings = termios.tcgetattr(sys.stdin)
         
+        # Initialize arm to home position safely
+        self.reset_arm()
+
     def getKey(self):
-        # THIS IS THE MAGIC TRICK!
-        # Normally, Python waits for you to type a whole word and press 'Enter'.
-        # These next two lines temporarily hijack your keyboard so Python reads exactly 1 keypress instantly.
         tty.setraw(sys.stdin.fileno())
-        rlist, _, _ = select.select([sys.stdin], [], [], 0.1)  # Wait 0.1 seconds for a key
+        rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
         if rlist:
-            key = sys.stdin.read(1)  # Grab that 1 key!
+            key = sys.stdin.read(1)
         else:
-            key = ''  # No key was pressed
-        # Restore the terminal back to normal so you can read the screen properly
+            key = ''
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
         return key
         
     def vels(self, speed, turn):
-        # Just a helper function to print the current speed nicely on the screen
-        return "currently:\tspeed %s\tturn %s " % (speed, turn)		
+        return f"Current Speed -> Linear: {speed:.2f} m/s | Angular: {turn:.2f} rad/s"
     
+    def step_arm_joint(self, joint_id, delta):
+        self.arm_joints[joint_id - 1] += delta
+        
+        # Safety limits to prevent breaking the arm
+        if joint_id == 5:
+            self.arm_joints[joint_id - 1] = max(0, min(270, self.arm_joints[joint_id - 1]))
+        elif joint_id == 6:
+            self.arm_joints[joint_id - 1] = max(30, min(180, self.arm_joints[joint_id - 1]))
+        else:
+            self.arm_joints[joint_id - 1] = max(0, min(180, self.arm_joints[joint_id - 1]))
+            
+        arm_msg = ArmJoint()
+        arm_msg.id = joint_id
+        arm_msg.joint = int(self.arm_joints[joint_id - 1])
+        arm_msg.time = 500
+        self.pub_arm_single.publish(arm_msg)
+        
+        action = "Opening" if delta > 0 else "Closing"
+        if joint_id != 6:
+            action = "Up" if delta > 0 else "Down"
+        print(f"[ARM] Joint {joint_id} -> {action} -> {arm_msg.joint} deg")
+
+    def reset_arm(self):
+        self.arm_joints = [90, 90, 0, 0, 90, 90]
+        arm_msg = ArmJoints()
+        arm_msg.joint1 = self.arm_joints[0]
+        arm_msg.joint2 = self.arm_joints[1]
+        arm_msg.joint3 = self.arm_joints[2]
+        arm_msg.joint4 = self.arm_joints[3]
+        arm_msg.joint5 = self.arm_joints[4]
+        arm_msg.joint6 = self.arm_joints[5]
+        arm_msg.time = 2000
+        self.pub_arm_all.publish(arm_msg)
+        print("[SYSTEM] Arm reset to Home Position.")
+
+    def emergency_stop(self):
+        # 1. Stop Wheels
+        self.pub_cmd_vel.publish(Twist())
+        # 2. Stop Arm (Send current positions with 100ms time to force immediate braking)
+        arm_msg = ArmJoints()
+        arm_msg.joint1 = self.arm_joints[0]
+        arm_msg.joint2 = self.arm_joints[1]
+        arm_msg.joint3 = self.arm_joints[2]
+        arm_msg.joint4 = self.arm_joints[3]
+        arm_msg.joint5 = self.arm_joints[4]
+        arm_msg.joint6 = self.arm_joints[5]
+        arm_msg.time = 100
+        self.pub_arm_all.publish(arm_msg)
+
 def main():
-    rclpy.init()  # Turn on ROS 2
-    yahboom_keyboard = Yahboom_Keybord("yahboom_keyboard_ctrl")
+    rclpy.init()
+    robot_teleop = YahboomKeyboard("yahboom_keyboard_ctrl")
     
-    # --- STATE VARIABLES ---
-    xspeed_switch = True  # If True, keys move you forward/backward. If False, keys slide you sideways!
-    (speed, turn) = (0.2, 1.0)  # Starting speeds (20% forward, 100% turning)
-    (x, th) = (0, 0)            # Current movement directions (0 = stop)
-    status = 0
-    stop = False                # Emergency stop flag
-    count = 0                   # A counter to make the robot stop if you stop pressing keys
-    twist = Twist()             # Create an empty movement message
+    speed, turn = 0.2, 1.0
+    x, y, th = 0, 0, 0
+    stop = False
+    count = 0
+    twist = Twist()
     
-    try:  # The try/except/finally block is for safety. It ensures the robot stops if the program crashes.
-        print(msg)  # Print the menu
-        print(yahboom_keyboard.vels(speed, turn))  # Print starting speeds
+    try:
+        print(msg)
+        print(robot_teleop.vels(speed, turn))
         
-        while (1):  # Loop forever
-            key = yahboom_keyboard.getKey()  # Listen for a keypress
+        while True:
+            key = robot_teleop.getKey()
             
-            # Check for special toggle keys
-            if key == "t" or key == "T":
-                xspeed_switch = not xspeed_switch  # Switch between forward/backward mode and sideways mode
-            elif key == "s" or key == "S":
-                print ("stop keyboard control: {}".format(not stop))
-                stop = not stop  # Toggle pause
-            
-            # If the key is in our movement dictionary...
-            if key in moveBindings.keys():
-                x = moveBindings[key][0]   # Get forward direction
-                th = moveBindings[key][1]  # Get turn direction
-                count = 0                   # Reset the stop counter
-            # If the key is in our speed dictionary...
-            elif key in speedBindings.keys():
-                speed = speed * speedBindings[key][0]  # Multiply speed
-                turn = turn * speedBindings[key][1]    # Multiply turn
-                count = 0
+            # Handle Pause/Resume
+            if key in ("s", "S"):
+                stop = not stop
+                print(f"[SYSTEM] ALL CONTROLS PAUSED: {stop}")
+                if stop:
+                    robot_teleop.emergency_stop() # Lock everything immediately
+                    x, y, th = 0, 0, 0
+
+            # Handle Emergency Stop
+            elif key == ' ':
+                robot_teleop.emergency_stop()
+                x, y, th = 0, 0, 0
+                print("[SYSTEM] EMERGENCY STOP ENGAGED.")
                 
-                # Enforce hard speed limits so the robot doesn't go crazy fast
-                if speed > yahboom_keyboard.linenar_speed_limit: 
-                    speed = yahboom_keyboard.linenar_speed_limit
-                    print("Linear speed limit reached!")
-                if turn > yahboom_keyboard.angular_speed_limit: 
-                    turn = yahboom_keyboard.angular_speed_limit
-                    print("Angular speed limit reached!")
+            # If NOT paused, process movement
+            elif not stop:
+                if key in moveBindings.keys():
+                    x, y, th = moveBindings[key]
+                    count = 0	
+                elif key in speedBindings.keys():
+                    speed = speed * speedBindings[key][0]
+                    turn = turn * speedBindings[key][1]
+                    count = 0
+                    speed = min(speed, robot_teleop.linear_speed_limit)
+                    turn = min(turn, robot_teleop.angular_speed_limit)
+                    print(robot_teleop.vels(speed, turn))
                     
-                print(yahboom_keyboard.vels(speed, turn))  # Print new speed
+                # Arm Controls
+                elif key == '1': robot_teleop.step_arm_joint(1, -5)
+                elif key == '2': robot_teleop.step_arm_joint(1, 5)
+                elif key == '3': robot_teleop.step_arm_joint(2, -5)
+                elif key == '4': robot_teleop.step_arm_joint(2, 5)
+                elif key == '5': robot_teleop.step_arm_joint(3, -5)
+                elif key == '6': robot_teleop.step_arm_joint(3, 5)
+                elif key == '7': robot_teleop.step_arm_joint(4, -5)
+                elif key == '8': robot_teleop.step_arm_joint(4, 5)
+                elif key == '9': robot_teleop.step_arm_joint(5, -5)
+                elif key == '0': robot_teleop.step_arm_joint(5, 5)
                 
-            # Spacebar = emergency stop
-            elif key == ' ': 
-                (x, th) = (0, 0)
-            else:
-                # If you press any other random key (or let go of all keys)
-                count = count + 1
-                if count > 4:  # If no valid keys are pressed for 4 loops
-                    (x, th) = (0, 0)  # Stop moving
-                if (key == '\x03'): break  # If you press Ctrl+C, break the loop and quit
+                # NEW Gripper Controls (g to close, h to open)
+                elif key in ('g', 'G'): robot_teleop.step_arm_joint(6, -5)
+                elif key in ('h', 'H'): robot_teleop.step_arm_joint(6, 5)
                 
-            # Apply the movement to the Twist message
-            if xspeed_switch:
-                twist.linear.x = speed * x  # Move forward/backward
-            else:
-                twist.linear.y = speed * x  # Slide left/right (Mecanum wheels!)
-                
-            twist.angular.z = turn * th     # Spin left/right
+                elif key in ('r', 'R'): robot_teleop.reset_arm()
+                else:
+                    count = count + 1
+                    if count > 4:
+                        x, y, th = 0, 0, 0
+                    if key == '\x03':  # Ctrl+C
+                        break
             
-            # Send the command to the robot
-            if not stop: 
-                yahboom_keyboard.pub.publish(twist)  # Drive!
-            if stop:
-                yahboom_keyboard.pub.publish(Twist()) # Send all zeros (Stop)
+            # If paused, ignore everything except Ctrl+C
+            else:
+                if key == '\x03':
+                    break
+                elif key != '':
+                    print("[SYSTEM] System paused. Press 's' to resume.")
                 
-    except Exception as e: 
-        print(e)  # Print any errors
-    finally: 
-        # No matter what happens (even if it crashes), THIS WILL RUN.
-        # Send an empty Twist message (all zeros) to guarantee the robot stops moving!
-        yahboom_keyboard.pub.publish(Twist())
-        
-    # Clean up
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, yahboom_keyboard.settings)  # Restore terminal
-    yahboom_keyboard.destroy_node()
-    rclpy.shutdown()
+            # Calculate and publish base movement
+            twist.linear.x = speed * x
+            twist.linear.y = speed * y
+            twist.angular.z = turn * th
+            
+            if not stop:
+                robot_teleop.pub_cmd_vel.publish(twist)
+            else:
+                robot_teleop.pub_cmd_vel.publish(Twist())
+            
+    except Exception as e:
+        print(f"[ERROR] {e}")
+    finally:
+        # Graceful shutdown: stop everything before exiting
+        robot_teleop.emergency_stop()
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, robot_teleop.settings)
+        robot_teleop.destroy_node()
+        rclpy.shutdown()
