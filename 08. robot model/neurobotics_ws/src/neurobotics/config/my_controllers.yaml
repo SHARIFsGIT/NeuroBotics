@@ -1,0 +1,62 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 30
+    use_sim_time: true
+
+    diff_cont:
+      type: diff_drive_controller/DiffDriveController
+    joint_broad:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    arm_cont:
+      type: position_controllers/JointGroupPositionController
+
+diff_cont:
+  ros__parameters:
+    use_sim_time: true
+    left_wheel_names: ["lwheel1_Joint", "lwheel2_Joint"]
+    right_wheel_names: ["rwheel1_Joint", "rwheel2_Joint"]
+    wheel_separation: 0.15      # TRUE value: wheel joints sit at y = +-0.075 in
+                                # the URDF. Was 0.1955 (30% too big), which made
+                                # odometry under-report every turn - robots drove
+                                # arcs while /diff_cont/odom claimed "straight".
+                                # Check this like a real calibration: command a
+                                # 360 deg spin and compare against reality.
+    wheel_radius: 0.04
+    publish_rate: 30.0
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    enable_odom_tf: true
+    cmd_vel_timeout: 0.5
+    use_stamped_vel: false
+    linear:
+      x:
+        has_velocity_limits: true
+        max_velocity: 1.0
+        max_acceleration: 1.0
+        has_acceleration_limits: true
+    angular:
+      z:
+        has_velocity_limits: true
+        max_velocity: 2.0
+        max_acceleration: 2.0
+        has_acceleration_limits: true
+
+joint_broad:
+  ros__parameters:
+    publish_rate: 30.0
+
+arm_cont:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - arm1_Joint
+      - arm2_Joint
+      - arm3_Joint
+      - arm4_Joint
+      - arm5_Joint
+      - rlink1_Joint
+      - rlink2_Joint
+      - llink1_Joint
+      - llink2_Joint
+      - rlink3_Joint
+      - llink3_Joint
