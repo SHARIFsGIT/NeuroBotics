@@ -1,0 +1,43 @@
+{
+ "n": 7,
+ "id": "part-07",
+ "fname": "laser_Warning.py",
+ "enTitle": "Four Parameters — Declare & Get",
+ "lang": "python",
+ "start": 33,
+ "end": 43,
+ "flags": [],
+ "explain": [
+  {
+   "a": 33,
+   "b": 34,
+   "text": "L33 হলো publisher-ব্লকের পরের blank separator — এখান থেকে constructor-এর parameter-সেকশন শুরু। L34-এর banner comment ঘোষণা করে <code># --- ROS 2 PARAMETERS</code> এবং বন্ধনীতে বলে এগুলো Speed ও Distance Limits — অর্থাৎ দুটো speed-সীমা আর দুটো distance/angle-সীমা আসতে চলেছে। নিচে ঠিক চারটা declare+get pair আছে (linear, angular, LaserAngle, ResponseDist), কিন্তু verified quirk — শিরোনামের speed-অংশটি ফাঁকা প্রতিশ্রুতি: <code>self.linear</code> আর <code>self.angular</code> দুটোই assign হয়ে আর কখনো read হয় না, তাই কোনো speed limit কার্যকরই হয় না। আসল কাজ করে distance/angle জোড়া দুটি — সেগুলোই নিচের item-গুলোয়।"
+  },
+  {
+   "a": 35,
+   "b": 36,
+   "text": "প্রথম জোড়া: <code>self.declare_parameter(\"linear\",0.5)</code> — node-এর parameter registry-তে <code>linear</code> নামে একটা parameter ভর্তি হয়, default 0.5 (কল্পিত অর্থে max forward speed, m/s)। পরের লাইনে <code>self.linear = self.get_parameter('linear').get_parameter_value().double_value</code> — three-step chain-টি এভাবে পড়েন: <code>get_parameter('linear')</code> নোডের Parameter object ফেরত দেয়, তার <code>get_parameter_value()</code> টাইপ-বহনকারী ParameterValue container দেয়, আর শেষের <code>.double_value</code> field plain Python float (0.5) বের করে আনে — declare-এ default যেহেতু float, তাই double variant-ই পড়তে হয়। declare না করে get করলে ROS 2 exception ছোঁড়ে, তাই প্রতিটা জোড়ায় আগে declare, পরে get; বাইরে থেকেও override করা যায় (<code>-p linear:=0.2</code> ধরনের ros-args দিয়ে)। কিন্তু L35-এর নিজের comment-ই স্বীকার করে <code>not actually used in this script, but declared</code> — verified quirk: <code>self.linear</code> এই একবারই বসে, পুরো file-এ আর read হয় না, আর কোথাও কোনো clamp নেই। ফলে এই সংখ্যার robot-এ কোনো ভৌত অস্তিত্ব নেই — guard তো আসলে কখনো forward-ই চালায় না (L123: linear.x কখনো set হয় না)।"
+  },
+  {
+   "a": 37,
+   "b": 38,
+   "text": "দ্বিতীয় জোড়া একই ছাঁচে: <code>self.declare_parameter(\"angular\",1.0)</code> (comment: max turning speed), তারপর <code>self.angular = self.get_parameter('angular').get_parameter_value().double_value</code> — একই chain, মান 1.0 rad/s। এখানেও সেই verified quirk: <code>self.angular</code> assign-এর পর আর কোথাও read হয় না — এবং linear-এর মতো স্বীকারোক্তিমূলক comment-ও নেই। বাস্তবে turn কত জোরে হবে সেটা ঠিক করে অন্য পথ: L48-এর <code>SinglePID(3.0, 0.0, 5.0)</code>, তারপর L103-118-এর compute, sign-branch, deadzone আর 0.5-damping — সেই পথে কোথাও 1.0-এর সঙ্গে তুলনাই হয় না। illustrative Kp-view-এ turn-এর ceiling আসে প্রায় ±0.94 rad/s, যা কাকতালে 1.0-এর নিচে — কিন্তু সেটা enforcement নয়; gain বাড়ালে বা বড় Kd transient এলে output 1.0 পেরোতে পারে, আটকানোর কেউ নেই।"
+  },
+  {
+   "a": 39,
+   "b": 40,
+   "text": "তৃতীয় জোড়া — এবার সত্যিকারের ব্যবহৃত parameter: <code>self.declare_parameter(\"LaserAngle\",45.0)</code>, read-back <code>self.LaserAngle = self.get_parameter('LaserAngle').get_parameter_value().double_value</code>। মানে front cone-এর half-width — comment বলছে <code>Width of the front cone (45 degrees left and right)</code>: robot-এর সামনের কেন্দ্র-রেখা থেকে বামে ও ডানে ৪৫ ডিগ্রি করে। একমাত্র read হয় L68-এ: <code>abs(angle) &lt; self.LaserAngle</code> — strict less-than, তাই ঠিক 45.0-ডিগ্রির beam-টি cone-এ ঢোকে না; illustrative fused ring-এ (৩৬০ beam) এই ছাঁকনি রেখে যায় মোট ৮৯টা beam। এই parameter বদলালে hardware সত্যিই অনুভব করে — যেমন LaserAngle 60 করলে পাশের object-ও tracking-এ ধরা পড়বে, robot আরও আগে ঘুরতে শুরু করবে।"
+  },
+  {
+   "a": 41,
+   "b": 43,
+   "text": "চতুর্থ জোড়া: <code>self.declare_parameter(\"ResponseDist\",0.55)</code> — comment বলছে <code>The \"Danger Zone\" distance (0.55 meters)</code> — আর read-back chain <code>self.get_parameter('ResponseDist').get_parameter_value().double_value</code> দিয়ে <code>self.ResponseDist</code>-এ 0.55 বসে। এটাও সত্যিই ব্যবহৃত: L89-এর alarm শর্ত <code>minDist &lt;= self.ResponseDist and minDist != 0.0</code> — সামনের সবচেয়ে কাছের object 0.55 m বা তার কমে এলেই /beep-এ 1 যায়, buzzer বাজে (illustrative wave C: 0.48 m — beep; wave A: 0.90 m — নীরব)। L43 blank — parameter-সেকশন এখানে শেষ, constructor এবার state tracker ও PID-এর দিকে যায় (L45-এ <code>Joy_active</code>, L48-এ ang_pid)।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "Node তৈরির সময়, প্রথম /scan আসার আগেই, চারটা parameter declare হয়ে attributes-এ ওঠে — এই মুহূর্তে চাকা স্থির, lidar ঘুরছে, buzzer চুপ, console-এ নতুন কোনো print নেই। পরে কাজে লাগে দুটি: LaserAngle 45.0 ঠিক করে দেয় কোন beam-গুলো সামনে গণ্য হবে (illustrative fused ring-এ ৮৯টা), আর ResponseDist 0.55 ঠিক করে কত কাছে এলে buzzer বাজবে — 0.48 m-এ সোজা সামনে এলে (wave C, illustrative) বাজনা ওঠে আর চাকা স্থির — u = 0-তে deadzone; একটু কাত হয়ে 0.50 m-এ এলে (wave D) বাজতে বাজতে সেই দিকে ঘোরে; 0.90 m-এ বাজনা থামে — ঘূর্ণন আলাদা হিসাব, কোণ বাঁচলে তখনও ধীরে ঘুরতে পারে (wave A)। linear 0.5 আর angular 1.0 কেবল registry-র রেকর্ডে বাস করে — চাকার জগতে তাদের কোনো ভূমিকা নেই।",
+  "incorrect": "শিরোনামের Speed Limits কথাটা বিশ্বাস করে launch-এ <code>-p linear:=0.2</code> দিলে কিছুই বদলায় না — linear.x কোথাও set-ই হয় না, robot আগের মতোই একই রকম জায়গায় ঘুরে। angular-কে আসল cap ভাবলে সেটাও ভুল: PID gain বাড়ালে বা step-এ বড় Kd transient এলে angular.z সহজেই 1.0 rad/s ছাড়িয়ে যেতে পারে — কোথাও clamp নেই, সেই মানই হুবহু /cmd_vel-এ গিয়ে চাকা দুটোকে হঠাৎ জোরে ঘুরিয়ে দেয়। উল্টোদিকে ResponseDist টাইপো করে 5.5 লিখলে ৫.৫ মিটার দূরের valid object-ও বাজাতে থাকবে (সামনে কিছু না থাকলে অবশ্য চুপ — L73-এর early return), আর LaserAngle 10 করে ফেললে দৃষ্টি সংকীর্ণ হয় — সোজা সামনের object তখনও চোখে পড়ে (abs(angle) তো প্রায় 0), 0.55 m-এর ভেতরে এলে বাজেও; হারায় পার্শ্বের object — 10 ডিগ্রির বাইরের beam-গুলোই আর গণ্য হয় না, তাই কাত হয়ে আসা কাছের বাধা না দেখে robot চুপ করে থাকে।"
+ },
+ "animType": null
+}

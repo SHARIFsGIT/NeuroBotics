@@ -1,0 +1,26 @@
+[
+{
+"file": "README.md",
+"ln": 1,
+"lns": [
+1
+],
+"kind": "exec"
+},
+{
+"file": "README.md",
+"ln": 2,
+"lns": [
+2
+],
+"kind": "struct"
+},
+{
+"file": "README.md",
+"ln": 3,
+"lns": [
+3
+],
+"kind": "exec"
+}
+]

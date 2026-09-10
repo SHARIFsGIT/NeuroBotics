@@ -1,0 +1,174 @@
+[
+ {
+  "n": 1,
+  "id": "part-01",
+  "fname": "README.md",
+  "enTitle": "Runbook — Three Commands",
+  "lang": "bash",
+  "start": 1,
+  "end": 5,
+  "flags": [],
+  "explain": [
+   {
+    "a": 1,
+    "b": 1,
+    "text": "<code>sh start_agent.sh</code> — runbook-এর প্রথম command: <code>sh</code> interpreter দিয়ে vendor-এর bringup script-টা চালানো হলো। মনে রাখতে হবে এই script-টা আমাদের কোনো source file-এর ভেতরে নেই, তাই ভেতরে ঠিক কী লেখা আছে তা আমরা দেখিনি — illustrative ধারণা: এটা robot-এর base driver আর সামনে-পেছনের দুটো lidar-এর vendor driver তুলে দেয়, যাতে কাঁচা scan data বেরোতে শুরু করে। folder 10 আর folder 11 — দুই আগের app-এর README-এর প্রথম line-ও হুবহু এই command-ই — মানে series-এর প্রতিটা lidar পরীক্ষার গোড়ায় একই bringup। README-টা মোট ৫ line-এর: L2 আর L4 blank line, শুধু তিনটা স্তরকে চোখে আলাদা দেখানোর separator — আসল content তিনটা command, আর তিনটাই পরেরটার পূর্বশর্ত।"
+   },
+   {
+    "a": 3,
+    "b": 3,
+    "text": "<code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code> — দ্বিতীয় স্তর: sensor chain। রূপটা <code>ros2 launch package_name launch_file</code>: ROS 2 আগে <code>yahboom_M3Pro_laser</code> package-টা খোঁজে, তার share directory থেকে <code>laser_driver.launch.py</code> হাতে নিয়ে তার <code>generate_launch_description()</code> চালায়। launch file-টাই এই folder-এর দ্বিতীয় source file, আর এটা folder 11-এর driver-এর সঙ্গে byte-identical — ভেতরে কোনো node সরাসরি লেখা নেই; দুটো <code>IncludeLaunchDescription</code> দিয়ে folder 10-এর গোটা fusion pipeline চেইন করা হয়েছে — <code>ira_laser_tools</code>-এর merger সামনে-পেছনের lidar জোড়ে একটা 360-degree scan বানায়, <code>yahboom_laser_filter</code> robot-এর নিজের শরীর-হাতের blind-spot reading সরিয়ে data পরিষ্কার করে। ফলে <code>/scan</code> topic-এ merged, filtered stream প্রস্তুত হয়। একটা জরুরি সীমা মনে রাখো — এই launch file tracking node-টা চালু করে না; L3 শুধু sensor chain-ই তোলে, behavior node-এর জন্য আলাদা L5 লাগবে। <code>ros2 launch</code>-এর ক্ষমতা এখানেই — এক command-এ একাধিক node-এর পুরো chain একসাথে ওঠে।"
+   },
+   {
+    "a": 5,
+    "b": 5,
+    "text": "<code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> — তৃতীয় ও শেষ স্তর: tracking node। এবার <code>ros2 launch</code> নয়, <code>ros2 run package_name executable_name</code> — কোনো launch file ছাড়াই package-এর একটাই executable সরাসরি চালানো হয়েছে, নাম <code>laser_Tracker</code> (বড় হাতের T লক্ষ্য করুন)। এই এক শব্দেই আগের app-এর README-র সঙ্গে পুরো তফাত — বাকি চার line (L1-L4) হুবহু এক, কিন্তু folder 11-এর L5-এ ছিল <code>laser_Avoidance</code>। অর্থের তফাত আরও গভীর: folder 11-এর node বাধা এড়াতো (avoidance), এই node সামনের জিনিস এড়ায় না — ফলো করে। node-টা <code>laser_Tracker_a1</code> নাম নিয়ে জন্মায় (laser_Tracker.py-র L137), L3-এর chain থেকে আসা merged <code>/scan</code> আর joystick-এর <code>/JoyState</code> subscribe করে, প্রতিটা scan-এ সামনের ±45° cone-এর সবচেয়ে কাছের valid object খুঁজে তার দিকে এগোয় — dual PID (linear + angular) মিলে <code>ResponseDist</code> parameter-এর মান 0.55 m stand-off দূরত্ব ধরে রাখে আর object-টাকে সামনে কেন্দ্রে রাখতে ঘোরায়, command যায় <code>/cmd_vel</code>-এ। ক্রমটা সৌন্দর্যের নয়: L3 না উঠলে এই node কোনো scan পায় না, উঠে চুপচাপ বসে থাকে।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "বাস্তব robot-এ তিনটা command ঠিক এই ক্রমে দিন। L1-এর vendor bringup base আর দুটো lidar driver জাগায় (illustrative), L3-এর launch folder 10-এর merger ও filter chain তুলে <code>/scan</code>-এ পরিষ্কার 360-degree data পাঠাতে শুরু করে, তারপর L5-এর <code>laser_Tracker</code> node প্রতিটা scan পেয়ে সামনের ±45° cone-এর সবচেয়ে কাছের object-টার দিকে এগোয় — দুটো PID মিলে চাকা ঘুরিয়ে 0.55 m দূরত্ব ধরে রাখে ও object-কে সামনে কেন্দ্রে রাখে, velocity যায় <code>/cmd_vel</code>-এ, আর console-এ প্রতিটা scan-এ সামনের object-এর দূরত্ব ও angle ছাপাতে থাকে। ফলে robot বাধা এড়ায় না — সামনের কাছের জিনিসটাকেই টার্গেট ধরে তার 0.55 m দূরে ঘুরে-ঘুরে লেগে থাকে। একটা স্তর বাদ গেলে পরের স্তরের খাবারই আসে না।",
+   "incorrect": "সাধারণ ভুল: L5 আগে চালানো। ROS 2-এ subscription এমন topic-এও সফল হয় যার publisher এখনো নেই, তাই node ত্রুটিমুক্ত উঠে বসে থাকে — <code>registerScan</code> একবারও চলে না, <code>/cmd_vel</code>-এ কিছু যায় না, চাকা নড়ে না; আসল কারণ L3-এর fusion chain ওঠেনি বলে <code>/scan</code> চুপ। দ্বিতীয় ভুল প্রত্যাশা: folder 11-এর <code>laser_Avoidance</code> দেখে এটাকেও বাধা এড়ানোর node ভাবা — বাস্তবে <code>laser_Tracker</code> সামনের object-এর দিকেই এগিয়ে যায়, তাই robot-কে দেয়াল বা মানুষের দিকে মুখ করে ছেড়ে দিলে সে ওটার 0.55 m দূরে গিয়ে থেমে সেটাকে ফলো করতে থাকবে। একই রকম চুপচাপ ফল হয় L1 বাদ দিলে — lidar থেকে কাঁচা scan-ই আসে না।"
+  },
+  "animType": "runbookFlow"
+ },
+ {
+  "n": 2,
+  "id": "part-02",
+  "fname": "laser_driver.launch.py",
+  "enTitle": "Driver Launch — Imports",
+  "lang": "python",
+  "start": 1,
+  "end": 7,
+  "flags": [],
+  "explain": [
+   {
+    "a": 1,
+    "b": 2,
+    "text": "<code>import os</code> — Python-এর standard library-র file ও path টুল, author-এর comment বলছে <code>(System file operations)</code>। কাজ একটাই: L12 আর L20-এ <code>os.path.join</code> দিয়ে folder 10-এর <code>merge_multi.launch.py</code> ও <code>laser_filter_node.launch.py</code>-এর path জোড়া দেওয়া। <code>from ament_index_python.packages import get_package_share_directory</code> এনেছে সেই ROS 2 function যেটাকে package-এর নাম দিলে — L13-এ <code>ira_laser_tools</code>, L21-এ <code>yahboom_laser_filter</code> — সে ওই package-এর install হওয়া share directory-র পথ ফিরিয়ে দেয়। এটা plain function call: <code>generate_launch_description()</code> চলার সময়েই, মানে construction time-এ, পথ মিলে যায় — folder 10-এর <code>LaunchConfiguration</code> substitution-এর lazy আচরণের ঠিক উল্টো; এজন্যই package install না থাকলে launch পড়ার মুহূর্তেই error আসে। শুরুতেই একটা কথা দিয়ে রাখি: গোটা driver file-টা আগের app folder 11-এর <code>laser_driver.launch.py</code>-এর সঙ্গে byte-identical — এই ছয়টা import থেকে শেষ bracket পর্যন্ত এক বাইট তফাতও নেই, কারণ দুই app-ই চায় একই sensor chain।"
+   },
+   {
+    "a": 3,
+    "b": 5,
+    "text": "<code>from launch import LaunchDescription</code> — প্রধান container; L28-এ <code>return LaunchDescription</code> দিয়ে যে list-টা launch framework-এর হাতে ফিরে যায় সেটাই এই class-এর object, তাই এই import ছাড়া পুরো file-টাই অর্থহীন। <code>from launch.actions import IncludeLaunchDescription</code> এই file-এর আসল অস্ত্র: একটা launch file-এর ভেতরে আরেকটা launch file চালানোর action, নামেরই মানে Include — L32 আর L38-এ একটা করে বসেছে। এই একটা tool-ই এখানকার পুরো design: নিজে কোনো node না চালিয়ে folder 10-এর merger ও filter launch-কে chain করা। <code>from launch.launch_description_sources import PythonLaunchDescriptionSource</code> বাইরের path string-টাকে wrap করে framework-কে জানায় যে ওই file-টা Python launch file — ROS 2-এ XML বা YAML launch source-ও আছে, কিন্তু এখানে দুটোই Python। এই তিনটি মিলেই launch-chaining pattern: container, include action, আর Python source declaration।"
+   },
+   {
+    "a": 6,
+    "b": 7,
+    "text": "<code>from launch_ros.actions import Node</code> — ছয়টা import-এর শেষটা, আর author-এর নিজের comment-ই স্বীকার করছে <code>imported just in case it's needed later</code>; সত্যিই গোটা file-এ <code>Node</code> আর কোথাও ব্যবহার হয়নি — L28-42-এর list-এ শুধু দুটো <code>IncludeLaunchDescription</code>, কোনো <code>Node</code> action নেই। এটা একটা দামি পাঠ — import দেখেই মনে করা যাবে না জিনিসটা কাজে লাগছে; Python নামটাকে module scope-এ bind করে চুপচাপ বসে থাকে, কোনো warning বা error নেই, তাই dead import সহজে চোখে পড়ে না। এই app-এর জন্য তার মানেও স্পষ্ট: এই launch file শুধু sensor chain ওঠায়, tracking node-টা চালু করে না — README-র L5 command <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> সেটাকে আলাদাভাবে তোলে, আর সেই node fused <code>/scan</code> থেকে সামনের সবচেয়ে কাছের object খুঁজে 0.55 m দূরত্বে ফলো করে (আগের app folder 11-এ একই chain-এর উপর ছিল <code>laser_Avoidance</code> — বাধা এড়িয়ে চলা; driver দুই app-এই এক, শুধু ভোক্তা আলাদা)। পার্থক্যটা আরেকটু ধরো: folder 10-এর <code>merge_multi.launch.py</code> একইভাবে <code>Node</code> import করে সরাসরি node চালু করেছিল, কিন্তু এই file সব কাজ অন্য দুই launch file-কে দিয়ে করায়। শেষ সূক্ষ্ম পয়েন্ট: <code>launch</code> আর <code>launch_ros</code> দুটো আলাদা package — <code>Node</code> পাওয়া যায় শুধু দ্বিতীয়টায়, তাই ভবিষ্যতে সত্যিই কোনো node যোগ করতে হলে এই লাইনটাই আগে থেকে প্রস্তুত ছিল। L7 একটা blank line — ছয়টা import-এর block-কে L8-এর <code>def generate_launch_description():</code> থেকে আলাদা দেখানোর separator, নিজে কিছুই execute করে না।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "এই file তুললেই <code>get_package_share_directory</code> construction time-এ robot-এর install tree থেকে <code>ira_laser_tools</code> ও <code>yahboom_laser_filter</code>-এর share directory খুঁজে দেয়, তাই merger ও filter-এর launch file-এর path আগেই ঠিক হয়। এরপর দুটো IncludeLaunchDescription chain হয়ে folder 10-এর পুরো fusion pipeline ওঠে — front আর back lidar মিলে 360-degree fused <code>/scan</code> তৈরি হয়, blind spot-এর ভুয়া রিডিংও কাটা পড়ে। এই stage-এ robot-এর চাকা একদম স্থির থাকে: import-গুলো কোনো <code>/cmd_vel</code> message পাঠায় না, শুধু <code>laser_Tracker</code> node-এর খাবার তৈরি হয় — সেই node পরে এই fused scan থেকে সামনের সবচেয়ে কাছের object ধরে 0.55 m দূরত্বে ফলো করে।",
+   "incorrect": "ভুল পড়া: L6-এর <code>Node</code> import দেখে ধরে নেওয়া যে এই launch file নিজে tracking node-টাও চালু করে। Robot-এ এই ধারণা বিপদজনক: মনে করা হবে robot নিজে নিজে সামনের object ফলো করছে, অথচ <code>/cmd_vel</code> publish করার node চালুই হয়নি — <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> আলাদাভাবে না চালালে merger-filter উঠুক, <code>/scan</code> প্রস্তুত হোক, lidar ঘুরতে থাকুক, robot চুপচাপ দাঁড়িয়ে থাকবে — চাকায় কোনো command যাবে না। আর unused ভেবে এই import মুছলে কিছু ভাঙে না, কিন্তু author-এর just-in-case দরজাটা বন্ধ হয়।"
+  },
+  "animType": null
+ },
+ {
+  "n": 3,
+  "id": "part-03",
+  "fname": "laser_driver.launch.py",
+  "enTitle": "Two Paths — Merger & Filter",
+  "lang": "python",
+  "start": 8,
+  "end": 24,
+  "flags": [],
+  "explain": [
+   {
+    "a": 8,
+    "b": 8,
+    "text": "<code>def generate_launch_description():</code> — এই নামটাই <code>ros2 launch</code>-এর সঙ্গে চুক্তি। README L3-এর <code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code> চালালে framework এই file-কে import করে ঠিক এই নামের function-টাকে একবার ডাকে; launch file-এ কোনো <code>main()</code> বা spin loop নেই, তাই নাম বদলালেই launch ভেঙে পড়ে। Function-এর ভেতরের প্রতিটা লাইন চলে CONSTRUCTION phase-এ — run phase শুরুর আগে, একবার, উপর থেকে নিচে। Folder 10-এর lesson মনে করো: <code>LaunchConfiguration</code> substitution ছিল lazy, মান মিলত run phase-এ; এই file-এ উল্টো — যা লেখা সব এখনই eagerly চলে। Driver-টা গত app folder 11-এর সঙ্গে byte-identical — ওখানেও এই একই দুই path build হত; তফাত শুধু downstream-এ: ওই app-এর L5 node <code>laser_Avoidance</code> বাধা এড়াত, এই folder 12-এর <code>laser_Tracker</code> সামনের কাছের object-কে 0.55 m দূরত্বে ফলো করে। কাজ শেষে function-টা একটা <code>LaunchDescription</code> ফেরাবে (L28), সেটাকেই framework পরে run করায়।"
+   },
+   {
+    "a": 10,
+    "b": 11,
+    "text": "দুটো লাইনই <code>#</code> দিয়ে শুরু — comment, Python এগুলো execute করে না, তবু author-এর নকশা হিসেবে file-টার কাঠামো পরিষ্কার করে। L10 banner: <code>PROGRAM 1: THE LASER MERGER</code>; L11 কাজ বলে — <code>ira_laser_tools</code> package-এর path খুঁজে, তার <code>launch</code> folder-এ ঢুকে <code>merge_multi.launch.py</code> বের করা। Comment-এ যা বলা L12-16 হুবহু তা-ই করে — comment মানচিত্র, code পথ। এই <code>merge_multi.launch.py</code>-ই folder 10-এ লাইন ধরে পড়া merger: সেখানে সামনে-পেছনে দুই lidar-এর raw scan (folder 09-এ যেমন একটা lidar-এর নিজের stream দেখেছি) এক 360-degree <code>/scan</code>-এ জোড়া লাগে — সেই fused ring-ই পরে এই app-এর <code>laser_Tracker</code>-এর খাবার।"
+   },
+   {
+    "a": 12,
+    "b": 13,
+    "text": "<code>laser_merge_launch_file = os.path.join(</code> — assignment শুরু, bracket L16 পর্যন্ত খোলা থাকায় তার সব argument একসঙ্গে মূল্যায়ন হবে। প্রথম argument <code>get_package_share_directory('ira_laser_tools')</code>: এটা launch-এর কোনো magic নয়, ament-এর package index-কে জিজ্ঞেস করা একটা সাধারণ Python function call — আর সে চলে এখনই, construction phase-এ, installed share directory-র path string ফেরিয়ে দেয় (illustrative: <code>install/ira_laser_tools/share/ira_laser_tools</code> — যা <code>ros2 pkg prefix</code> দেখায়)। Package না মিললে এখনই error ওঠে — robot-এর কোনো lidar বা চাকা নড়ার অনেক আগেই, তাই এটা safe early failure।"
+   },
+   {
+    "a": 14,
+    "b": 16,
+    "text": "পরের দুটো argument <code>'launch'</code> আর <code>'merge_multi.launch.py'</code>। <code>os.path.join</code> এদের মাঝে ঠিক separator বসিয়ে একটা পূর্ণ path বানায় — string <code>+</code> দিয়ে জোড়া দিলে separator ভুল হওয়ার ঝুঁকি থাকে, <code>os.path.join</code> সেই ভার নিজে নেয়, তাই কোন OS-এ চলুক না কেন path ঠিক থাকে। ফল: merger launch file-এর absolute path, জমা রইল variable <code>laser_merge_launch_file</code>-এ। খেয়াল করো, এই মুহূর্তে কিছুই launch হয়নি — এটা নিছক একটা string। Merger-এর আসল কাজ হবে run phase-এ, Part 04-এর <code>IncludeLaunchDescription</code> action থেকে।"
+   },
+   {
+    "a": 18,
+    "b": 19,
+    "text": "সেই একই pattern-এর দ্বিতীয় কপি। L18 banner: <code>PROGRAM 2: THE LASER FILTER</code>; L19 বলে — <code>yahboom_laser_filter</code> package-এর path, তার <code>launch</code> folder, ভেতরে <code>laser_filter_node.launch.py</code>। ভাষা ও গঠন ইচ্ছা করেই আগের ব্লকের মতো রাখা: দুটো আলাদা program, কিন্তু খোঁজার নিয়ম এক। ভূমিকাও স্পষ্ট — merger দুই lidar-এর মিলিত scan বানায়, filter তার পরে blind spot সরিয়ে (robot-এর নিজের গা বা arm-এর ভুয়া কাছের রিডিং) stream পরিষ্কার করে; এই ক্রমটাই folder 10-এ দেখা pipeline, এখন এক launch file থেকে পুরোটা একসাথে চালানো হচ্ছে।"
+   },
+   {
+    "a": 20,
+    "b": 21,
+    "text": "<code>laser_filter_launch_file = os.path.join(</code> — নামে শুধু merge-এর জায়গায় filter, বাকি আদল হুবহু আগের ব্লক। <code>get_package_share_directory('yahboom_laser_filter')</code> এবার অন্য একটা package খোঁজে — Yahboom-এর নিজের laser filter package, <code>ira_laser_tools</code> নয়। এটাও একই সাধারণ function call: চলে এখনই, eagerly, construction phase-এ — তাই দুটো path-ই সঙ্গে সঙ্গে মিলে যায় আর দুটোই যাচাই হয়ে যায় কোনো node ওঠার আগেই। এক launch-এ একাধিক package-এর tool এভাবেই এক জায়গায় জড়ো করা যায় — এই file-টা তারই ছোট উদাহরণ।"
+   },
+   {
+    "a": 22,
+    "b": 24,
+    "text": "শেষ দুটো segment: <code>'launch'</code> আর <code>'laser_filter_node.launch.py'</code> — মিলে filter launch file-এর পূর্ণ path, জমা <code>laser_filter_launch_file</code>-এ। এই মুহূর্তে file-টার অবস্থা দাঁড়াল এমন: দুটো string variable তৈরি, দুটোতেই বাস্তব path, কিন্তু একটাও program চালু হয়নি — কোনো node এখনো exist করে না। এই chain থেকে আসা fused, filtered <code>/scan</code>-ই পরে README L5-এর <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> node-টা subscribe করবে; এই launch file শুধু তার খাবার তৈরি করে, tracker-কে নিজে চালু করে না। এরপর L26 থেকে আসবে সেই তালিকা তৈরির পর্ব, যেখানে এই দুই path <code>IncludeLaunchDescription</code> দিয়ে run phase-এ নামানো হবে। সহজ কথায়: L12-24 হলো দুইটা ঠিকানা খুঁজে লিখে রাখা — বাড়ি বানানোর কাজ পরের part-এ।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "আসল robot-এ README L3-এর <code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code> চালালে সবার আগে চলে এই দুইটা path lookup — ament index থেকে <code>ira_laser_tools</code> আর <code>yahboom_laser_filter</code>-এর installed share directory মিলে যায়, তারপরই merger+filter pipeline নামে। Terminal-এ workspace source থাকলে path কখনো ভুল হয় না, workspace অন্য জায়গায় থাকলেও ঠিক থাকে। সামনে-পেছনের দুই lidar-এর scan জুড়ে 360-degree <code>/scan</code> তৈরি হয় আর filter blind spot সরায় — এই পরিষ্কার stream-ই পরে <code>laser_Tracker</code> node পেয়ে সামনের কাছের object-টাকে 0.55 m দূরত্বে ফলো করে। কোনো package না মিললে robot চলতে শুরু করার আগেই construction-এ error ওঠে — early failure, নিরাপদ।",
+   "incorrect": "বিভ্রান্তি: অনেকে ভাবে এই লাইনেই merger আর filter চালু হয়ে গেছে, বা source folder-এর <code>merge_multi.launch.py</code> এডিট করলেই robot-এর আচরণ বদলাবে। আসলে path-টা পড়ে install/share-এর কপি থেকে — rebuild না করে এডিট করলে পুরনো fusion config-ই চলে, ফলে ভুল lidar topic বা ভুল frame-এ scan আসে আর <code>/scan</code> ভরে না; তখন <code>laser_Tracker</code>-এর <code>registerScan</code> একবারও চলে না — ফলো করার মতো কোনো object তার চোখেই পড়ে না, robot নিশ্চল দাঁড়িয়ে থাকে। আরেকটা ভুল: launch হয়ে গেছে মানেই tracking শুরু — আসলে এই file tracker node-কে চালুই করে না, সেটা README L5-এর আলাদা <code>ros2 run</code> command ছাড়া ওঠে না।"
+  },
+  "animType": "includeChain"
+ },
+ {
+  "n": 4,
+  "id": "part-04",
+  "fname": "laser_driver.launch.py",
+  "enTitle": "Return — Two Includes, Zero Nodes",
+  "lang": "python",
+  "start": 25,
+  "end": 42,
+  "flags": [],
+  "explain": [
+   {
+    "a": 26,
+    "b": 27,
+    "text": "শেষ পর্বের ঘোষণা — L26-এর <code># --- THE FINAL LIST ---</code> ঠিক আগের দুটো section header-এর (<code>PROGRAM 1</code>, <code>PROGRAM 2</code>) মতোই একই dash-ঘেরা format-এ লেখা। তফাত হলো: আগের দুই পর্ব শুধু দুটো file path string বানিয়েছিল (L12-16, L20-24), এই পর্ব সেই path-গুলো কাজে লাগায়। L27 বলছে program-এর list ROS 2-কে ফিরিয়ে দিয়ে সব একসাথে চালু করতে হবে — কিন্তু এই ফাইলের নিজস্ব কোনো program নেই; list-এ ঢুকবে শুধু দুটো include action। অর্থাৎ পুরো ফাইলটা একটা pure orchestrator: নিজে কোনো node চালায় না, শুধু অন্য দুটো launch file-এর ঠিকানা হাজির করে দেয়।"
+   },
+   {
+    "a": 28,
+    "b": 28,
+    "text": "L28 একটা পুরো বাক্যের দরজা খুলে দেয় — <code>return</code> মানে <code>generate_launch_description()</code>-এর ফল হিসেবে ros2 launch tool পাবে ঠিক এই object-টাই। <code>LaunchDescription</code> হলো L3-এ import করা container class, আর তার constructor-কে সরাসরি একটা list literal দেওয়া হচ্ছে: opening <code>[</code> এই লাইনে, element-গুলো L30-40-এ, closing <code>]</code> L42-তে। এই list literal-এর ভেতরেই ঢুকে আছে তিনটা blank line — L29, L35, L41; bracket খোলা থাকায় Python-এর চোখে এরা সম্পূর্ণ বৈধ, কাজ শুধু দুটো element-কে চোখে আলাদা করে দেখানো। Folder 10-এর <code>merge_multi.launch.py</code> আলাদা আলাদা list বানিয়ে জোড়া দিয়েছিল; এখানে পথ উল্টো — inline list, দুটো element সরাসরি বন্ধনীর ভেতরে। আর মনে রেখো: এই লাইন চলছে construction phase-এ — list-টা এখন শুধু বানানো হচ্ছে, কিছুই চালু হচ্ছে না; চালু করার কাজ পরে run phase-এ ঘটবে।"
+   },
+   {
+    "a": 30,
+    "b": 31,
+    "text": "List-এর প্রথম element-এর আগের comment। <code># 1.</code> নম্বরটা ক্রম শেখাচ্ছে: merger আগে, filter পরে — এই ক্রম পাইপলাইনের গল্পের সাথে মেলে। L31 বলছে এই include <code>the file we found above</code> চালাবে, আর তার কাজ দুটো lidar-এর data জোড়া দেওয়া — comment-এর ভাষায় ওটা <code>stitches the front and back lasers together into one 360-degree map</code>। <code>found above</code> মানে L12-16-এ construction time-এই বসে যাওয়া <code>laser_merge_launch_file</code> path — কোনো lazy substitution নয়, string তখনই final। Folder 10-এ আমরা এই ফাইলের ভেতরটা পড়েছি, folder 09-এ দেখেছি একটা lidar একটাই দিক দেখে — তাই 360-degree দেখতে হলে এই জোড়া ছাড়া উপায় নেই।"
+   },
+   {
+    "a": 32,
+    "b": 34,
+    "text": "তিন লাইনের nested গঠন। বাইরে <code>IncludeLaunchDescription</code> (L4-এর import) — launch জগতের recursion tool: এক launch file-এর ভেতরে আরেকটা launch file চালানোর একমাত্র পরিষ্কার উপায়। ভেতরে <code>PythonLaunchDescriptionSource(laser_merge_launch_file)</code> (L5-এর import) — এটা জানিয়ে দেয় অন্তর্ভুক্ত ফাইলটা Python launch file, YAML নয়। সবচেয়ে ভেতরে path string। Run phase-এ framework এই action execute করতে গিয়ে ওই ফাইল import করে তার নিজের <code>generate_launch_description()</code> ডাকে — অর্থাৎ প্রতিটা included ফাইলের নিজের constructor phase আর run phase আলাদা করে চলে; ভেতরের গল্পটা folder 10-এর, এখানে সেটা illustrative। L34-এর <code>),</code> এই include-টা বন্ধ করে কমা সহ — কমাটাই list-এর দুই element-এর বিভাজক।"
+   },
+   {
+    "a": 36,
+    "b": 37,
+    "text": "দ্বিতীয় element-এর comment — <code># 2.</code> বলছে এটা পাইপলাইনের দ্বিতীয় ধাপ। L37-এর ব্যাখ্যা folder 10-এর filter-এর কাজের সাথে মেলে: ওটা <code>removing \"blind spots\" (like the robot's own arm)</code> — মানে fused scan-এর ভেতর robot-এর নিজের গা বা arm-এর reflection থেকে আসা ভুয়া কাছের রিডিং বাদ দেওয়া হয়। এই app-ে এই ধাপটা বিশেষ গুরুত্ব পায়, কারণ <code>laser_Tracker</code> node সামনের ±45-degree cone-এর মধ্যে সবচেয়ে কাছের object-টাকেই খুঁজে তার থেকে 0.55 m দূরত্ব ধরে রাখে — filter না থাকলে node-টা robot-এর নিজের arm-এর ভুয়া রিডিংকেই সবচেয়ে কাছের object ভেবে ফেলত, আর তখন একটা অদৃশ্য target থেকে দূরে থাকতে চাকা পেছনে ঘোরানোর command চলত (illustrative)। আর <code>the file we found above</code> এখানে L20-24-এর <code>laser_filter_launch_file</code> path-কেই বোঝায় — একই construction-time নিয়ম, string আগেই বসে আছে।"
+   },
+   {
+    "a": 38,
+    "b": 40,
+    "text": "দ্বিতীয় include — গঠনে হুবহু প্রথমটার মতো, শুধু সবচেয়ে ভেতরের argument আলাদা: <code>laser_filter_launch_file</code>। দুটো action দেখতে অভিন্ন হলেও ওরা দুটো সম্পূর্ণ আলাদা ফাইল খুলবে — একটা <code>ira_laser_tools</code> package থেকে, আরেকটা <code>yahboom_laser_filter</code> package থেকে। Run phase-এ framework list-এর ভেতর দিয়ে উপর থেকে নিচে action execute করে, তাই merger আগে চালু, filter পরে — আর ক্রমটা অর্থবহ, কারণ merger-এর output stream-ই filter-এর input। ছোট নজরদারি: L34 প্রথম element-এর পরে কমা দিয়েছিল, কিন্তু L40-এ <code>)</code>-এর পরে কমা নেই — শেষ element-এর পরে Python কমা ছাড়াই চলে যায়। তবে এটা শুধু action-এর ক্রম, কোনো synchronization নয়: ROS 2-তে একটা process সামান্য আগে-পরে উঠলেও publisher-subscriber পরে মিলে যায়, এই কারণে launch ভেঙে পড়ে না।"
+   },
+   {
+    "a": 42,
+    "b": 42,
+    "text": "ফাইলের শেষ লাইন <code>])</code> — দুটো bracket একসাথে বন্ধ, bracket ladder-এর শেষ ধাপ। ভেতরের <code>]</code> L28-এ খোলা list literal বন্ধ করে, বাইরের <code>)</code> <code>LaunchDescription</code> constructor call বন্ধ করে, আর তখনই <code>return</code> statement সম্পূর্ণ হয়। হিসাবটা গুনে দেখো: L28-এর <code>LaunchDescription([</code> দুটো bracket খুলেছিল, L34-এর <code>),</code> প্রথম include বন্ধ করেছে, L40-এর <code>)</code> দ্বিতীয়টা, L42 বাকি দুটো বন্ধ করে সব মিলিয়ে দিয়েছে। পুরো ফাইলের সারমর্ম এখানেই: construction phase-এ দুটো path string, run phase-এ merger-তারপর-filter দুটো include action, আর নিজের node একদম zero — L6-এ import করা <code>Node</code> কখনো ব্যবহারই হয়নি, ওই লাইনের comment নিজেই বলে দিয়েছিল এটা রাখা হয়েছে শুধু সতর্কতার জন্য। একটা ঐতিহাসিক মন্তব্য: folder 11-এ হুবহু এই একই driver file (byte-identical) laser_Avoidance-কে সেবা দিয়েছিল — সেখানে node-টা বাধা এড়াত; এই app-এ node বদলে <code>laser_Tracker</code>, যে সামনের কাছের object অনুসরণ করে। Driver অপরিবর্তিত থাকতে পারে কারণ sensor chain দুই ক্ষেত্রেই এক — পার্থক্য শুধু সেই fused <code>/scan</code> কে খায়। আর স্পষ্ট থাকো: <code>laser_Tracker</code>-কে এই launch file তোলে না — README-র L3 command শুধু sensor chain জাগায়; tracking node-টা আসে README L5-এর <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> থেকে।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "Real robot-এ এক command-এ পুরো sensing pipeline ওঠে: run phase-এ list-এর ক্রম মেনে merger আগে চালু হয়ে সামনে-পেছনের দুটো lidar-এর raw scan জুড়ে 360-degree fused <code>/scan</code> বানায়, তারপর filter robot-এর নিজের arm-এর ভুয়া কাছের রিডিং বাদ দিয়ে stream পরিষ্কার করে — terminal-এ দুটো included launch-এর process log নামতে থাকে (illustrative)। ফলে আলাদাভাবে <code>ros2 run</code> করা <code>laser_Tracker</code> node একটা পরিষ্কার <code>/scan</code> পায়, যেটা সামনের কাছের object খুঁজে 0.55 m দূরত্ব ধরে রাখতে <code>/cmd_vel</code> publish করে। এই ফাইল নিজে কোনো <code>/cmd_vel</code> message পাঠায় না, তাই এটা চালু করলেই robot-এর চাকা নড়ে না — শুধু তার চোখ খোলে।",
+   "incorrect": "সাধারণ ভুল: এই launch file-টাই tracking চালায় ভেবে নেওয়া। আসলে এর ভেতরে একটাও Node action নেই, শুধু দুটো include; <code>laser_Tracker</code> node README-র শেষ command-এ আলাদা করে <code>ros2 run</code> করতে হয় — সেটা না চালালে sensor chain পুরো চলুক, <code>/scan</code> ভরে থাকুক, robot চুপচাপ দাঁড়িয়ে থাকবে। আরেকটা ভুল: filter include বাদ দিলে সময় বাঁচে ভাবা — blind spot রিডিং fused scan-এ থেকে গেলে tracker robot-এর নিজের arm-কেই সামনের সবচেয়ে কাছের object ভেবে 0.55 m দূরত্ব ধরতে চাইবে, ফলে অদৃশ্য target থেকে সরতে চাকা বারবার পেছনে ঘুরতে থাকবে (illustrative)।"
+  },
+  "animType": null
+ }
+]

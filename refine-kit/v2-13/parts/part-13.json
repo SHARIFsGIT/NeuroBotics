@@ -1,0 +1,134 @@
+{
+ "n": 13,
+ "id": "part-13",
+ "fname": "laser_Warning.py",
+ "enTitle": "Tracking — PID Compute & Sign Branches",
+ "lang": "python",
+ "start": 96,
+ "end": 110,
+ "flags": [],
+ "explain": [
+  {
+   "a": 97,
+   "b": 98,
+   "text": "L97-এর banner <code># --- THE TRACKING LOGIC ---</code> ঘোষণা করে buzzer-এর ফয়সালা শেষ — L89-95-এর alarm block-এর পরে এবার steering-এর পালা। L98 <code>velocity = Twist()</code> দিয়ে একেবারে fresh message তৈরি হয়, সব field-এর default 0.0। এই zero-start-টাই পুরো design-এর ভিত্তি: নিচের লাইনগুলো শুধু <code>angular.z</code> set করবে, <code>linear.x</code> কোথাও ছোঁয়া হবে না — ফলে guard-এর robot কখনও সামনে আগায় না, জায়গায় বসে pivot করে (spin-in-place)।"
+  },
+  {
+   "a": 99,
+   "b": 99,
+   "text": "L99 <code>print(\"minDistID: \", minDistID)\t</code> — closing paren-এর পরে সোর্স লাইনের একেবারে শেষে একটা TAB অক্ষর বসে আছে, verbatim এমনই রাখা হয়েছে (console-এ অদৃশ্য, editor-এ column একটু সরে থাকতে দেখা যায়)। registerScan-এর চারটা debug print-এর মধ্যে এটি দ্বিতীয়: L85-এ দূরত্ব (<code>minDist</code>), এখানে কোণ, তারপর L112 ও L120-এ deadzone-আর-damping-এর আগে-পরের মান। অর্থাৎ প্রতি scan-এ console-এ দেখা যায় সবচেয়ে কাছের object কত degree পাশে — ঘুরার হিসাব ঠিক দিকে যাচ্ছে কি না, এই ছাপ থেকেই ট্র্যাক করা যায়।"
+  },
+  {
+   "a": 101,
+   "b": 102,
+   "text": "দুইটি comment-ই এই অংশের control law-এর সার বলে দেয়: <code>Target Angle is 0 (straight ahead)</code> — robot-এর নাক যেখানে, সেটাই লক্ষ্য; <code>Current Angle is minDistID</code> — ±45° cone-এর ভেতরের closest object এখন যে কোণে বসে (L78-এ বের করা)। কাজ একটাই: এই দুইয়ের ফারক শূন্যে নামানো। এখানে একটা অনুপস্থিতি খেয়াল করুন — folder 12-র tracker closest object-কে 0.55 m দূরত্বে ধরে রাখত (minDist-এ snap বসিয়ে), guard-এ সেই snap-এর কোনো চিহ্ন নেই: দূরত্ব নিয়ে এই ফাইল কিছুই করে না, শুধু মুখ ঘোরায়।"
+  },
+  {
+   "a": 103,
+   "b": 103,
+   "text": "L103 এই Part-এর হৃদয়: <code>ang_pid_compute = self.ang_pid.pid_compute(abs(minDistID) / 72, 0)</code>। এক লাইনে তিনটি সিদ্ধান্ত। প্রথমত <code>abs(minDistID)</code> — error সবসময় sign-মুক্ত; PID-টিকে শুধু \"কতটা ঘুরতে হবে\" জানানো হয়, \"কোন দিকে\" সেই ভার পরের if/elif-এর ঘাড়ে। দ্বিতীয়ত দ্বিতীয় argument <code>0</code> — target কোণ শূন্য, সোজা সামনে, তাই effective error দাঁড়ায় |a|/72 − 0। তৃতীয়ত <code>/ 72</code> — একটি bare magic number; ফাইল কোথাও এর ব্যাখ্যা দেয় না, degree-কে unitless scale-এ নামানো ছাড়া আর কিছুই নিশ্চিত করে বলা যায় না। SinglePID vendor module (L13-এর star-import) থেকে এসেছে, internal এই folder-এ নেই — L48 শুধু gain (3.0, 0.0, 5.0) জানায়; নিচের সব সংখ্যা তাই Kp-only ভাবে illustrative।"
+  },
+  {
+   "a": 105,
+   "b": 107,
+   "text": "L105-এর comment নিয়মটি বলে দেয়: <code>If the object is to the left (positive angle), turn left</code>। fused ring-এ কোণ −44…+44 degree পর্যন্ত চলে, ROS convention-এ positive দিক মানে বাঁ দিক। L106-এর শর্ত <code>if 0 &lt; minDistID :</code> — colon-এর আগে একটা space, সোর্স verbatim এমনই। শর্ত সত্য হলে L107 <code>velocity.angular.z = ang_pid_compute</code>: PID-এর অঋণাত্মক ফল positive z হয়ে বসে, positive angular.z মানে CCW — বাঁ দিকের wheel পিছনে, ডান দিকের wheel সামনে, robot জায়গায় বাঁ দিকে pivot করে object-মুখী হয়।"
+  },
+  {
+   "a": 108,
+   "b": 110,
+   "text": "L108-এর comment উল্টো কেসটি বলে: <code>If the object is to the right (negative angle), turn right</code>। L109 <code>elif minDistID &lt; 0:</code> — এখানে colon-এর আগে space নেই, L106-এর সঙ্গে তফাতটা খেয়াল করুন (দুটোই সোর্স fidelity)। L110 <code>velocity.angular.z = -ang_pid_compute</code> — একই magnitude, sign উল্টো; negative z মানে CW, ডান দিকে pivot। আর <code>minDistID</code> ঠিক 0.0 হলে দুই শর্তই false — কোনো branch ঢোকে না, L98-এর fresh Twist-এর default 0.0-ই z হয়ে থাকে, robot নড়ে না। ডিজাইনের সার: magnitude PID থেকে, direction এই sign-branch দুটি থেকে — <code>abs()</code> আর if/elif মিলে একটি mirror-symmetric steering বানায়।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-টিই ফাইলের গণিতের হৃদয়: সামনের closest object কত degree পাশে (a), তা থেকে কত জোরে (u = ang_pid_compute) কোন দিকে (z) ঘুরতে হবে — L103 প্রথম প্রশ্নের উত্তর দেয়, L106-110 বাকি দুটির।",
+  "levels": [
+   {
+    "label": "Level 1 — Symbols ও units",
+    "latex": "\\[ a = \\texttt{minDistID}\\ [\\deg], \\qquad e = \\dfrac{|a|}{72}\\ [\\text{unitless}], \\qquad u = \\texttt{ang\\_pid\\_compute}, \\qquad z = \\texttt{velocity.angular.z}\\ \\left[\\tfrac{\\mathrm{rad}}{\\mathrm{s}}\\right] \\]",
+    "text": "a হলো cone-এর ভেতরের closest object-এর কোণ, fused ring-এ degree-তে, মান −44 থেকে +44-এর ভেতর। 72 দিয়ে ভাগ হয়ে e-এর কোনো unit থাকে না। u হলো PID-এর বের করা turn-demand, z হলো তাতে sign বসিয়ে wheel-এ পাঠানো ঘূর্ণন। Gain: Kp = 3.0, Ki = 0.0, Kd = 5.0 (L48)।"
+   },
+   {
+    "label": "Level 2 — Error তৈরি",
+    "latex": "\\[ e = \\dfrac{|a|}{72} - 0 = \\dfrac{|a|}{72} \\]",
+    "text": "pid_compute-এর দ্বিতীয় argument 0 — target কোণ শূন্য, সোজা সামনে (L102-এর comment-ই তা বলে)। শূন্য বিয়োগে কিছু বদলায় না, তাই e শুধু |a|/72। abs() থাকায় e কখনও ঋণাত্মক হয় না — দিকের দায় PID-এর বাইরে, L106/L109-এর sign-branch-এর কাঁধে।"
+   },
+   {
+    "label": "Level 3 — Kp-view algebra (illustrative)",
+    "latex": "\\[ u = K_p\\,e = 3\\cdot\\dfrac{|a|}{72} = \\dfrac{|a|}{24} \\]",
+    "text": "Ki = 0 বলে Kp-only view-তে u-তে বাঁচে শুধু proportional term (SinglePID-এর ভেতরের হিসাব এই folder-এ নেই)। 3/72 = 1/24 — অর্থাৎ object প্রতি 24 degree করে পাশে সরলে u এক করে বাড়ে; a = 20° হলে u = 20/24 ≈ 0.833।"
+   },
+   {
+    "label": "Level 4 — Sign-branch geometry",
+    "latex": "\\[ z = \\begin{cases} +u, & a > 0 \\quad (\\text{left, CCW}) \\\\ -u, & a < 0 \\quad (\\text{right, CW}) \\\\ 0, & a = 0 \\quad (\\text{no branch}) \\end{cases} \\]",
+    "text": "PID magnitude দেয়, if/elif direction দেয়। ROS convention-এ positive angular.z মানে CCW (বাঁ দিকে), negative মানে CW (ডান দিকে)। দুই দিকের |z| হুবহু সমান — +20° আর −20° একই জোরে ঘুরায়, শুধু দিক উল্টো: আচরণ mirror-symmetric। a ঠিক 0.0 হলে দুই শর্তই false, L98-এর default 0.0-ই থেকে যায়।"
+   },
+   {
+    "label": "Level 5 — Range ও ceiling (pre-damping)",
+    "latex": "\\[ 0 \\le |a| < 45^{\\circ}: \\qquad 0 \\le e < \\tfrac{45}{72} = 0.625, \\qquad 0 \\le u < 3\\cdot\\tfrac{45}{72} = 1.875 \\]",
+    "text": "cone strict &lt; 45° (L68) বলে e-এর সীমা 0.625-এর নিচে, u-এর সীমা 1.875-এর নিচে; এই illustrative ring-এ কোণ পূর্ণ degree-তে পড়ে, তাই বাস্তবে সবচেয়ে বড় |a| = 44, u = 44/24 ≈ 1.83 — 1.875 গাণিতিক সীমা মাত্র। হিসাব এখানেই থামে: L115-এর deadzone আর L118-এর ×0.5 damping পরের Part-এর ব্যাপার, তাই এই স্তরের সব সংখ্যা pre-damping।"
+   },
+   {
+    "label": "Level 6 — পূর্ণ P-D form ও Kd transient",
+    "latex": "\\[ u_n = K_p\\,e_n + K_d\\,(e_n - e_{n-1}), \\qquad K_i = 0, \\quad K_d = 5 \\]",
+    "text": "প্রকৃত SinglePID (vendor internal, illustrative) derivative term-ও রাখে। Kd = 5 বেশ বড়: scene বদলের পরে প্রথম call-এ e হঠাৎ লাফায় কিন্তু e_{n-1} এখনও পুরোনো দৃশ্যের মান — derivative term তখন একটা same-sign transient যোগ করে, ঘুরার শুরুতে সাময়িক overshoot লাগে; দ্বিতীয় call থেকে স্থির। ঠিক এই অনিশ্চয়তাই উপরের সব u/z সংখ্যাকে illustrative করে রাখে।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ e = \\tfrac{|+20|}{72} = \\tfrac{20}{72} = 0.278, \\qquad u = 3 \\times 0.278 = 0.833, \\qquad z = +0.833\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "Wave B (0.70 m @ +20 deg): 0.70 &gt; 0.55, তাই buzzer চুপ করেই tracking চলে। a positive বলে L106-এর branch — এই স্তরে z = +0.833 (pre-damping; ×0.5 পরের Part), robot বাঁ দিকে CCW pivot করে মুখ ঘোরায়। সব সংখ্যা Kp-view, illustrative।"
+   },
+   {
+    "latex": "\\[ e = \\tfrac{|-20|}{72} = 0.278, \\qquad u = 3 \\times 0.278 = 0.833, \\qquad z = -0.833\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "Wave D (0.50 m @ −20 deg): 0.50 ≤ 0.55, তাই buzzer বাজছে। একই magnitude, শুধু L109-এর branch sign উল্টে দেয় — z = −0.833, ডান দিকে CW pivot, বাজতে বাজতেই ঘোরা। B আর D-র পাশাপাশি তুলনাই abs()+sign-branch জোড়ার কাজ দেখিয়ে দেয় (illustrative)।"
+   },
+   {
+    "latex": "\\[ a = 0.0: \\qquad e = \\tfrac{0}{72} = 0, \\qquad u = 0, \\qquad z = 0.0\\ (\\text{no branch, default kept}) \\]",
+    "text": "Wave C (0.48 m @ 0 deg): object হুবহু সামনে, danger zone-এর ভেতরে — buzzer বাজছে কিন্তু a = 0.0। L106 ও L109 দুটোই false, তাই L98-এর default 0.0-ই z: robot দাঁড়িয়ে শুধু বিঁপবিঁপ করে; linear.x-ও কোথাও set হয় না, তাই এগোনোর প্রশ্নই ওঠে না।"
+   },
+   {
+    "latex": "\\[ |a| = 44: \\;\\; e = \\tfrac{44}{72} = 0.611, \\;\\; u = 1.833; \\qquad \\text{limit } |a| = 45: \\;\\; u = 1.875 \\]",
+    "text": "Cone-এর কিনারা (illustrative): এই ring-এ সবচেয়ে পাশের valid beam 44°, তাই u-এর বাস্তব সর্বোচ্চ ≈ 1.83; strict &lt; 45° হওয়ায় ঠিক 45° beam cone-এ ঢোকেই না — 1.875 সীমা মাত্র। declare করা angular = 1.0 parameter (L38) কোথাও enforce হয় না, তাই এই ceiling কেটে দেওয়ার কোনো clamp নেই।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "velocity = Twist()",
+    "math": "\\( x_0 = 0,\\; z_0 = 0 \\)",
+    "text": "প্রতি scan-এ fresh শূন্য message; linear.x এরপর আর কোনোদিন set হয় না, তাই x চিরকাল 0 — guard-এর spin-in-place আচরণের বীজ এখানেই বোনা।"
+   },
+   {
+    "code": "abs(minDistID) / 72",
+    "math": "\\( e = |a|/72 \\)",
+    "text": "degree থেকে unitless-এ scaling; 72-এর কোনো named constant বা ব্যাখ্যা ফাইলে নেই — bare magic number, শুধু পর্যবেক্ষণযোগ্য পাটিগণিতটুকুই বলা যায়।"
+   },
+   {
+    "code": "self.ang_pid.pid_compute(abs(minDistID) / 72, 0)",
+    "math": "\\( u = K_p\\,(|a|/72 - 0) = |a|/24 \\)",
+    "text": "প্রথম argument current (normalized কোণ), দ্বিতীয়টা target 0; Kp = 3 (L48)। SinglePID-এর internal এই folder-এ নেই — u-সূত্রটি Kp-view, illustrative।"
+   },
+   {
+    "code": "if 0 < minDistID :",
+    "math": "\\( a > 0 \\;\\Rightarrow\\; z = +u \\)",
+    "text": "বাঁ-পাশের object: positive z, CCW ঘূর্ণন। শর্তে colon-এর আগের space-সহ যেটা সোর্সে আছে সেটাই এখানে।"
+   },
+   {
+    "code": "elif minDistID < 0:",
+    "math": "\\( a < 0 \\;\\Rightarrow\\; z = -u \\)",
+    "text": "ডান-পাশের object: negative z, CW ঘূর্ণন। a = 0 হলে দুই mapping-ই প্রযোজ্য হয় না — z তার default 0.0-এ থেকে যায়।"
+   }
+  ],
+  "failure": [
+   "দুই branch-এর sign উল্টে গেলে robot object-এর উল্টো দিকে ঘুরতে থাকে — Wave B-র pillar বাঁয়ে থাকতে ডানে spin করবে; কয়েক scan-এর মধ্যেই object ±45° cone-এর বাইরে চলে যাবে, তখন L73-এর empty return এসে /cmd_vel আর /beep দুটোই শেষ মানে latch করে রাখবে: wheel বিপথে ঘুরতেই থাকবে, buzzer আটকে থাকবে।",
+   "72 ভুল হলে responsiveness সরাসরি বদলে যায় — 7.2 বসালে e দশগুণ: 5° পাশের object-এও u ≈ 2.08, ঘূর্ণন whip-এর মতো হঠাৎ; 720 বসালে 40° পাশে থাকলেও u ≈ 0.17, পরের Part-এর |u| &lt; 0.5 deadzone সব গিলে ফেলবে — robot মুখই ঘোরাবে না, শুধু বিঁপবিঁপ করবে।",
+   "abs() বাদ দিয়ে সরাসরি minDistID পাঠালে ডান-পাশের object-এর u ঋণাত্মক হয়ে যায়, আর L110 সেটাকে আবার উল্টো করে — a = −20° হলে z = +0.833: object ডানে, ঘূর্ণন বাঁয়ে। abs() আর sign-branch এক যুগল; একটা বাদ গেলেই দিক ওলটে যায়।",
+   "কোনো clamp নেই — L38-এ declare করা angular = 1.0 পড়ার পর আর কখনও ব্যবহার হয়নি। cone-এর কিনারায় এই স্তরের z 1.83 পর্যন্ত (সীমায় 1.875) উঠতে পারে, কিন্তু publish-এর আগেই L118-এর x0.5 damping সেটাকে অর্ধেক করে দেয় — wheel-এ সর্বোচ্চ যায় ~0.9375 rad/s, declared 1.0-এর ঠিক নিচে। বিপদটা সংখ্যায় নয়, ভরসায়: cap-টা parameter-এ নেই, damping-এর coincidence-এ।",
+   "বড় Kd = 5 থাকায় scene বদলানোর পরের প্রথম call-এ derivative term একটা same-sign transient যোগ করে (illustrative) — ঘুরার শুরুতে সাময়িক overshoot; দ্বিতীয় call থেকে e স্থির হয়ে transient মিলিয়ে যায়, তাই tuning-এর সিদ্ধান্ত প্রথম ছাপ দেখে নেওয়া ঠিক নয়।"
+  ]
+ },
+ "robot": {
+  "correct": "প্রতি fused scan-এ alarm block-এর ঠিক পরেই এই অংশ চলে: console-এ L85-এর <code>minDist</code>-এর পাশে L99-এর <code>minDistID</code> ছাপ হয়, তারপর fresh Twist-এ শুধু angular.z বসে। Wave B-তে (0.70 m @ +20 deg) PID দেয় u = 0.833, L106-এর branch সেটাকে positive করে বসায় — বাঁ দিকের wheel পিছনে, ডান দিকের wheel সামনে, robot জায়গায় CCW pivot করে pillar-মুখী হয় (এই স্তরে z = +0.833, damping পরে); buzzer চুপ, কারণ 0.70 &gt; 0.55। Wave D-তে (0.50 m @ −20 deg) একই magnitude উল্টো দিকে — ডানে CW ঘুরা, বাজতে বাজতে। Object হুবহু সামনে (a = 0.0) হলে কোনো branch-ই ঢোকে না, দুই পাশের wheel সমান থেমে থাকে; linear.x কখনও set না হওয়ায় robot এক চুলও সামনে যায় না।",
+  "incorrect": "Branch-এর sign উল্টে গেলে robot ঠিক উল্টো কাজ করে — বাঁয়ে pillar থাকতে ডানে spin, কয়েক সেকেন্ডেই object cone-এর বাইরে; তখন L73-এর return শেষ /cmd_vel latch করে রাখে: wheel ঘুরতেই থাকে, /beep-ও আটকে থাকে, robot কখনও স্থির হয় না। 72 ভুল হলে হয় whip নয় অবশ — 720 করলে 40° পাশের object-ও ঘুরাতে পারে না (u ≈ 0.17, পরের deadzone-এ শূন্য), ফলে robot মুখ ঘুরিয়ে দাঁড়িয়ে শুধু বিঁপবিঁপ করে। আর কোনো clamp নেই বলে cone-এর কিনারায় u 1.83 ছুঁলেও publish-এর আগে L118-এর x0.5 damping তা অর্ধেক করে দেয় — wheel-এ যায় ~0.9375 rad/s: declared angular 1.0 কেউ আটকায় না, সীমার মধ্যে থাকাটা damping-এর ভাগ্য"
+ },
+ "animType": "pidDial"
+}

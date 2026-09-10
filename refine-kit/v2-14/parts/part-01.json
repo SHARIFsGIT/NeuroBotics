@@ -1,0 +1,58 @@
+{
+ "n": 1,
+ "id": "part-01",
+ "fname": "README.md",
+ "enTitle": "Runbook — Eight Commands, One Map",
+ "lang": "bash",
+ "start": 1,
+ "end": 15,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 1,
+   "text": "<code>sh start_agent.sh</code> — runbook-এর প্রথম command: vendor-এর agent script-টা <code>sh</code> interpreter দিয়ে চালানো হলো। Script-টা এই folder-এর কোনো source file নয়, তাই ভেতরে ঠিক কী লেখা আছে তা আমরা দেখিনি — illustrative ধারণা: এটা robot-এর পুরো ROS environment তুলে দেয়, base আর sensor driver-সহ। folder 11, 12 আর 13 — তিন আগের app-এর README-এর প্রথম line-ও হুবহু এই command-ই ছিল; প্রতিটা পরীক্ষার গোড়ায় একই bringup। README-টা মোট 15 line-এর, কিন্তু আসল content মাত্র 8টা command — সবই odd line-এ: 1, 3, 5, 7, 9, 11, 13, 15; মাঝের even line-গুলো (2 থেকে 14) blank separator, এক-একটা ধাপ চোখে আলাদা দেখানোর সাজানো ব্যবস্থা। আর 8টা command-এর প্রতিটাই পরেরটার পূর্বশর্ত হিসেবে সাজানো — সেই ক্রম ভাঙলেই গল্প ভাঙে।"
+  },
+  {
+   "a": 2,
+   "b": 3,
+   "text": "L2 blank line — প্রথম ধাপ শেষ, দ্বিতীয় ধাপের আগের দাগ। L3: <code>ros2 launch slam_mapping gmapping.launch.py</code> — এই এক command-ই এই app-এর মূল ইঞ্জিন: পুরো SLAM stack। gmapping.launch.py ভেতরে 5টা program একসঙ্গে তোলে — 4টা <code>IncludeLaunchDescription</code> আর 1টা সরাসরি Node। ক্রমে: <code>ira_laser_tools</code>-এর <code>merge_multi.launch.py</code> সামনে-পেছনের দুই lidar জুড়ে fused 360-degree <code>/scan</code> বানায় (folder 10-13-এ যে merger আমরা ব্যবহার করেছি সেটাই); <code>yahboom_laser_filter</code> robot-এর নিজের শরীরের ভুয়া রিডিং ছেঁটে দেয়; <code>imu_filter_madgwick</code> node IMU-র কাঁচা data ছেঁকে নেয়; <code>ekf_bringup</code> IMU আর চাকার মাপ মিলিয়ে filter-করা odometry বানায় (vendor package-এর রীতি অনুযায়ী /odometry/filtered topic-এ); শেষে <code>slam_gmapping.launch.py</code> — আসল SLAM core। gmapping-এর দুই খাবার — fused scan আর odometry — দুটোই এই এক launch-এর প্রথম চার program সাজিয়ে দেয়; এই chain ছাড়া mapping শুরুই হয় না।"
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "text": "L4 blank। L5: <code>ros2 launch slam_mapping slam_view.launch.py</code> — তৃতীয় ধাপ: যা বানাচ্ছে তা দেখা। launch-টা ছোট, মোট দুই entry — একটা argument, একটা node: <code>rviz2</code> executable, আর <code>-d</code> দিয়ে <code>slam_rviz.rviz</code> pre-configured layout auto-load হয়, তাই হাতে display সাজাতে হয় না। <code>use_sim_time</code>-এর default 'false' — আসল robot, আসল wall clock। খেয়াল করো, এটা নিছক দর্শকের জানালা: mapping চলে L3-এর stack-এ, RViz শুধু লাইভ map-টা আঁকে; L5 বাদ দিলেও map একই গতিতে বানবে — শুধু তুমি দেখতে পাবে না।"
+  },
+  {
+   "a": 6,
+   "b": 7,
+   "text": "L6 blank। L7: <code>ros2 run yahboomcar_ctrl yahboom_keyboard</code> — এবার <code>ros2 launch</code> নয়, <code>ros2 run</code> — রূপ: আগে package-এর নাম, পরে executable-এর নাম; কোনো launch file ছাড়াই একটাই executable সরাসরি চালানো। node-টা জন্মায় <code>yahboom_keyboard_ctrl</code> নাম নিয়ে আর terminal-এ একটা বড় menu ছাপে — base-এর জন্য i/ (সামনে-পেছনে), j/l (ঘোরা), a/d (mecanum strafe — পাশে সরা), 1-0 পর্যন্ত চাপে arm-এর joint-গুলো ±5 ডিগ্রি করে বাড়ায়-কমায়, g/h দিয়ে gripper বন্ধ-খোলা, space এক চাপে emergency stop। publish করে <code>cmd_vel</code> topic-এ (Twist; লক্ষ্য করো নামটা relative — follow_line-এর <code>/cmd_vel</code>-এর মতো নয়, শুরুতে slash নেই), আর arm-এর জন্য arm_joint ও <code>arm6_joints</code> topic। SLAM-এর গল্পে এই node-এর ভূমিকাই সবচেয়ে জরুরি: gmapping নতুন জায়গা শেখে শুধু robot চলার সময় — আর এই keyboard-ই robot-কে হাতে চালানোর প্রধান উপায়।"
+  },
+  {
+   "a": 8,
+   "b": 9,
+   "text": "L8 blank। L9: <code>ros2 launch M3Pro_demo camera_arm_kin.launch.py</code> — পঞ্চম ধাপ: robot-এর চোখ আর হাতের math। ভেতরে দুই program: <code>orbbec_camera</code> package-এর <code>dabai_dcw2.launch.py</code> camera driver তোলে (dabai — camera-র model-এর নাম, source নিজেই বলে), আর <code>arm_kin</code> package-এর <code>kin_srv</code> executable <code>kin_ik_fk</code> নামে চলে — inverse/forward kinematics-এর math service। এই ধাপটা পরেরটার পূর্বশর্ত: follow_line-এর camera-র RGB+depth stream আর arm driver-এর পুরো chain এখান থেকেই ওঠে।"
+  },
+  {
+   "a": 10,
+   "b": 11,
+   "text": "L10 blank। L11: <code>ros2 run M3Pro_demo follow_line</code> — robot চালানোর দ্বিতীয় উপায়: হাতের keyboard নয়, robot নিজে। এই 485-line-এর node (এই folder-এর সবচেয়ে বড় file) camera-তে ধরা লাল লাইন ফলো করে <code>/cmd_vel</code> পাঠায়, পাশাপাশি AprilTag-ও চেনে। একটা গুরুত্বপূর্ণ সতর্কতা এই command-এই লুকিয়ে: follow_line-এর constructor-এ একটা blocking wait আছে — <code>arm6_joints</code> topic-এ কোনো subscriber না আসা পর্যন্ত node প্রতি 0.1 s-এ home pose পাঠিয়ে ঘুরতে থাকে; L9-এর camera+arm chain আগে না উঠলে node উঠেও <code>Init Done.</code> ছাপা পর্যন্ত পৌঁছায় না। তাই ক্রমটা L9 তারপর L11 — এড়ানোর নয়।"
+  },
+  {
+   "a": 12,
+   "b": 13,
+   "text": "L12 blank। L13: <code>ros2 topic pub /arm6_joints arm_msgs/msg/ArmJoints {\"joint1: 90, joint2: 140, joint3: 20, joint4: 10, joint5: 90, joint6: 180, time: 1500\"} --once</code> — runbook-এর দীর্ঘতম line, আর একমাত্র command যেটা কোনো file চালায় না; এটা সরাসরি হাতে লেখা একটা message। রূপটা সহজ — প্রথমে <code>ros2 topic pub</code>, তারপর topic-এর নাম, message type, শেষে payload: এখানে topic <code>/arm6_joints</code>, type <code>arm_msgs/msg/ArmJoints</code> — keyboard node আর follow_line ওই একই type ব্যবহার করে; payload ছয়টা joint-এর কোণ আর সময় — joint1 90, joint2 140, joint3 20, joint4 10, joint5 90, joint6 180, time: 1500 (এই সময়ের মধ্যে pose-এ পৌঁছানোর নির্দেশ; keyboard node-এ একই field-এ 500/2000/100 মান দেখেছি — ছোট মান মানেই দ্রুত সাড়া)। <code>--once</code> মানে ঠিক একটা message publish করে command নিজেই শেষ। value-গুলো keyboard-এর clamp range-এর ভেতরে (joint5 0..270, joint6 30..180, বাকিরা 0..180)। একটা quirk source-এ যেমন আছে তেমনই রাখা: braces-এর ভেতরে পুরো payload-টা double quote-এ মোড়া, কিন্তু ভেতরের YAML value-গুলো quote-হীন — এই লেখা shell-dependent, আমরা as-is ব্যাখ্যা করি, কখনো ঠিক করি না। গল্পে এর জায়গা: follow_line-এর পরে, save-এর আগে — একটা manual arm-pose demo, এক শট মাত্র।"
+  },
+  {
+   "a": 14,
+   "b": 15,
+   "text": "L14 blank — শেষ ধাপের আগের দাগ। L15: <code>ros2 launch slam_mapping save_map.launch.py</code> — runbook-এর সমাপ্তি: যা বানাল তা জমা করা। ভেতরে nav2_map_server-এর <code>map_saver_cli</code> — one-shot tool: চালু হয়ে gmapping-এর বর্তমান map দুই file-এ (PGM ছবি + YAML বিবরণ) লিখেই exit করে। নাম <code>yahboom_map</code>, জায়গা <code>M3Pro_navigation</code> package-এর map/ folder — মানে map-টা আসলে পরের navigation কাজের জন্যই রাখা হচ্ছে। দুইটা threshold রং ঠিক করে: <code>0.196</code> — দেয়াল হওয়ার সম্ভাবনা 19.6%-এর কম হলে cell সাদা (free), <code>0.65</code> — 65%-এর বেশি হলে কালো (occupied), মাঝামাঝিগুলো ধূসর unknown। আর এখানেই পুরো runbook-এর নীতিবাক্যটা খাটে: drive-then-save — gmapping ততটুকুই জানে যতটুকু robot চলে দেখেছে। robot ঘুরিয়ে আনা ছাড়া এই line চালালে প্রায় ফাঁকা map-ই জমা হয়; তাই L7 বা L11-এ robot চালা হয়ে যাওয়ার পরেই L15-এর পালা।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "বাস্তব robot-এ 8টা command ঠিক এই ক্রমে দাও — প্রতিটা আলাদা terminal-এ চালালেই সবচেয়ে পরিষ্কার। L1 vendor agent ROS environment তোলে (script-টা এই folder-এ নেই — ভেতরের content illustrative)। L3-এর এক launch-এ 5 program একসঙ্গে: দুই lidar জুড়ে 360-degree <code>/scan</code>, শরীরের ভুয়া রিডিং ছাঁটাই, IMU filter (node-টা তার data <code>/imu</code> topic-এ publish করে, remap-টা সেটাকে <code>/imu/data_raw</code>-এ পৌঁছে দেয়; consumer সেখানেই শোনে), EKF-এর মিলিয়ে দেওয়া filter-করা odometry, আর সব খাবার পাওয়া gmapping core — লাইভ map বানানো শুরু হয়। L5-এর RViz-এ সেই map বড় হতে দেখো। এরপর robot চালাও: L7-এর keyboard-এ হাতে (i/ চালানো, a/d strafe, q/z দিয়ে speed scale), অথবা L9-এর camera+arm chain তুলে L11-এর follow_line-কে নিজে লাইন ধরে চালতে দাও — robot যত ঘুরবে, map তত বাড়বে আর পাকাবে। মাঝপথে L13-এর এক-শট pub arm-কে 90/140/20/10/90/180 pose-এ time 1500-এ নিয়ে যায় — demo মাত্র, mapping চলছেই থাকে। শেষে L15 map-টাকে <code>yahboom_map</code> নামে PGM+YAML জোড়ায় <code>M3Pro_navigation</code>-এর map/ folder-এ জমিয়ে দেয় (সীমা 0.196/0.65) — এই file-জোড়াই পরের navigation app-এর ভিত।",
+  "incorrect": "প্রথম ও সবচেয়ে ধ্রুব ভুল: 'SLAM চালু মানেই map হয়ে গেছে' — robot দাঁড়িয়ে থাকলে gmapping নতুন কিছুই শেখে না; L3-এর পরে robot না চালিয়ে সরাসরি L15 চালালে প্রায়-ফাঁকা একটা map জমে, কারণ 0.196/0.65 সীমা যাচাই করার মতো প্রাচীর-তথ্যই তখনো জমেনি। দ্বিতীয় ভুল ক্রম নিয়ে: L11 (follow_line) আগে চালিয়ে দেওয়া — constructor-এর blocking wait-এ node <code>arm6_joints</code>-এ subscriber-এর অপেক্ষায় প্রতি 0.1 s-এ home pose পাঠিয়ে ঘুরতে থাকে, <code>Init Done.</code> ছাপা পর্যন্ত পৌঁছায় না — L9-এর camera+arm chain আগে না উঠলে। তৃতীয় ভুল প্রত্যাশা: L13-কে চলমান নিয়ন্ত্রণ ভাবা — <code>--once</code> ঠিক একটাই message পাঠায়, তারপর command শেষ; আর map কখনো আপনা-আপনি save হয় না — L15 না চালালে RViz-এ যা দেখছ তা শুধু চলন্ত stack-এর ভেতরেই বাঁচে, disk-এ কিছু জমে না, robot বন্ধ করলেই হারায়। চতুর্থ: slam_view বাদ দিলে mapping থেমে যাবে ভাবা — না, RViz শুধু দর্শক; ইঞ্জিন পুরোটা L3-এর stack-এ।"
+ },
+ "animType": "runbook14"
+}

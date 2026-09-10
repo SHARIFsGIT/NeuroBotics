@@ -1,0 +1,133 @@
+{
+ "n": 8,
+ "id": "part-08",
+ "fname": "laser_Tracker.py",
+ "enTitle": "State & Dual PID Controllers",
+ "lang": "python",
+ "start": 40,
+ "end": 49,
+ "flags": [],
+ "explain": [
+  {
+   "a": 40,
+   "b": 41,
+   "text": "<code># --- STATE TRACKERS &amp; PID CONTROLLERS ---</code> — constructor-এর শেষ অংশের banner। L31 দিয়ে শুরু হওয়া parameter-ব্লক L39-এ শেষ; L40-এর blank line দুই অংশের মাঝের separator। এই নতুন অংশে constructor মোট তিনটা attribute জমা দেবে: একটা bool state flag আর দুটো PID controller object। নামের ভাগাভাগিই নকশাটা বোঝায়: STATE TRACKER মানে সময়ের সঙ্গে বদলে যাওয়া পরিস্থিতি ধরে রাখার ঘর, PID CONTROLLERS মানে সেই পরিস্থিতি থেকে চাকার গতির হিসাব বানানোর যন্ত্র — এই লাইনের পর থেকেই behavior-এর আসল ইঞ্জিন বসতে শুরু করে।"
+  },
+  {
+   "a": 42,
+   "b": 42,
+   "text": "<code>self.Joy_active = False</code> — প্রথম state tracker: node-টার জন্মমুহূর্তের মোড। <code>False</code> মানে AI নিজেই গাড়ি চালাবে। এই মান সারা জীবনে বদলায় ঠিক এক জায়গায়: <code>/JoyState</code> topic-এ message এলে <code>JoyStateCallback</code> (L52-54) এটাকে <code>msg.data</code> দিয়ে overwrite করে। আর পড়া হয় <code>registerScan</code>-এর ভেতরে L86-তে: <code>True</code> হলে প্রতিটা scan-এ all-zero <code>Twist</code> publish করে সোজা return — মানুষ joystick ধরলে AI প্রতি scan-এ চাকা সক্রিয়ভাবে ব্রেক করে সরে দাঁড়ায়। কাজেই L42-এর এই একটা শব্দই ঠিক করে দেয় node-টা জন্ম থেকে কার হাতে থাকবে — joystick থেকে প্রথম message না আসা পর্যন্ত robot পুরোপুরি AI-এর নিয়ন্ত্রণে।"
+  },
+  {
+   "a": 43,
+   "b": 46,
+   "text": "L43 blank line-এর পরে তিন লাইনের comment block — কোনো code চলে না, কিন্তু লেখক এখানে পুরো ফাইলের সবচেয়ে দামি ধারণাটা নিজের ভাষায় বুঝিয়ে রেখেছেন। <code># PID controllers are math algorithms that help the robot move smoothly toward a target</code> আর <code># without overshooting or stuttering.</code> — PID মানে এমন হিসাব যা target-এর দিকে মসৃণভাবে এগোয়: লাপিয়ে পার হয়ে যাওয়া (overshoot) নয়, আটকে আটকে কাঁপাও (stutter) নয়। তৃতীয় লাইন <code># This one controls forward/backward speed to maintain the 0.55m distance.</code> পরের লাইনে জন্মানো <code>lin_pid</code>-এর কাজ বেঁধে দেয়: L39-এর <code>ResponseDist</code> = 0.55 m দূরত্ব ধরে রাখা। এই comment block-টাই math section-এর সূত্রগুলোর সঙ্গে মেলানোর চাবিকাঠি।"
+  },
+  {
+   "a": 47,
+   "b": 47,
+   "text": "<code>self.lin_pid = SinglePID(1.0, 0.0, 1.0)</code> — প্রথম controller; inline comment বলে তিনটা positional argument হলো <code># (Kp, Ki, Kd)</code> = (1.0, 0.0, 1.0)। <code>SinglePID</code> class এই ফাইলে লেখা নয় — এসেছে L12-এর star-import <code>from yahboom_M3Pro_laser.common import *</code> থেকে, আর সেই vendor module এই folder-এ নেই; ভেতরের হিসাব আমরা দেখিনি, তাই SinglePID-এর আচরণ সবটাই inferred। সংখ্যাগুলোর মানে: proportional gain 1, integral gain 0, derivative gain 1 — মাঝের শূন্যটা integral term-কে পুরো বাদ দেয়, কার্যত এটা একটা PD controller। আর সবচেয়ে জরুরি তথ্য: controller-টা এই constructor-এ মাত্র একবার জন্মায়, কিন্তু তার ভেতরের state পুরো জীবন টিকে থাকে — প্রতিটা scan callback-এ L102-এ <code>pid_compute</code> ডাকলেও object একই, আগের callback-এর স্মৃতি হারায় না। Ki আর Kd term যে স্মৃতির উপর চলে তার ব্যবস্থা এখানেই — Ki = 0 হওয়ায় জমা বলে কিছু থাকে না, কিন্তু Kd-এর হিসাব চলছে।"
+  },
+  {
+   "a": 48,
+   "b": 48,
+   "text": "<code># This one controls left/right turning to keep the object centered in the camera.</code> — এই comment-এ একটা পুরোনো (stale) শব্দ লুকিয়ে আছে: <b>camera</b>। এই node-এ কোনো camera নেই — একমাত্র sensor subscription হলো L23-এর LiDAR-এর <code>/scan</code>, আর object-এর বামে-ডানে কতদূর সেটা মাপা হয় scan-এর angle থেকে (<code>minDistID</code>, ডিগ্রিতে)। comment-টা যে কাজের কথা বলছে তা সঠিক — পরের লাইনের controller-ই বামে-ডানে ঘুরিয়ে object-কে সামনে কেন্দ্রে রাখে — কিন্তু sensor-এর নামটা ভুল; সম্ভবত অন্য কোনো camera-ওয়ালা প্রজেক্ট থেকে শব্দটা বয়ে এসেছে (inferred)। এই একটা শব্দের ভুলের বিভ্রান্তি বড় — পাঠক camera topic খুঁজতে শুরু করলে পুরো debug ভুল পথে ঢুকে যাবে।"
+  },
+  {
+   "a": 49,
+   "b": 49,
+   "text": "<code>self.ang_pid = SinglePID(2.0, 0.0, 2.0)</code> — দ্বিতীয় controller: একই <code>SinglePID</code> class, কিন্তু তিনটা gain-ই দুই গুণ — (2.0, 0.0, 2.0), এটাও PD। দুটো সম্পূর্ণ আলাদা instance: একটার ভেতরের state অন্যটাকে ছোঁয় না, দুই হিসাব পাশাপাশি চলে — একটার চোখ দূরত্বে (মিটারে), অন্যটার চোখ কোণে (পরে L107-এ দেখা যাবে, কোণকে 72 দিয়ে ভাগ করে ছোট সংখ্যায় নামানো হয়)। ইনপুটের এই স্কেল-পার্থক্যই gain দুই গুণ হওয়ার মূল কারণ — পূর্ণ যুক্তি math section-এ। এই লাইনেই constructor-এর সব কাজ শেষ: node-টা এখন চারটা parameter, একটা mode flag আর দুটো সজ্জিত PID নিয়ে ব্যবহারের জন্য প্রস্তুত; L50-51-এর blank-এর পরেই আসবে পরের def — <code>JoyStateCallback</code> (L52)।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটাই প্রশ্নের উত্তর দেয়: <code>SinglePID(1.0, 0.0, 1.0)</code> আর <code>SinglePID(2.0, 0.0, 2.0)</code> — এই দুই ডাকের ভেতরে কোন হিসাব-ইঞ্জিন বসে আছে, আর তিনটা সংখ্যা ইঞ্জিনের কোন স্ক্রু ঘোরায়। vendor-এর SinglePID source এই folder-এ নেই, তাই নিচের গঠনটা standard PID আইন থেকে inferred — আউটপুটের সংখ্যাগুলো illustrative।",
+  "levels": [
+   {
+    "label": "Level 1 — Symbols ও units",
+    "latex": "\\[ e(t) = r(t) - y(t), \\qquad u(t), \\qquad K_p,\\ K_i,\\ K_d \\]",
+    "text": "প্রতিটা symbol: r = setpoint (target), y = measurement (বর্তমান মান), তাদের বিয়োগফল e = error, আর u = controller-এর আউটপুট। এই node-এ দুটো স্বাধীন loop: linear loop-এ r = 0.55 m (L39-এর ResponseDist), e মিটারে, u হয়ে যায় <code>linear.x</code> (m/s); angular loop-এ e পরে normalized কোণ থেকে আসবে, u হয়ে যায় <code>angular.z</code> (rad/s)। দুই loop-এর unit আলাদা — একই gain দুই জায়গায় একই আচরণ করবে না; এটাই Level 5-এর আলোচনার বীজ।"
+   },
+   {
+    "label": "Level 2 — মূল PID আইন",
+    "latex": "\\[ u(t) = K_p\\,e(t) + K_i \\int_0^t e(\\tau)\\,d\\tau + K_d\\,\\frac{de(t)}{dt} \\]",
+    "text": "তিনটা term, তিন রকম দৃষ্টি: Kp-term দেখে শুধু এই মুহূর্তের ভুল (present); Ki-term দেখে জন্ম থেকে জমা ভুলের সমষ্টি (past); Kd-term দেখে ভুল কত দ্রুত বদলাচ্ছে (rate of change)। বড় ভুল মানে বড় ধাক্কা, আর ভুল শূন্য হলে তিনটা term-ই শূন্য — tracking-এর সুখসমাচার এখানেই: object 0.55 m দূরে ঠিক সামনে থাকলে দুই loop-ই চুপ।"
+   },
+   {
+    "label": "Level 3 — Ki = 0: integral বাদ",
+    "latex": "\\[ u(t) = K_p\\,e(t) + K_d\\,\\frac{de(t)}{dt} \\qquad \\text{(PD controller)} \\]",
+    "text": "দুই controller-ই মাঝের সংখ্যাটা 0.0 রেখেছে — অতীতের ভুল জমার রাস্তা বন্ধ। ফলে কোনো স্থায়ী ছোট ভুল ফুলে উঠবে না (integral windup নেই) — আর এখানে সেই অনুপস্থিতি ক্ষতিও করে না, কারণ L96-এর deadzone যাবতীয় ছোট ভুল আগেই ক্ষমা করে শূন্য করে দেয়। মনে রাখার কথা: ভুল-জমা বন্ধ করাটা gain-এর গুণ নয়, গঠনের গুণ — দুই object-এর জন্মসনদে (L47, L49) সেটা লেখাই আছে।"
+   },
+   {
+    "label": "Level 4 — Kd কী দেখে",
+    "latex": "\\[ \\dot{e} = \\frac{de}{dt}, \\qquad e_{k-1} = 0,\\ e_k = -0.35 \\ \\text{(step change)} \\]",
+    "text": "Kd-term ভুলের হার মাপে। নতুন controller-এ আগের ভুল শূন্য ধরা যাক (inferred) — তাহলে প্রথম scan callback-এ ভুল শূন্য থেকে লাফিয়ে সরাসরি e-তে ওঠে: এটা step change, আর step-এর হার বিশাল। সেইজন্যই প্রথম ডাকে Kd-term Kp-term-এর একই সাইনে একটা বড় অস্থায়ী ধাক্কা (transient) যোগ করে — Wave A-তে ঠিক এটাই ঘটে (নিচে numeric)। এর পরে robot এগোলে ভুল কমার হার অনুযায়ী এটা পথে ব্রেকের ভূমিকা নেয় — L44-45 comment-এর overshoot-নয় প্রতিশ্রুতির ভিত্তি এই term-ই (গঠন inferred)।"
+   },
+   {
+    "label": "Level 5 — দুই loop, দুই gain",
+    "latex": "\\[ u_{lin} = 1.0\\,e_{lin}\\ (\\text{m}), \\qquad u_{ang} = 2.0 \\cdot \\frac{|a|}{72},\\quad |a| &lt; 45^\\circ \\]",
+    "text": "angular loop-এর কাঁচা ইনপুট হলো কোণ a ডিগ্রি — কিন্তু L107-এ তাকে 72 দিয়ে ভাগ করা হয়, তাই 45 ডিগ্রির বড় ভুলও মাত্র 45/72 = 0.625। linear loop-এর ভুল কিন্তু মিটারে সরাসরি — সহজেই 0.35 বা তার বেশি। অর্থাৎ angular-এর ইনপুট-স্কেল অনেক ছোট, আর সেই ঘাটতি পূরণেই gain দুই গুণ: 2.0 x 0.625 = 1.25 পর্যন্ত যাওয়া সম্ভব (L120-এর 0.6 damping-এর আগে)। 72 সংখ্যাটা কোথা থেকে এলো ফাইল কখনো বলে না — একটা bare magic number; gain-অনুপাতের এই ব্যাখ্যাটাও inferred tuning-যুক্তি, প্রমাণ নয়।"
+   },
+   {
+    "label": "Level 6 — Discrete রূপ ও persistent state",
+    "latex": "\\[ u_k = K_p\\,e_k + K_i \\sum_{j=1}^{k} e_j\\,\\Delta t + K_d\\,\\frac{e_k - e_{k-1}}{\\Delta t} \\]",
+    "text": "robot-এর জগৎ অবিচ্ছিন্ন নয় — হিসাব চলে scan callback ধরে ধরে, ব্যবধান Δt। তখন integral হয় জমা যোগফল, derivative হয় পরপর দুই ভুলের পার্থক্য ভাগ Δt। দুই term-এরই স্মৃতি দরকার: যোগফলের খাতা আর আগের ভুল — আর সেই স্মৃতি জমে থাকে controller object-এর ভেতরে। L47/L49-এ controller-দের একবারই জন্ম দেওয়ার মানে এখানে খুলে যায়: registerScan-এর ভেতরে প্রতি scan-এ নতুন করে বানালে খাতা প্রতিবার শূন্য থেকে শুরু হতো। (SinglePID-এর আসল discrete রূপ vendor module-এ — এটা standard textbook রূপ, inferred।)"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ e_{lin} = 0.55 - 0.90 = -0.35\\ \\mathrm{m}, \\qquad u_{lin} \\approx 1.0 \\times (-0.35) = -0.35 \\]",
+    "text": "Wave A (illustrative): pillar সামনে 0.90 m, +12 ডিগ্রি। Kp-term একা ধরলে lin_pid-এর আউটপুট প্রায় -0.35; L102-এর সামনের minus চিহ্ন এটাকে <code>linear.x = +0.35</code> m/s করে দেয় — কাছে যাওয়ার দিক। দিক-সিদ্ধান্তটা L100-101 comment-এর বক্তব্য থেকে inferred: vendor-এর ভেতরের sign convention ফাইল দেখে প্রমাণ করা যায় না।"
+   },
+   {
+    "latex": "\\[ e_{k-1} = 0,\\ e_k = -0.35 \\ \\Rightarrow\\ K_d\\text{-term} = 1.0 \\cdot \\frac{-0.35 - 0}{\\Delta t} \\]",
+    "text": "প্রথম callback-এর step (illustrative): নতুন controller-এ আগের ভুল 0 ধরলে (inferred) Kd-term দাঁড়ায় -0.35/Δt — Δt ছোট বলে মানটা বড়, সাইনে Kp-term-এর মতোই ঋণাত্মক; অর্থাৎ প্রথম ডাকে approach-এর ধাক্কা একটু বাড়ে। পরের callback-গুলোতে ভুল আর step নয় — transient শান্ত হয়ে আসে।"
+   },
+   {
+    "latex": "\\[ e_{ang} = \\tfrac{12}{72} - 0 = 0.1667, \\qquad u_{ang} \\approx 2.0 \\times 0.1667 = 0.333 \\]",
+    "text": "একই Wave A-র কোণ-হিসাব (illustrative): object কেন্দ্র থেকে +12 ডিগ্রি। ang_pid-এর Kp-term 0.333 — gain দুই গুণ হওয়ায় এই মান; Kp = 1 হলে হতো 0.167। এই 0.333 পরে L117-এর turn deadzone-এর 0.5 থ্রেশহোল্ড ছুঁতে পারে না, তাই angular.z শূন্য হয়ে যাবে — 12 ডিগ্রি এত ছোট ভুল যে robot এই মুহূর্তে শুধু দূরত্ব কমাবে, ঘুরবে না।"
+   },
+   {
+    "latex": "\\[ e_{lin} = 0.55 - 0.70 = -0.15\\ \\mathrm{m}, \\qquad u_{ang} = 2 \\times \\tfrac{20}{72} = 0.556 \\ge 0.5 \\]",
+    "text": "Wave B (illustrative): 0.70 m, +20 ডিগ্রি। linear.x প্রায় +0.15 m/s — ধীরে এগোনো; angular এবার deadzone পার হয়: 0.556 থ্রেশহোল্ড ছাড়ায়, L120-এর 0.6 গুণ হয়ে angular.z প্রায় +0.33 rad/s — বাঁয়ে ঘোরা। এই Part-এ জন্মানো দুই controller প্রথমবার একসাথে অশূন্য আউটপুট দেয়।"
+   },
+   {
+    "latex": "\\[ |0.58 - 0.55| = 0.03 &lt; 0.1 \\ \\Rightarrow\\ e_{lin} := 0 \\Rightarrow\\ u_{lin} = 0,\\ u_{ang} = 0 \\]",
+    "text": "Wave C (illustrative): 0.58 m, ঠিক 0 ডিগ্রি। L96-এর deadzone দূরত্বকে 0.55-এ snap করে — ভুল শূন্য, আর শূন্য ভুলে আইনের তিনটা term-ই শূন্য; কোণটাও ঠিক 0 বলে কোনো sign branch চলেই না। চাকা থেমে থাকে — এটাই lock-on অবস্থা। আর Ki = 0 বলে অতীতে কিছু জমেও নেই যে এখন বেরিয়ে এসে গড়াবে।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "self.Joy_active = False",
+    "math": "\\( s_{\\mathrm{AI}} = 1 \\)",
+    "text": "জন্মমান False মানে AI-loop চালু। flag-টা আসলে পুরো PID-হিসাবের উপরে বসানো একটা enable switch: <code>/JoyState</code> থেকে True এলে L86-তে হিসাব শুরুর আগেই loop বন্ধ, প্রতিটা scan-এ all-zero <code>Twist</code>।"
+   },
+   {
+    "code": "self.lin_pid = SinglePID(1.0, 0.0, 1.0)  # (Kp, Ki, Kd)",
+    "math": "\\( u_{lin} = 1.0\\,e_{lin} + 0 \\cdot \\int e\\,dt + 1.0\\,\\dot{e}_{lin} \\)",
+    "text": "তিনটা positional argument ঠিক আইনের তিনটা coefficient — বাঁ থেকে Kp, Ki, Kd। মাঝের 0.0 বসানো মাত্রই integral term গুণে শূন্য: দুই term-এর হিসাবই টিকে থাকে। এই object-টাই পরে L102-এ <code>pid_compute</code> হয়।"
+   },
+   {
+    "code": "self.ang_pid = SinglePID(2.0, 0.0, 2.0)",
+    "math": "\\( u_{ang} = 2.0\\,e_{ang} + 2.0\\,\\dot{e}_{ang} \\)",
+    "text": "গঠন হুবহু আগেরটার মতো, শুধু দুইটা coefficient-ই দুই গুণ — angular-এর ছোট normalized ইনপুট (|angle|/72) থেকে যথেষ্ট ঘুরা বের করার জন্য। call হয় L107-এ।"
+   },
+   {
+    "code": "pid_compute(target, current)",
+    "math": "\\( e = \\text{first} - \\text{second} \\)",
+    "text": "ফাইলে ডাকের ক্রম লেখা আছে (target, current): linear-এ (0.55, minDist), angular-এ (|minDistID|/72, 0)। ভেতরে বিয়োগটা কোন দিকে হয় তা vendor module না দেখে অনিশ্চিত — as-written পাঠে first-second (inferred)।"
+   }
+  ],
+  "failure": [
+   "Ki-এর জায়গায় বড় মান বসালে (যেমন 1.0): object অনেকক্ষণ 0.90 m দূরে দাঁড়িয়ে থাকলে প্রতি scan callback-এ e = -0.35 জমে যেত, আউটপুট সীমাহীন বাড়ত — আর L33-এর declared linear limit কোথাও enforce হয় না বলে চাকা ক্রমবর্ধমান বেগে pillar-এ গিয়ে ধাক্কা লাগত (illustrative; আসল কোডে Ki = 0)।",
+   "দুই controller-এর gain অদল-বদল হলে (linear-এ 2.0): মাত্র 0.90 m ভুলেই u = 2 x (-0.35) = -0.70, অর্থাৎ linear.x = +0.70 m/s — declared max 0.5-ও ছাড়িয়ে গেল। robot 0.55 m stand-off-এ না থেমিয়ে জোরে এগিয়ে গিয়ে overshoot করবে; সামনে মানুষ থাকলে বিপজ্জনক।",
+   "L48-এর camera শব্দটা সত্যি ধরে নিলে: এই node কোনো camera topic subscribe-ই করে না, centering-এর একমাত্র সংকেত LiDAR <code>/scan</code>-এর angle (minDistID)। ভুল sensor-এর পিছনে debug করলে সমাধান আর আসবে না — robot ততক্ষণ ঢেলে বসে থাকবে।",
+   "<code>Joy_active</code>-এর জন্যমান True হলে, আর <code>/JoyState</code> থেকে কোনো message না এলে: L86-এর gate চিরকাল মানুষের মোডে আটকে থাকবে — প্রতিটা scan-এ all-zero Twist ঢালা হবে, চাকা এক মুহূর্তের জন্যও ঘুরবে না, console-এ scan-প্রতি দূরত্বের ছাপও পড়বে না (L86 আগেই return করে ফেলে, L91-92 আর পৌঁছায় না)।",
+   "controller-দুটো constructor-এর বদলে registerScan-এর ভেতরে বানালে: প্রতি scan-এ object-এর স্মৃতি (আগের ভুল, জমা যোগফল) শূন্য থেকে শুরু — Kd-term তখন প্রতিবার প্রথম-ডাকের step-transient-ই দেয়, গতির প্রকৃত হার কখনো মাপতে পারে না; চলা হয়ে ওঠে কাঁপা (গঠন inferred)।"
+  ]
+ },
+ "robot": {
+  "correct": "এই দশ লাইন চলার মুহূর্তে robot স্থির — constructor-অংশ, চাকায় কোনো command যায় না, এই লাইনগুলোর নিজস্ব কোনো console-ছাপও নেই। node জন্মায় AI-মোডে (<code>Joy_active = False</code>) আর হাতে নেয় দুটো সজ্জিত PD ইঞ্জিন: lin_pid (1, 0, 1) দূরত্বের জন্য, ang_pid (2, 0, 2) কোণের জন্য। sensor chain থেকে প্রথম fused scan এলেই ইঞ্জিন-দুটি কাজে নামে (illustrative): Wave A-তে (0.90 m, +12 ডিগ্রি) lin_pid বের করে প্রায় -0.35, L102-এর minus চাকাকে দেয় +0.35 m/s সামনে; ang_pid-এর 0.333 পরের deadzone-এ শূন্য হয়, তাই robot সোজা এগিয়ে যায়, ঘোরে না। Wave C-তে (0.58 m, 0 ডিগ্রি) দুই ইঞ্জিনই শূন্য আউটপুট দেয় — চাকা থেমে, robot 0.55 m stand-off-এ বসে থাকে।",
+  "incorrect": "এই অংশকে প্রতি scan-এ চলতে ভাবাটাই প্রথম ভুল — এটা node জন্মানোর সময় একবারই চলে, তাই এখানকার ভুল জন্ম থেকে আটকে থাকে। <code>Joy_active</code>-এর জন্মমান True হলে আর joystick থেকে কোনো message না এলে প্রতিটা scan-এ all-zero Twist ঢালা হবে — চাকা এক মুহূর্তও ঘুরবে না, LiDAR ঘুরতে থাকলেও console-এ scan-প্রতি দূরত্বের ছাপ আসবে না কারণ L86 আগেই return করে ফেলে। gain অদল-বদল করলে (linear-এ 2.0) 0.90 m ভুলেই linear.x প্রায় +0.70 m/s — কোনো clamp নেই বলে robot দ্রুত ছুটে গিয়ে 0.55 m পার হয়ে যাবে, সামনের মানুষকে ধাক্কা দেবে। আর L48-এর camera শব্দে বিভ্রান্ত হয়ে camera-র দিকে তাকালে debug ভুল পথে যাবে — centering-এর একমাত্র সংকেত LiDAR-এর <code>/scan</code> angle।"
+ },
+ "animType": null
+}

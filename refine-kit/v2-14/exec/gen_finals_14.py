@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""Generate exec/finals-14.json — the final-step (i=423) override for the
+folder-14 exec spec, mirroring finals-13's shape: finalCap/finalDbg/finalFx/
+finalOp/finalRob. finalRob is a 440x330 SVG reusing shell-14's rob0 chrome
+(TERMINAL x16 y22 w196 h228 / SYSTEM x216 y22 w208 h228 / 3 Bangla lines
+at y 262/273/284)."""
+import json
+from pathlib import Path
+
+KIT = Path("/home/shariful/NeuroBotics/refine-kit/v2-14")
+
+finalCap = (
+    "পুরো runbook-এর যাত্রা সম্পূর্ণ: <code>sh start_agent.sh</code> থেকে "
+    "<code>save_map.launch.py</code> পর্যন্ত আটটি command — সাতটি file, ৯৮৪টি line, "
+    "<b>৪২৩টি step</b>। শেষ দৃশ্যে <code>map_saver_cli</code> one-shot টুল: "
+    "<code>yahboom_map.yaml</code> আর <code>yahboom_map.pgm</code> ডিস্কে লিখে নিজেই বেরিয়ে "
+    "গেল, launch ফিরে এল, প্রম্পট ফাঁকা। gmapping-এর আঁকা মানচিত্র এখন চিরস্থায়ী — "
+    "পরের যুগের navigation এই ফাইল দুটির ওপরেই দাঁড়াবে।"
+)
+
+finalDbg = [
+    ["commands (8)",
+     "L1 sh start_agent.sh · L3 ros2 launch slam_mapping gmapping.launch.py · L5 slam_view.launch.py · "
+     "L7 ros2 run yahboomcar_ctrl yahboom_keyboard · L9 camera_arm_kin.launch.py · L11 ros2 run M3Pro_demo follow_line · "
+     "L13 ros2 topic pub /arm6_joints ... --once · L15 save_map.launch.py (odd lines; evens blank)"],
+    ["files (7)",
+     "README.md (15) · gmapping.launch.py (94) · slam_view.launch.py (59) · yahboom_keyboard.py (242) · "
+     "camera_arm_kin.launch.py (40) · follow_line.py (485) · save_map.launch.py (49) = 984 lines"],
+    ["steps (423)", "189 struct + 200 exec + 34 event — every source line appears in >= 1 step"],
+    ["gmapping launch",
+     "ctor: dup Node import (L2+L9) + unused L3-4 + dead lists L17-19 + FOUR eager joins (merger/filter/ekf/gmapping) · "
+     "run: 5 entries — 4 IncludeLaunchDescription + imu Node L53-62"],
+    ["imu remap",
+     "remappings L60: ('/imu', '/imu/data_raw') both ways — vendor imu publishes data_raw, ekf expects /imu; the Node is the naming bridge"],
+    ["slam_view",
+     "rviz2 Node L41-52 + arguments=['-d', rviz_config, use_sim_time] L48-52 — 7 unused imports L2-3 self-acknowledged; fixed frame /map"],
+    ["keyboard",
+     "12 moveBindings (x,y,th) + speedBindings x1.1/x0.9 · speed 0.2 turn 1.0 · twist=(speed*x, speed*y, turn*th) L226-228 · "
+     "arm keys 1-6 + 7/8/9/0 presets with clamps L201-210 · SPACE zero-Twist · s pause/resume · deadman count 1..5 · Ctrl+C clean"],
+    ["follow_line PID",
+     "FollowLinePID 0.05 / 0 / 0.01 · e=(point_x-320)*1.0/16 L261 · deadzone |dx|<40 -> z=0 L282-284 · linear.x=0.1 hardcoded L269"],
+    ["obstacle logic",
+     "front_warning > 10 -> stop + buzzer 1 (L270-275) · clear -> buzzer 0 x3 (L279) · warning cone <30/>330 deg + !=0.0 + <=0.375 m"],
+    ["state machine",
+     "init -> identify -> tracking; AprilTag pivot L341-345 hijacks any state to Remove · centering +-10 at (320,400) · "
+     "c_dist=depth/1000 L357 · joint5 published TWICE L375-376"],
+    ["remove_obstacle",
+     "R1 (350,430) -> clamp (0.10,0.10) · R2 (328,405) -> SWAP linear.x=0.020 / linear.y=0.032 (y > x!) · RemovePID 0.04/0/0.015 · centered -> sleep 3 + joint5 x2"],
+    ["halt (follow_line)",
+     "Ctrl+C -> except: pass -> banner prints L475-485 (Goodbye!) -> zero-Twist L483 published AFTER prints · no cv.destroy in source"],
+    ["save_map",
+     "map_saver_cli one-shot L31-42 · -f LaunchConfiguration('map_path') L37 — the only launch here that really uses it · "
+     "default M3Pro_navigation/map/yahboom_map (share_path, L18) · tool writes and exits"],
+    ["thresholds",
+     "p < 0.196 -> free (white) · p > 0.65 -> occupied (black) · between -> gray unknown — the band is deliberately wide, 0.196 != 1-0.65"],
+    ["result",
+     "map on disk: yahboom_map.yaml + yahboom_map.pgm (path illustrative) · map_saver_cli exit 0 · launch returned · stack down, robot idle"],
+]
+
+finalFx = ("RUNBOOK COMPLETE · 7 files · 984 lines · 423 steps {189 struct / 200 exec / 34 event} · "
+           "launch files = ctor + run two-phase · keyboard = import + main + event waves · "
+           "follow_line = 3-pass + waves · save_map = one-shot -> yaml + pgm on disk")
+
+finalRob = (
+    # TERMINAL card
+    '<rect x="16" y="22" width="196" height="228" rx="9" fill="#161b22" fill-opacity=".55" stroke="#4fc3f7" stroke-width="1.4"/>'
+    '<text x="26" y="34" text-anchor="start" font-family="monospace" font-size="10" fill="#e6edf3" font-weight="bold">TERMINAL</text>'
+    '<text x="202" y="34" text-anchor="end" font-family="monospace" font-size="5.8" fill="#7ee787">done</text>'
+    '<text x="26" y="45" font-family="monospace" font-size="5.8" fill="#6e7681">jetson@yahboom: ~ (illustrative)</text>'
+    '<text x="26" y="58" font-family="monospace" font-size="5.8" fill="#c9d1d9">$ ros2 launch slam_mapping save_map.launch.py</text>'
+    '<text x="26" y="69" font-family="monospace" font-size="5.4" fill="#8b949e">[INFO] map_saver_cli: process started</text>'
+    '<text x="26" y="79" font-family="monospace" font-size="5.4" fill="#8b949e">[INFO] waiting for /map ...</text>'
+    '<text x="26" y="89" font-family="monospace" font-size="5.4" fill="#7ee787">saving to .../map/yahboom_map</text>'
+    '<text x="26" y="99" font-family="monospace" font-size="5.4" fill="#7ee787">yahboom_map.yaml written</text>'
+    '<text x="26" y="109" font-family="monospace" font-size="5.4" fill="#7ee787">yahboom_map.pgm written</text>'
+    '<text x="26" y="119" font-family="monospace" font-size="5.4" fill="#8b949e">[INFO] map_saver_cli: exit 0</text>'
+    '<text x="26" y="130" font-family="monospace" font-size="5.8" fill="#6e7681">$ _ (launch returned)</text>'
+    '<rect x="26" y="142" width="176" height="92" rx="4" fill="#0d1117" fill-opacity=".8" stroke="#21262d" stroke-width="1"/>'
+    '<text x="34" y="156" font-family="monospace" font-size="5.4" fill="#e6edf3" font-weight="bold">8 commands - L1..L15</text>'
+    '<text x="34" y="167" font-family="monospace" font-size="5" fill="#8b949e">L1 bringup   L3 gmapping</text>'
+    '<text x="34" y="176" font-family="monospace" font-size="5" fill="#8b949e">L5 slam_view L7 keyboard</text>'
+    '<text x="34" y="185" font-family="monospace" font-size="5" fill="#8b949e">L9 cam+kin   L11 follow_line</text>'
+    '<text x="34" y="194" font-family="monospace" font-size="5" fill="#8b949e">L13 arm --once</text>'
+    '<text x="34" y="203" font-family="monospace" font-size="5" fill="#7ee787">L15 save_map - DONE</text>'
+    '<text x="34" y="218" font-family="monospace" font-size="5.2" fill="#c9d1d9">7 files · 984 lines · 423 steps</text>'
+    '<text x="34" y="228" font-family="monospace" font-size="5.2" fill="#6e7681">every line covered, verbatim</text>'
+    # SYSTEM card
+    '<rect x="216" y="22" width="208" height="228" rx="9" fill="#161b22" fill-opacity=".55" stroke="#30363d" stroke-width="1.4"/>'
+    '<text x="226" y="34" text-anchor="start" font-family="monospace" font-size="10" fill="#e6edf3" font-weight="bold">SYSTEM</text>'
+    '<text x="414" y="34" text-anchor="end" font-family="monospace" font-size="5.8" fill="#ffb454">stack down</text>'
+    '<rect x="224" y="42" width="192" height="150" rx="4" fill="#0d1117" fill-opacity=".8" stroke="#21262d" stroke-width="1"/>'
+    '<text x="320" y="54" text-anchor="middle" font-family="monospace" font-size="5.6" fill="#e6edf3" font-weight="bold">saved map (occupancy view)</text>'
+    '<rect x="240" y="62" width="160" height="112" rx="3" fill="#161b22" stroke="#30363d" stroke-width="1"/>'
+    '<path d="M240 100h34v46h-34z M240 158h24v16h-24z M268 130h22v44h-22z" fill="#7ee787" fill-opacity=".8"/>'
+    '<path d="M276 62h18v40h-18z M240 150h26v8h-26z M356 66h20v60h-20z M386 130h14v44h-14z" fill="#ff7b72" fill-opacity=".8"/>'
+    '<path d="M298 62h54v30h-54z M318 100h50v46h-50z M356 156h44v18h-44z" fill="#6e7681" fill-opacity=".55"/>'
+    '<text x="252" y="180" font-family="monospace" font-size="5" fill="#7ee787">white = free</text>'
+    '<text x="312" y="180" font-family="monospace" font-size="5" fill="#ff7b72">black = wall</text>'
+    '<text x="366" y="180" font-family="monospace" font-size="5" fill="#8b949e">gray = ?</text>'
+    '<text x="226" y="206" font-family="monospace" font-size="5.4" fill="#7ee787">yahboom_map.yaml · thresholds 0.196/0.65</text>'
+    '<text x="226" y="216" font-family="monospace" font-size="5.4" fill="#7ee787">yahboom_map.pgm · 1 px per cell</text>'
+    '<text x="226" y="228" font-family="monospace" font-size="5.4" fill="#ffb454">map_saver_cli exited · one-shot by design</text>'
+    '<text x="226" y="240" font-family="monospace" font-size="5.4" fill="#8b949e">merger filter imu ekf gmapping rviz teleop — all down</text>'
+    # 3 Bangla lines
+    '<text x="220" y="262" font-size="8.6" fill="#e6edf3">যাত্রা সম্পূর্ণ — আট command, সাত file, ৪২৩ step।</text>'
+    '<text x="220" y="273" font-size="8.6" fill="#7ee787">gmapping-এর আঁকা মানচিত্র এখন ডিস্কে: yahboom_map.yaml + .pgm।</text>'
+    '<text x="220" y="284" font-size="8.6" fill="#ffb454">SLAM শেষ — navigation-এর পালা, মানচিত্র প্রস্তুত।</text>'
+)
+
+finals = {
+    "finalCap": finalCap,
+    "finalDbg": finalDbg,
+    "finalFx": finalFx,
+    "finalOp": None,
+    "finalRob": finalRob,
+}
+
+import xml.dom.minidom as MD
+try:
+    MD.parseString("<svg>" + finalRob + "</svg>")
+    print("finalRob: XML parse OK,", len(finalRob), "chars")
+except Exception as e:
+    raise SystemExit("finalRob XML INVALID: " + str(e))
+# coordinate bounds guard (440x330 canvas)
+import re
+for m in re.finditer(r'(?:x|cx|x1|x2)="(-?[\d.]+)"', finalRob):
+    v = float(m.group(1))
+    assert -5 <= v <= 445, ("x out of bounds", m.group(0))
+for m in re.finditer(r'(?:y|cy|y1|y2)="(-?[\d.]+)"', finalRob):
+    v = float(m.group(1))
+    assert -5 <= v <= 332, ("y out of bounds", m.group(0))
+
+out = KIT / "exec" / "finals-14.json"
+out.write_text(json.dumps(finals, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+print(f"wrote {out} ({out.stat().st_size} bytes): finalDbg {len(finalDbg)} rows")

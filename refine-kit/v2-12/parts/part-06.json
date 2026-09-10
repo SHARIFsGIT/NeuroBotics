@@ -1,0 +1,53 @@
+{
+ "n": 6,
+ "id": "part-06",
+ "fname": "laser_Tracker.py",
+ "enTitle": "Constructor — Subscriptions & Publisher",
+ "lang": "python",
+ "start": 16,
+ "end": 29,
+ "flags": [],
+ "explain": [
+  {
+   "a": 16,
+   "b": 18,
+   "text": "<code>class laserTracker(Node):</code> — L15-এর <code>RAD2DEG</code> constant-এর পরে L16 একটা blank line দিয়ে module-এর মাথা (L1-15: comment, import, print, constant) শেষ, এখান থেকে ফাইলের আসল দেহ — behavior class-টা। L3-এ আনা <code>Node</code>-কে inherit করাতেই <code>create_subscription</code>, <code>create_publisher</code>, <code>declare_parameter</code> — node-হওয়ার সব যন্ত্রপাতি এই class-এর হাতে এসে যায়। <code>def __init__(self,name):</code> — constructor-এর একটাই argument: <code>name</code>, বাইরে থেকে স্পষ্ট করে দিতে হয়। এই <code>name</code>-ই পরে <code>main()</code> থেকে আসবে — <code>laserTracker(\"laser_Tracker_a1\")</code> (L137) — মানে ROS 2-এর নাম-জগতে node-টার নাম <code>laser_Tracker_a1</code>, অথচ Python class-এর নাম <code>laserTracker</code>; দুটো আলাদা জিনিস, একটাও অন্যটা থেকে তৈরি হয় না।"
+  },
+  {
+   "a": 19,
+   "b": 19,
+   "text": "<code>super().__init__(name)</code> — inheritance-এর সবচেয়ে জরুরি লাইন। এটা না চললে <code>Node</code>-এর নিজের constructor চলেই না, <code>self</code>-এর ভেতরে node-হওয়ার অভ্যন্তরীণ তালিকাই তৈরি হয় না — পরের লাইনে <code>self.create_subscription(...)</code> ডাকতেই <code>AttributeError</code>-জাতীয় error উঠে আসত। <code>super()</code> মানে এখানে parent class <code>Node</code>; <code>name</code> হাতবদল হতেই node-এর নাম পাকা হয়ে যায়। ক্রমটাও নিয়মমাফিক: parent-এর constructor আগে, নিজের জিনিসপত্র পরে — Python inheritance-এর প্রথা। আর মনে রাখুন, import pass-এ শুধু class-টা ও তার def-গুলো bind হয়; এই constructor-এর দেহ চলে run phase-এ, <code>main()</code> যখন instance বানায় তখন।"
+  },
+  {
+   "a": 21,
+   "b": 22,
+   "text": "<code># --- CREATING SUBSCRIBERS (Listeners) ---</code> আর <code># Listen to the 360-degree LiDAR scanner</code> — দুটোই comment, কিছু চালায় না; কিন্তু লেখকের প্রতিমানটা এখানেই: publisher একটা রেডিও স্টেশন, subscription একটা শ্রোতা — শ্রোতা নিজে কথা বলে না, message এলেই শুধু নিজের callback জাগায়। \"360-degree\" দাবিটা এই ফাইল নিজে সত্যি করে দেখাতে পারে না: এই node কোনো lidar চালায় না। README-র L3 launch চালালে folder 10-এর merger+filter chain সামনে-পেছনে দুই lidar-এর কাঁচা scan জুড়ে একটা পূর্ণ 360-degree ring বানায়, blind-spot পাকা করে — tracker শুনবে সেই ফলাফল। চোখ ওই chain-এর, সিদ্ধান্ত এই ফাইলের।"
+  },
+  {
+   "a": 23,
+   "b": 23,
+   "text": "<code>self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code> — প্রথম শ্রোতা: চোখ। চারটা argument: message-এর ধরন <code>LaserScan</code> (L5-এ আনা), topic <code>\"/scan\"</code> — merger+filter chain-এর শেষ ফলাফলের ঠিকানা, কোনো raw lidar topic নয়; callback <code>self.registerScan</code> (L56-এ সংজ্ঞাত; এই ফাইলের মগজ — সামনের ±45-degree cone-এর মধ্যে সবচেয়ে কাছের object খুঁজে তাকে 0.55 m দূরত্বে রেখে অনুসরণ করার পুরো হিসাব ওখানে); আর শেষের <code>1</code> = queue depth — পুরনো message জমিয়ে না রেখে সবসময় সবচেয়ে নতুন scan-টাই কাজে লাগানো। tracking-এ এটাই চাই: কয়েক scan পুরনো দূরত্ব মানে object-টা আসলে আর ওখানেই নেই।"
+  },
+  {
+   "a": 24,
+   "b": 25,
+   "text": "<code># Listen to the joystick (so you can pause the AI and drive manually)</code> আর <code>self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)</code> — দ্বিতীয় শ্রোতা: মানুষের হাত। <code>True</code> এলে <code>JoyStateCallback</code> (L52-54) শুধু একটা flag উল্টে দেয়, আর <code>registerScan</code> সেই flag পেলে প্রতিটা scan-তে সব-শূন্য <code>Twist</code> publish করে ফিরে আসে (L86-88) — AI pause, চাকা joystick-এর হাতে। সূক্ষ্ম জায়গাটা <code>Bool</code>-এর পরিচয়: এটা std_msgs-এর চেনা Bool নয়। L12-এর <code>from yahboom_M3Pro_laser.common import *</code> star-import থেকে আসা yahboom-এর নিজস্ব <code>Bool</code> — এই ফাইলে <code>std_msgs</code> নামে কোনো import-ই নেই। আর এই উৎস folder 11-এর সাথে মেলালে ছবিটা আরও পরিষ্কার হয়: laser_Avoidance-এর L12-তেও হুবহু এই একই star-import লাইন, ওই ফাইলেও <code>std_msgs</code> নামে কোনো import নেই — দুই node-ই নিজের <code>Bool</code> আনে একই yahboom common module থেকে, কোনো ফাইলই std_msgs/Bool ব্যবহার করে না। common module-টা এই folder-এ নেই, তাই <code>.data</code>-র বাইরে তার ভেতরটা অজানা — field-এর নাম আন্দাজে বানানো যাবে না। টপোলজি তবু folder 11-এর সাথে হুবহু এক: একই <code>/JoyState</code> শ্রোতা, depth-ও <code>1</code>।"
+  },
+  {
+   "a": 27,
+   "b": 28,
+   "text": "<code># --- CREATING PUBLISHERS (Radio Stations) ---</code> আর <code># Tell the wheels to move</code> — শ্রোতার পাল্লায় এবার উল্টো দিক: রেডিও স্টেশন। এই class-এর একটাই কথা বলার মুখ — চাকার motor-কে <code>/cmd_vel</code>-এ বলা। কঙ্কালটা এক নিঃশ্বাসে মনে রাখুন: দুই কান ভেতরে (<code>/scan</code>, <code>/JoyState</code>), এক মুখ বাইরে (<code>/cmd_vel</code>)। folder 11-এর laser_Avoidance-এর সাথে wiring হুবহু এই — ফারাক কোথায়? avoidance node এই একই দুই কানের data দিয়ে বাধা এড়িয়ে পথ বানাত; tracker node একই data দিয়ে সবচেয়ে কাছের object-টাকেই ধরে পিছু নেয়। একই শরীর, উল্টো প্রবৃত্তি।"
+  },
+  {
+   "a": 29,
+   "b": 29,
+   "text": "<code>self.pub_vel = self.create_publisher(Twist,'/cmd_vel',1)</code> — মুখ। message-এর ধরন <code>Twist</code> (L4): ভেতরে <code>linear</code> আর <code>angular</code> দুই field, প্রতিটাতে x, y, z; মেঝের robot-এ কাজে লাগে দুটোই — <code>linear.x</code> (সামনে-পেছনে, মিটার/সেকেন্ড) আর <code>angular.z</code> (নিজের কেন্দ্র ঘিরে ঘোরা, radian/সেকেন্ড)। পরের Part-গুলোর dual PID ঠিক এই দুই field-এই ভরবে। queue depth আবার <code>1</code>: পুরনো কমান্ড জমানোর দরকার নেই, শেষ সিদ্ধান্তটাই সব। এই লাইন শেষ হতেই node-টা হাত-পা-চোখ সব পেয়ে যায়; L31 থেকে শুরু হবে parameter-ঘোষণা — গতি আর দূরত্বের সীমা নিয়ে।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "main()-এর L137-এ <code>laserTracker(\"laser_Tracker_a1\")</code> call হলে ঠিক এই constructor-টাই চলে: <code>super().__init__(name)</code> node-কে নাম দেয়, তারপর দুই subscription আর এক publisher রেজিস্টার হয়ে যায়। README-র L3 launch আগে চালানো থাকলে folder 10-এর merger+filter chain-এর পূর্ণ 360-degree <code>/scan</code> ring আসতে শুরু করে — প্রতিটা scan <code>registerScan</code>-কে জাগায়, joystick ধরলে <code>/JoyState</code> <code>JoyStateCallback</code>-কে জাগায়, আর সিদ্ধান্ত বেরোয় এক পথে: <code>/cmd_vel</code>-এ <code>Twist</code>, যা সোজা চাকার motor পায়। lidar এই node-এর নিজের হাতে নয় — চোখ ওপরের chain-এর, এখানে শোনা আর চালানো।",
+  "incorrect": "<code>super().__init__(name)</code> বাদ পড়লে পরের লাইনেই <code>AttributeError</code> — console-এ traceback, <code>ros2 node list</code>-এ <code>laser_Tracker_a1</code> নামটা আসবেই না, <code>/cmd_vel</code>-এ publisher জন্মাবে না, চাকা স্থির। আরেকটা ভুল ধারণা: <code>Bool</code>-কে std_msgs-এর Bool ভেবে অন্য ধরনের message পাঠানো — তখন হয় message-ই callback পর্যন্ত পৌঁছাবে না, নয়তো L53-এর isinstance guard সেটাকে ফেরত দেবে; <code>Joy_active</code> কখনো <code>True</code> হবে না, মানুষ joystick ধরেও AI-কে থামাতে পারবে না — robot শেষ সিদ্ধান্তের চাকা-গতিতেই চলতে থাকবে। আর merger-এর কাঁচা topic-এ কান দিলে ring-এর অর্ধেক খালি আসবে — tracker অপূর্ণ দুনিয়া দেখে হিসাব করবে।"
+ },
+ "animType": "subPubGraph"
+}

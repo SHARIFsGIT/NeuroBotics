@@ -1,0 +1,48 @@
+{
+  "n": 7,
+  "id": "part-07",
+  "fname": "laser_Tracker.py",
+  "enTitle": "Four Parameters — Declare & Get",
+  "lang": "python",
+  "start": 30,
+  "end": 39,
+  "flags": [],
+  "explain": [
+    {
+      "a": 30,
+      "b": 31,
+      "text": "L30-এর ফাঁকা লাইনটা publisher block-এর পরে বিভাজক মাত্র। L31-এর section comment <code># --- ROS 2 PARAMETERS (Speed &amp; Distance Limits) ---</code> ঘোষণা করে: constructor-এর এই অংশ চারটা ROS 2 parameter নথিভুক্ত করবে। Parameter মানে নাম-দেওয়া একটা value, যা node চালুর সময় <code>--ros-args -p linear:=0.8</code>-এর মতো করে code edit ছাড়াই override করা যায়। কিন্তু comment-এর 'Limits' শব্দে ভরসা করবেন না — নিচের লাইনগুলোতে দেখা যাবে, চারটার মধ্যে speed-সংক্রান্ত দুটো limit আসলে আর কোথাও পড়াই হয় না।"
+    },
+    {
+      "a": 32,
+      "b": 32,
+      "text": "L32-এ প্রথম declare: <code>self.declare_parameter(\"linear\",0.5)</code> — node-এর parameter store-এ <code>linear</code> নামে default 0.5 সহ একটা entry খোলে; পাশের comment <code># Max forward speed (0.5 m/s)</code> একে সর্বোচ্চ সামনে-যাওয়ার গতি বলে পরিচয় করায়। Declare না করে get করলে rclpy exception ওঠে, তাই প্রতিটা get-এর আগে তার declare থাকা জরুরি। Default-টা Python float (0.5) বলে store-এ type হয় DOUBLE — পরের লাইনে ঠিক সেই কারণেই double field পড়া হবে।"
+    },
+    {
+      "a": 33,
+      "b": 33,
+      "text": "L33-এ declare করা value ফেরানোর তিন-ধাপ chain: <code>self.get_parameter('linear').get_parameter_value().double_value</code>। ধাপ ১ — <code>self.get_parameter('linear')</code> node-এর parameter store থেকে ওই নামের <code>Parameter</code> object ধরে আনে। ধাপ ২ — <code>.get_parameter_value()</code> সেই object-এর type-সহ value-container বের করে। ধাপ ৩ — <code>.double_value</code> floating-point field-টা টেনে দেয়, ফলে <code>self.linear</code> = 0.5। VERIFIED QUIRK: <code>self.linear</code> এই assignment-এর পর পুরো file-এ আর কখনো পড়া হয় না — L102-এ <code>velocity.linear.x</code> সরাসরি PID-এর ফলাফল থেকে বসে, কোথাও কোনো clamp নেই। অর্থাৎ 0.5 m/s সীমা শুধু comment-এ বাঁচে, motor পর্যন্ত পৌঁছায় না।"
+    },
+    {
+      "a": 34,
+      "b": 35,
+      "text": "L34-35 একই ছাঁচের দ্বিতীয় pair: <code>self.declare_parameter(\"angular\",1.0)</code> (comment <code># Max turning speed (1.0 rad/s)</code>), তারপর হুবহু একই chain <code>self.get_parameter('angular').get_parameter_value().double_value</code> দিয়ে <code>self.angular</code> = 1.0। এখানেও সেই এক VERIFIED QUIRK — <code>self.angular</code>-ও আর কখনো পড়া হয় না। L110-120-এ angular.z নির্ধারিত হয় PID-ফলাফল, sign branch আর <code>* 0.6</code> damping মিলিয়ে; declared 1.0 rad/s-এর ছোঁয়া সেখানে নেই। দুটো speed pair তাই সত্যিকারের safety limit নয় — নথি হয়ে বসে আছে শুধু।"
+    },
+    {
+      "a": 36,
+      "b": 37,
+      "text": "L36-37 তৃতীয় pair, এবং এটাই প্রথম সত্যিকারের ব্যবহার: <code>self.declare_parameter(\"LaserAngle\",45.0)</code> (comment <code># Width of the front cone (45 degrees left and right)</code>), তারপর একই chain-এ <code>self.LaserAngle</code> = 45.0। এটি কাজে লাগে L70-এ: <code>if abs(angle) &lt; self.LaserAngle and ranges[i] !=0.0 :</code> — ডিগ্রিতে মাপা beam-এর angle কঠোরভাবে (strict <code>&lt;</code>) 45.0-এর কম হলে তবেই সে beam সামনের cone-এর ভেতরে গণ্য হয়। বামে-ডানে 45° মানে সামনের মোট 90° জানালা; ঠিক 45.0°-এ পড়া beam ভেতরে ঢোকে না।"
+    },
+    {
+      "a": 38,
+      "b": 39,
+      "text": "L38-39 চতুর্থ ও শেষ pair: <code>self.declare_parameter(\"ResponseDist\",0.55)</code> — comment <code># The \"Sweet Spot\" distance to keep from the object (0.55 meters)</code> বলে object থেকে যে দূরত্ব ধরে রাখতে হবে; একই chain-এ <code>self.ResponseDist</code> = 0.55। এই value-ই node-এর মূল আচরণ চালায়: L96-এর deadzone যাচাই <code>abs(minDist - self.ResponseDist) &lt; 0.1</code>, আর L102-এ linear PID-এর target হিসেবে <code>-self.lin_pid.pid_compute(self.ResponseDist, minDist)</code>। মনে রাখুন: get হয় constructor-এ মাত্র একবার — launch-এর সময় <code>--ros-args</code> দিয়ে override করলে নতুন value attribute-এ ঢোকে, কিন্তু node চালু হয়ে যাওয়ার পরে <code>ros2 param set</code> করলে store বদলালেও সেই কপি আর বদলায় না।"
+    }
+  ],
+  "math": null,
+  "robot": {
+    "correct": "এই লাইনগুলো চলার পর node-এর parameter store-এ চারটা নাম বসে — linear 0.5, angular 1.0, LaserAngle 45.0, ResponseDist 0.55 — আর console-এ এরা নিজেরা কিছুই ছাপে না। পরের কাজে দুটো সত্যিই কাজে লাগে: LaserAngle 45.0 ঠিক করে LiDAR-এর সামনের ±45° cone-এর ভেতরের কোন কোন beam tracking-এর জন্য গণ্য হবে (L70), আর ResponseDist 0.55 হলো সেই stand-off দূরত্ব যেখানে object-কে ধরে রাখতে চায় robot (L96, L102)। ফলে tracking চালু থাকলে wheel-গুলো object-কে প্রায় 0.55 m দূরে রেখে এগিয়ে যায় ও ঘোরে।",
+    "incorrect": "ভুল অনুমান হলে যা হয়: 'linear 0.5 আর angular 1.0 হলো গতির ceiling' ভেবে বসা — আসলে <code>self.linear</code> আর <code>self.angular</code> কেউ আর পড়ে না, কোথাও কোনো clamp নেই। Illustrative হিসেবে: object 1.6 m দূরে হলে linear error অনুযায়ী Kp-view ফল প্রায় +1.05 m/s — declared 0.5-এর দ্বিগুণের বেশি কমান্ড wheel-এ গিয়ে robot-কে দ্রুত ছুটতে বাধ্য করে। উল্টো দিকে, launch-এ <code>-p linear:=0.2</code> দিয়ে সীমা নামালেও গতিতে তিলমাত্র পরিবর্তন আসে না — value-টা মরা attribute-এ কপি হয়ে শুধু পড়ে থাকে।"
+  },
+  "animType": null
+}

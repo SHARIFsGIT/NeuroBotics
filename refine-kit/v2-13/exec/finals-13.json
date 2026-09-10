@@ -1,0 +1,64 @@
+{
+ "finalCap": "পুরো runbook-এর যাত্রা: <code>sh start_agent.sh</code> -> vendor bringup (illustrative) -> <code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code>: constructor phase-এ L1 থেকে L42 — ছয় import (মধ্যে <code>Node</code>-টি unused, নিজের comment-ই স্বীকার করে), দুটি path <code>os.path.join(get_package_share_directory(...))</code> একই সময়ে বাঁধা পড়ে, তারপর <code>LaunchDescription([...])</code> list — নিজের একটিও Node নেই। Run phase-এ দুটি <code>IncludeLaunchDescription</code> ফায়ার হয়: folder 10-এর merger সামনে-পেছনের scan এক 360° ring-এ জোড়ে, filter blind-spot সাফ করে (illustrative)। এরপর <code>ros2 run yahboom_M3Pro_laser laser_Warning</code>: import pass-এ class-টি শুধু define হয় (console-এ <code>improt done</code> ছাপা সহ — typo-টি source-এই), main pass-এ constructor সত্যি চলে — node <code>laser_Warnning_a1</code> (দুই-n typo source-এই), দুই কান (<code>/scan</code>, <code>/JoyState</code>), দুই মুখ (<code>/cmd_vel</code> আর guard-এর নতুন কণ্ঠ <code>/beep</code>), চার parameter (মধ্যে <code>linear</code>/<code>angular</code> জন্মালেও আর কোথাও পড়া হয় না), <code>Joy_active=False</code>, একটিই PID — <code>SinglePID(3.0, 0.0, 5.0)</code>। তারপর spin-এ event-wave গুলো: Wave A 0.90 m@+14° — বাঁয়ে ধীর ঘূর্ণন, buzzer চুপ; Wave B 0.70 m@+20° — ঘূর্ণন জোরালো; Wave C 0.48 m@0° — <b>danger zone-এর ভিতরে: BEEP + স্থির</b>; Wave D 0.50 m@−20° — BEEP + ডানে ঘূর্ণন; Wave E সামনে ফাঁকা — কোনো publish নেই, motor শেষ কমান্ড ধরে রাখে <b>আর /beep তার শেষ মানে latch</b>; Wave F 0.80 m@+8° — else-branch buzzer বন্ধ করে, 8° deadzone-এর ভিতরে তাই স্থির; joystick override প্রতি scan-এ zero Twist (buzzer refresh-ও হয় না); শেষে Ctrl+C -> <code>finally</code> -> <code>exit_pro</code>-র shell brake — <code>/cmd_vel</code> শূন্য, কিন্তু <code>/beep</code>-এ হাত দেয় না -> <code>destroy_node</code> -> <code>rclpy.shutdown</code>।",
+ "finalDbg": [
+  [
+   "commands (3)",
+   "sh start_agent.sh · ros2 launch yahboom_M3Pro_laser laser_driver.launch.py · ros2 run yahboom_M3Pro_laser laser_Warning"
+  ],
+  [
+   "files (3)",
+   "README.md (5) · laser_driver.launch.py (42) · laser_Warning.py (145)"
+  ],
+  [
+   "steps",
+   "184 = 3 README-open + 16 driver-ctor + 6 driver-run + 2 README-mid + 56 import-pass + 16 main-pass + 85 event-wave"
+  ],
+  [
+   "driver actions",
+   "2 IncludeLaunchDescription, 0 Node — Node import (L6) unused; merger + filter delegated to folder-10 files by path"
+  ],
+  [
+   "eager paths",
+   "get_package_share_directory runs at construction (not lazy like LaunchConfiguration)"
+  ],
+  [
+   "node",
+   "laser_Warnning_a1 (double-n typo, source) · sub /scan + /JoyState (depth 1) · pub /cmd_vel + /beep (depth 1)"
+  ],
+  [
+   "parameters",
+   "linear 0.5 · angular 1.0 (both never read — no clamp) · LaserAngle 45.0 deg · ResponseDist 0.55 m"
+  ],
+  [
+   "PID",
+   "ang SinglePID(3.0, 0, 5) L48 — the ONLY one; no linear PID, no snap; vendor module not in folder; Kp-term view illustrative"
+  ],
+  [
+   "cone",
+   "|angle| < 45.0 strict AND ranges[i] != 0.0 — inf passes; 89 beams i=136..224 (illustrative 1-deg ring)"
+  ],
+  [
+   "alarm",
+   "minDist <= 0.55 (and != 0.0) -> /beep 1 · else -> /beep 0 every scan — level signal; empty-cone (L73) and Joy (L83) returns skip the refresh -> latch"
+  ],
+  [
+   "gates",
+   "turn deadzone |u| < 0.5 -> z=0 (Kp-view |a| < 12 deg) · damping x0.5"
+  ],
+  [
+   "ceiling (angular)",
+   "3 x (45/72) x 0.5 = 0.9375 rad/s — linear.x never set at all: the guard is spin-only"
+  ],
+  [
+   "waves",
+   "A 0.90@+14 -> (0, +0.292) quiet · B 0.70@+20 -> (0, +0.417) · C 0.48@0 -> (0, 0) BEEP · D 0.50@-20 -> (0, -0.417) BEEP · E empty -> no publish, /beep latched 1 · F 0.80@+8 -> (0, 0) quiet · Joy -> zero Twist"
+  ],
+  [
+   "shutdown",
+   "Ctrl+C -> except: pass -> finally -> exit_pro L127-132 os.system one-shot zero brake (/cmd_vel only; /beep untouched) -> destroy_node -> rclpy.shutdown"
+  ]
+ ],
+ "finalFx": "RUNBOOK COMPLETE · 3 files · 192 lines · 184 steps · driver = 2 includes x (constructor + run) · warning = import pass + main pass + event waves · fused 360 ring -> /scan -> +-45 cone min-search -> alarm (0.55 -> /beep) + single PID -> deadzone + x0.5 damping -> /cmd_vel (spin only) · Ctrl+C -> shell brake",
+ "finalOp": null,
+ "finalRob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">complete</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"56\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">jetson@yahboom:~$ ^C</text><text x=\"26\" y=\"67\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">KeyboardInterrupt caught, pass</text><text x=\"26\" y=\"78\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">ros2 topic pub --once /cmd_vel ...</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">zero brake published (shell)</text><text x=\"26\" y=\"100\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">destroy_node · rclpy.shutdown</text><text x=\"26\" y=\"111\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">guard stopped cleanly</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">complete</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"302\" y=\"128\" width=\"30\" height=\"36\" rx=\"5\" fill=\"url(#egB)\" stroke=\"#4fc3f7\" stroke-width=\"1.2\"/><path d=\"M317 128 L322 120 L317 124 L312 120 Z\" fill=\"#4fc3f7\" opacity=\".9\"/><text x=\"317\" y=\"172\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">parked</text><circle cx=\"317\" cy=\"146\" r=\"34\" fill=\"none\" stroke=\"#7ee787\" stroke-opacity=\".2\" stroke-width=\"1\"/><circle cx=\"317\" cy=\"146\" r=\"52\" fill=\"none\" stroke=\"#7ee787\" stroke-opacity=\".1\" stroke-width=\"1\"/><circle cx=\"334\" cy=\"120\" r=\"3\" fill=\"none\" stroke=\"#484f58\" stroke-width=\"1\"/><path d=\"M339 115 A9 9 0 0 1 343 119\" fill=\"none\" stroke=\"#484f58\" stroke-width=\"1\"/><path d=\"M341 111 A13 13 0 0 1 347 117\" fill=\"none\" stroke=\"#484f58\" stroke-width=\"1\"/><text x=\"238\" y=\"60\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">/scan: off</text><text x=\"238\" y=\"72\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">/cmd_vel: 0.0, 0.0</text><text x=\"238\" y=\"84\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ffb454\">buzzer: last state left as-is</text><text x=\"238\" y=\"96\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">node destroyed · rclpy down</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">যাত্রা শেষ — Ctrl+C এসেছিল, finally-ব্লক shell-brake ছেড়ে গেছে।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">Robot থেমে আছে, /cmd_vel-এ শূন্য Twist — কিন্তু exit_pro /beep-এ হাত দেয়নি।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">১৮৪টি step-এ পুরো runbook — তিনটি ফাইল, একটাও লাইন বাদ যায়নি।</text>"
+}

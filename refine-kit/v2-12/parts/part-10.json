@@ -1,0 +1,128 @@
+{
+  "n": 10,
+  "id": "part-10",
+  "fname": "laser_Tracker.py",
+  "enTitle": "registerScan — Beam Loop & Front Cone",
+  "lang": "python",
+  "start": 55,
+  "end": 72,
+  "flags": [],
+  "explain": [
+    {
+      "a": 55,
+      "b": 56,
+      "text": "L55 নিছক একটা blank line — JoyStateCallback (L52-54) আর নতুন function-এর মাঝের দৃশ্যমান বিভাজক। L56-তে <code>def registerScan(self, scan_data):</code> — এই node-এর পুরো behavior core। L23-এর subscription ঠিক এই নামটাই (<code>self.registerScan</code>) register করেছিল, তাই folder-10-এর merge+filter chain থেকে আসা fused <code>/scan</code>-এর প্রতিটি message-এ ROS 2 executor এই function-টাকে ডাকে। INPUT হলো একটা <code>LaserScan</code> message; যাত্রা L125-এর <code>Twist</code> publish-এ গিয়ে শেষ হবে — কিন্তু তার আগে এই Part-এ চলবে candidate-খোঁজার পর্ব।"
+    },
+    {
+      "a": 57,
+      "b": 57,
+      "text": "L57 <code>if not isinstance(scan_data, LaserScan): return</code> — type guard। L53-এর JoyStateCallback guard-এর ঠিক একই প্যাটার্ন: message-টা যদি কোনো কারণে <code>LaserScan</code> না হয়, callback কিছু না করেই return করে — crash নয়, শুধু ওই একটা scan বাদ। ফলে ভুল type-এর কোনো stray message পুরো node-কে ফেলে দিতে পারে না।"
+    },
+    {
+      "a": 58,
+      "b": 58,
+      "text": "L58 <code>ranges = np.array(scan_data.ranges)</code> — message field-এর Python list-টাকে numpy array-তে convert করা হলো। প্রতিটি element একটা beam-এর measured distance, unit meter; পরের loop সরাসরি <code>ranges[i]</code> দিয়ে index করবে। array-র length N মানে beam-সংখ্যা — fused ring-এ 360 (illustrative), অর্থাৎ নিচের loop-টি প্রতি scan-এ 360 বার ঘুরবে।"
+    },
+    {
+      "a": 59,
+      "b": 62,
+      "text": "L60-এর comment ঘোষণা করে <code># We will search for the absolute closest object in the front 90-degree cone</code> — 90° মানে মোট window: বাঁয়ে 45° আর ডানে 45°। L61-62-তে সেই খোঁজার জন্য দুটো PARALLEL খালি list: <code>minDistList = []</code> distance-গুলোর জন্য, <code>minDistIDList = []</code> angle-গুলোর জন্য। নামে 'ID' হলেও এখানে beam-এর index নয় — beam-এর DEGREE angle জমা হবে। একই list-position-এ থাকবে একই beam-এর distance আর angle-এর জোড়া; L77 ও L79-এর min-search পুরোপুরি এই pairing-এর উপরেই দাঁড়িয়ে। প্রতিটা scan-এ fresh খালি list দিয়ে শুরু হয়, তাই আগের scan-এর পুরোনো data কখনো মেশে না।"
+    },
+    {
+      "a": 63,
+      "b": 65,
+      "text": "L64-এর comment যেমন বলছে, L65-এর <code>for i in range(len(ranges)):</code> প্রতিটা beam-কে ঠিক একবার করে ঘুরে দেখে — i = 0 থেকে N-1, কোনো আগাম বাদ নেই। সামনে-পেছনে-পাশে সব beam-ই এই pass-এ আসে; বাছাই করবে ভেতরের L70 filter। এটি একটা linear sweep — প্রতি scan-এ N-টা (illustrative 360) iteration।"
+    },
+    {
+      "a": 66,
+      "b": 67,
+      "text": "L67-এ এই Part-এর মূল সূত্র: <code>angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code>। header-এর দুটি field — <code>angle_min</code> (প্রথম beam-এর direction, radian unit-এ) আর <code>angle_increment</code> (পরপর দুটো beam-এর কৌণিক ফাঁক, radian-এ) — আর L15-এর <code>RAD2DEG = 180 / math.pi</code> (= 57.2958…) মিলে index i-কে degree angle-এ বদলায়। folder-10 chain-এর echo values বসালে (angle_min = -3.14159, angle_increment = 0.0174533, illustrative) প্রতিটা beam ঠিক 1° করে ওঠে: angle_i = -180 + i degree — i = 180 মানে dead-ahead 0°, i = 0 মানে একেবারে পেছনে -180°। মনে রাখো, code নিজে কিছুই hard-code করে না — সব মান message header থেকে পড়ে।"
+    },
+    {
+      "a": 68,
+      "b": 70,
+      "text": "L70-এর filter: <code>if abs(angle) &lt; self.LaserAngle and ranges[i] !=0.0 :</code> — দুটো শর্ত AND দিয়ে যুক্ত। প্রথমটা front cone test: LaserAngle = 45.0 (L36-37), কিন্তু inequality-টা STRICT, তাই window-টা open interval (-45°, +45°) — ঠিক -45.0° বা ঠিক +45.0°-র beam বাদ। illustrative ring-এ মানে i = 136…224, মোট 89টা beam ভেতরে। দ্বিতীয়টা validity test: <code>ranges[i] !=0.0</code> exact 0.0-কে invalid sentinel ধরে বাদ দেয়। Honest edge: LaserScan convention-এ no-return beam-এর মান +inf, আর Python-এ <code>inf != 0.0</code> হলো True — তাই inf reading এই filter পেরিয়েই যায়। code-এর প্রকাশ্য assumption: upstream chain no-return-গুলোকে আগেই 0.0 বানিয়ে রেখেছে; না বানালে খোলা corridor-এ inf সোজা list-এ ঢুকবে।"
+    },
+    {
+      "a": 71,
+      "b": 72,
+      "text": "শর্ত পাস করা beam এবার জমা হয়: L71 <code>minDistList.append(ranges[i])</code> distance-টা রাখে, L72 <code>minDistIDList.append(angle)</code> ওই beam-এর degree angle-টা রাখে। দুটো append সবসময় জোড়ায় জোড়ায় চলে, তাই দুই list-এর same position-এ সবসময় একই beam-এর দুটো মান। এই ধাপে এখনো কোনো min নেই, wheel-এ কিছুই যায় না — শুধু পরের Part-এর min-search-এর candidate shortlist তৈরি হলো। Wave A-এর pillar (0.90 m, +12°, illustrative) ঠিক এভাবেই list-এ ঢুকে পরে minDist = 0.90, minDistID = +12 হবে।"
+    }
+  ],
+  "math": {
+    "intro": "এই Part-এর গণিত দুটো প্রশ্নের উত্তর দেয়: beam index i থেকে ওই beam-এর direction-angle degree-এ কত হয়, আর কোন কোন beam front cone-এর ভেতরে পড়ে shortlist-এ ঢোকে।",
+    "levels": [
+      {
+        "label": "Level 1 — Symbols & units",
+        "latex": "\\[ i = \\text{beam index},\\qquad \\theta_{\\min} = \\texttt{angle\\_min}\\ [\\mathrm{rad}],\\qquad \\Delta\\theta = \\texttt{angle\\_increment}\\ \\left[\\tfrac{\\mathrm{rad}}{\\mathrm{beam}}\\right],\\qquad \\mathrm{RAD2DEG} = \\frac{180}{\\pi} = 57.2958\\ \\left[\\tfrac{^{\\circ}}{\\mathrm{rad}}\\right] \\]",
+        "text": "i dimensionless index — কোন beam, তার নম্বর। theta_min হলো প্রথম beam-এর direction, unit radian। Delta theta হলো পরপর দুটো beam-এর কৌণিক ফাঁক, unit radian per beam। RAD2DEG হলো L15-এর module-level constant — radian-কে degree-এ নেওয়ার conversion factor, মান 57.29577951…। আর r_i মানে ranges[i] — beam i-এর measured distance, unit meter।"
+      },
+      {
+        "label": "Level 2 — মূল সূত্র (index to angle)",
+        "latex": "\\[ \\theta_i = \\left(\\theta_{\\min} + \\Delta\\theta \\cdot i\\right) \\times \\frac{180}{\\pi} \\quad [^{\\circ}] \\]",
+        "text": "L67-এর expression-এর math রূপ। base angle-এর সাথে (ধাপ × index) যোগ হয়, তারপর পুরোটা একসাথে radian থেকে degree-এ convert হয়। i এক বাড়লে theta_i বাড়ে ঠিক Delta theta × 57.2958 degree করে — evenly spaced ring-এ সব beam সমান কৌণিক দূরত্বে সাজানো।"
+      },
+      {
+        "label": "Level 3 — fused ring-এ substitution (illustrative)",
+        "latex": "\\[ \\theta_i = (-3.14159 + 0.0174533\\, i) \\times 57.2958 \\approx -180^{\\circ} + 1^{\\circ} \\cdot i \\]",
+        "text": "folder-10-এর merge+filter chain থেকে আসা ring-এর echo values বসালে (illustrative, folder 09-এ recorded মানের সাথে consistent): angle_min = -3.14159 মানে প্রায় -pi, angle_increment = 0.0174533 মানে প্রায় pi/180 — তাই 360 beam, দুটোর মাঝে ঠিক 1°। এই identity-র সুবিধে: i = 180 মানে 0° (dead ahead), i = 192 মানে +12°। কিন্তু code এই মানগুলো জানে না — সে header থেকে পড়ে; identity-টা শুধু আমাদের reasoning-এর সুবিধে, তাই illustrative।"
+      },
+      {
+        "label": "Level 4 — front cone-এর geometry",
+        "latex": "\\[ -45^{\\circ} < \\theta_i < 45^{\\circ},\\quad \\theta_i = -180^{\\circ} + i \\quad\\Rightarrow\\quad 135 < i < 225 \\quad\\Rightarrow\\quad i = 136, 137, \\dots, 224 \\]",
+        "text": "cone test-এর geometry। ভেতরে পড়ে মোট 224 - 136 + 1 = 89টা beam। inequality STRICT থাকায় i = 135 (theta = ঠিক -45.0°) আর i = 225 (theta = ঠিক +45.0°) — দুই সীমানাই বাদ। 45.0 মানটা আসে <code>LaserAngle</code> parameter থেকে (L36-37), তাই window চাইলে launch-এর সময় override করা যায়।"
+      },
+      {
+        "label": "Level 5 — validity predicate আর inf edge",
+        "latex": "\\[ r_i \\neq 0.0 \\;\\;\\mathrm{and}\\;\\; (+\\infty \\neq 0.0) = \\mathrm{True} \\quad\\Rightarrow\\quad \\text{no-return inf beam passes the filter} \\]",
+        "text": "validity test-টা শুধু exact 0.0 বাদ দেয় — কিন্তু LaserScan convention-এ no-return beam-এর মান +inf। Python-এ <code>inf != 0.0</code> evaluate হয় True, তাই inf beam পাশ কেটে list-এ ঢোকে। code-এর assumption: upstream filter no-return-কে 0.0 করে দিয়েছে (folder-10 chain-এর কাজ)। সেই assumption ভাঙলে খোলা corridor-এর 89টা beam-ই inf হতে পারে, আর তখন L77-এর min-ও inf হয়ে যাবে।"
+      }
+    ],
+    "numeric": [
+      {
+        "latex": "\\[ i = 192:\\quad \\theta_{192} = -180^{\\circ} + 192^{\\circ} = +12^{\\circ},\\qquad |12| < 45 \\;\\Rightarrow\\; \\text{cone pass} \\]",
+        "text": "Wave A (illustrative): pillar 0.90 m সামনের সামান্য বাঁয়ে +12°-তে। সেই beam-এর index উল্টো হিসে বের হয় i = 192। cone test পাস, তাই 0.90 যাবে minDistList-এ আর +12 যাবে minDistIDList-এ — পরের Part-এ এটাই minDist আর minDistID হবে।"
+      },
+      {
+        "latex": "\\[ \\theta_{135} = -45.0^{\\circ}\\ (\\text{excluded}),\\qquad \\theta_{225} = +45.0^{\\circ}\\ (\\text{excluded}),\\qquad 224 - 136 + 1 = 89\\ \\text{beams in the cone} \\]",
+        "text": "সীমানার হিসাব (illustrative): STRICT inequality থাকায় ঠিক ±45.0°-র দুটো beam cone-এর বাইরে — সীমানায় ঠিক বসানো object-এর beam কখনো list-এ আসবে না। ভেতরে থাকে 89টা beam।"
+      },
+      {
+        "latex": "\\[ \\text{header claims } \\Delta\\theta = 1^{\\circ},\\ \\text{real spacing } 0.5^{\\circ}:\\quad \\text{code: } \\theta_{192} = +12^{\\circ},\\quad \\text{reality: } -180^{\\circ} + 0.5 \\times 192 = -84^{\\circ} \\]",
+        "text": "ভুল increment-এর হিসাব (illustrative): header যদি আসল spacing-এর দ্বিগুণ মান দেয়, তাহলে code-এর চোখে সামনে (+12°) এমন beam শরীরে আসলে বাঁয়ে-পেছনে (-84°) পড়ে। প্রতিটা angle একসাথে shift হয়ে যায়, আর cone শারীরিকভাবে সামনের দিকটা ছেড়ে অন্য দিক জুড়ে বসে।"
+      }
+    ],
+    "mapping": [
+      {
+        "code": "for i in range(len(ranges)):",
+        "math": "\\( i = 0, 1, 2, \\dots, N-1 \\)",
+        "text": "N মানে len(ranges), অর্থাৎ beam-সংখ্যা। প্রতিটা beam ঠিক একবার — কোনো skipping বা early exit নেই।"
+      },
+      {
+        "code": "angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG",
+        "math": "\\( \\theta_i = (\\theta_{\\min} + \\Delta\\theta\\, i)\\cdot\\frac{180}{\\pi} \\)",
+        "text": "message header-এর দুটি field আর L15-এর constant — তিনটা উপাদান মিলে index-কে degree direction-এ বদলায়।"
+      },
+      {
+        "code": "if abs(angle) &lt; self.LaserAngle and ranges[i] !=0.0 :",
+        "math": "\\( |\\theta_i| < 45^{\\circ} \\;\\wedge\\; r_i \\neq 0 \\)",
+        "text": "প্রথম clause-টা geometry (open interval), দ্বিতীয়টা sentinel-filter — কিন্তু দ্বিতীয়টা inf ধরতে পারে না।"
+      },
+      {
+        "code": "minDistIDList.append(angle)",
+        "math": "\\( \\Theta_{\\mathrm{new}} = \\Theta \\cup \\{\\theta_i\\} \\)",
+        "text": "নামে 'ID' হলেও store হয় degree angle — L79-এ এটাই minDistID হয়ে পরের Part-এর angular PID-এর input।"
+      }
+    ],
+    "failure": [
+      "Header-এ ভুল angle_increment থাকলে প্রতিটা beam-এর হিসে করা angle একসাথে shift বা scale হয়ে যায় — ±45° cone আর শরীরের সামনের দিকে থাকে না। ফলে সামনের মানুষটার beam-গুলো minDistList-এ ঢোকেই না, পাশে বা পেছনের দেয়াল ঢুকে যায়; পরের Part-এ robot সেই ভুল object-কেই কেন্দ্র করে wheel ঘোরায়।",
+      "inf passthrough: upstream chain no-return-গুলোকে 0.0 না করে থাকলে খোলা corridor-এ cone-এর সব beam inf হয়ে minDistList-এ জমে, min(minDistList) = inf হয়ে যায় — L96-এর deadzone snap অকেজো, linear PID-এর error infinite, আর কোনো clamp না থাকায় linear.x-এ বিশাল value গিয়ে motor পূর্ণ গতিতে ছুটতে পারে।",
+      "STRICT inequality-র কারণে ঠিক 45.0°-তে বসানো object-এর beam চিরকাল বাদ পড়ে — একমাত্র object যদি সীমানায় থাকে, minDistList খালি থাকে, L82-এর dashes line console-এ ছাপা হতে থাকে, আর robot স্থির দাঁড়িয়ে।"
+    ]
+  },
+  "robot": {
+    "correct": "প্রতিটা fused /scan message-এ lidar-এর 360টা (illustrative) beam এই loop দিয়ে যায়, আর সামনের 89টা beam-এর valid distance-গুলো দুটো parallel list-এ জমা হয়। Wave A-তে (illustrative) pillar 0.90 m, +12° — অর্থাৎ beam i = 192 — তাই 0.90 আর +12 জোড়া হয়ে তালিকায় ঢোকে। এই ধাপে wheel এখনও স্থির: /cmd_vel-এ কিছু publish হয় না, console-এও এই Part-এর কোনো print নেই (print আসে L91-92, পরের Part-এ)। শুধু পরের ধাপের min-search-এর জন্য shortlist তৈরি হয়, আর প্রতিটা নতুন scan-এ খালি list দিয়ে আবার শুরু।",
+    "incorrect": "Header-এর angle_increment যদি আসল beam spacing-এর সাথে না মেলে, তাহলে প্রতিটা angle একসাথে সরে যায় — cone শরীরের সামনে না থেকে অন্য দিকে বসে, আর robot পাশের দেয়াল বা পেছনের object-কে সামনের target ভেবে wheel সেই দিকে ঘোরায়। আবার upstream no-return-গুলো 0.0 না হলে খোলা corridor-এ inf ঢুকে minDist = inf হয় — পরের Part-এ error অসীম হয়ে linear.x-এ অর্থহীন বিশাল value যায়, আর clamp না থাকায় motor হঠাৎ পূর্ণ গতিতে ছুটতে শুরু করে। আর একমাত্র object ঠিক 45.0° সীমানায় থাকলে সে কখনো তালিকায় আসে না — console-এ শুধু L82-এর dashes line পড়তে থাকে, robot স্থির।"
+  },
+  "animType": "beamSweep"
+}

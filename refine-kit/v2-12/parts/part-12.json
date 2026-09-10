@@ -1,0 +1,118 @@
+{
+ "n": 12,
+ "id": "part-12",
+ "fname": "laser_Tracker.py",
+ "enTitle": "Velocity & Stand-off Deadzone",
+ "lang": "python",
+ "start": 89,
+ "end": 96,
+ "flags": [],
+ "explain": [
+  {
+   "a": 89,
+   "b": 90,
+   "text": "L89-এর blank line গার্ড-ব্লক (L75-88) আর compute-ব্লককে আলাদা করে; এখানে নামতে পারাই মানে তিনটা gate পাস — L57-এর type check, L75-এর <code>len(minDistList) != 0</code> (নইলে L82-83 ছেপে <code>return</code> করত), আর L86-এর <code>self.Joy_active</code> False — মানুষের joystick নয়, AI চালাচ্ছে। তাই <code>minDist</code> (L77) আর <code>minDistID</code> (L79) দুটোই valid মান হাতে রাখছে। L90-এ <code>velocity = Twist()</code> — প্রতিটা scan-callback-এর জন্য টাটকা একটা command message, ছয়টা field-ই (linear ও angular-এর x, y, z) 0.0 নিয়ে শুরু হয়। এই শূন্য-শুরু নিজেই নিরাপত্তা: এই Part-এর পরে ঠিক দুটো field-এ লেখা হয় (L102-এ <code>linear.x</code>, L110-114-এ <code>angular.z</code>), বাকিগুলো শূন্যই থেকে L125-এ <code>self.pub_vel.publish(velocity)</code> হয়ে <code>/cmd_vel</code>-এ যায়। Variable-টা callback-local, তাই আগের scan-এর পুরনো মান কোথাও carry হয় না।"
+  },
+  {
+   "a": 91,
+   "b": 92,
+   "text": "<code>print(\"minDist: \", minDist)</code> আর <code>print(\"minDistID: \", minDistID)</code> — দুটো debug print। <code>registerScan</code> প্রতিটা <code>/scan</code> message-এ চলে, তাই এই দুই line-ও scan rate-এ বারবার ছাপা হয় — console-এ প্রতি scan-এ নতুন জোড়া লাইন জমে। Input হলো L77/L79-এর খোঁজা ফল: <code>minDist</code> সামনের cone-এর সবচেয়ে কাছের object-এর দূরত্ব মিটারে, <code>minDistID</code> সেই beam-টার কোণ ডিগ্রিতে। একটা সূক্ষ্ম ক্রম-বিন্দু: print দুটো L96-এর deadzone snap-এর আগে বসে, তাই terminal সবসময় কাঁচা মাপা মান দেখায়। Illustrative Wave C-তে object 0.58 m দূরে: console ছাপবে <code>minDist: 0.58</code>, অথচ নিচে L102-এর PID পাবে snapped 0.55 — console-এর সংখ্যা আর control-এর সংখ্যা ইচ্ছা করেই আলাদা রাখা হয়েছে।"
+  },
+  {
+   "a": 93,
+   "b": 95,
+   "text": "L93 blank line-এর পর L94-95-এর comment দুটো পরের statement-এর পুরো উদ্দেশ্য লিখে রাখে, verbatim: <code># Create a tiny deadzone: If we are already almost perfectly at 0.55m, pretend we are exactly at 0.55m</code> এবং <code># so the motors don't jitter back and forth.</code> অর্থ: দূরত্ব প্রায় ঠিক থাকলে মাপকে ইচ্ছা করে ঠিক 0.55 ধরে নেওয়া হবে — <code>pretend</code> শব্দটা source-এর নিজের স্বীকারোক্তি যে এটা সচেতন একটা ভান, মাপার কোনো সংশোধন নয়। কারণও বলা: এই ভান না করলে প্রতিটা scan-এ দূরত্বের ছোট ওঠানামা PID-এ ঢুকে চাকাকে বারবার উল্টো দিকে ঠালত, motor সামনে-পিছনে jitter করত। Comment-এর '0.55m' হলো <code>ResponseDist</code>-এর default মান (L38) — parameter-টা টিউন করলে কোড বদলাবে না, comment-এর সংখ্যা ওইরকমই থেকে যাবে।"
+  },
+  {
+   "a": 96,
+   "b": 96,
+   "text": "মূল লাইন: <code>if abs(minDist - self.ResponseDist) &lt; 0.1: minDist = self.ResponseDist</code> — one-line if, else নেই। শর্ত সত্য হলে local variable <code>minDist</code>-কে ওভাররাইট করে ঠিক stand-off মান (default 0.55) বসিয়ে দেওয়া হয়, ফলে ছয় লাইন নিচে L102-এর <code>pid_compute(self.ResponseDist, minDist)</code> কলে target আর current দুটোই 0.55 — linear error শূন্য, <code>velocity.linear.x</code> শূন্য, সামনে-পিছনের সংশোধন বন্ধ। Band হিসাব করলে সীমা 0.45 থেকে 0.65 m। তিনটা সূক্ষ্মতা: (১) তুলনা strict <code>&lt;</code> — ঠিক 0.45 বা ঠিক 0.65 হলে পার্থক্য 0.10, শর্ত মিথ্যা, snap হয় না (L70-এর cone test-এর মতোই কিনারা বাদ); (২) snap শুধু <code>minDist</code>-কে ছোঁয়, <code>minDistID</code> অপরিবর্তিত — এই deadzone কেবল linear অক্ষের, ঘূর্ণনের নিজস্ব deadzone L117-এ আলাদা; (৩) 0.1 সংখ্যাটা hard-coded literal — <code>ResponseDist</code> runtime parameter-এ বদলালে band তার সাথে সরে যায়, কিন্তু প্রস্থ 0.1 কোড edit ছাড়া বদলানো যায় না। Illustrative Wave C: 0.58 m সোজা সামনে — |0.58 - 0.55| = 0.03, snap হয়; Wave A-র 0.90 m — |0.90 - 0.55| = 0.35, snap হয় না।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটাই প্রশ্নের উত্তর দেয়: কোন দূরত্ব-ব্যবধানে L96-এর deadzone robot-কে 'আমি ঠিক জায়গায় আছি' বলিয়ে থামিয়ে দেয়, আর সেই snap L102-এর linear PID-এর error-কে ঠিক কী করে শূন্য করে ফেলে।",
+  "levels": [
+   {
+    "label": "Level 1 — Symbols & units",
+    "latex": "\\[ d = \\text{minDist}\\ (\\mathrm{m}), \\qquad d^{*} = \\text{ResponseDist} = 0.55\\ \\mathrm{m}, \\qquad \\varepsilon = 0.1\\ \\mathrm{m} \\]",
+    "text": "তিনটা symbol। <code>d</code> — L77-এ <code>min(minDistList)</code> থেকে পাওয়া কাছের object-এর মাপা দূরত্ব, মিটারে। <code>d*</code> — L38-39-এর <code>ResponseDist</code> parameter-এর মান, stand-off বা 'sweet spot'। <code>ε</code> — deadzone-এর অর্ধ-প্রস্থ (half-width); source-তে এর কোনো নাম নেই, সরাসরি 0.1 লেখা। তিনটাই মিটার ঘরে, তাই <code>|d - d*|</code>-ও মিটারে — তুলনাটা একই ঘরের সংখ্যার। কোণ <code>minDistID</code> এই সমীকরণে ঢোকে না: deadzone-টা পুরোটা দূরত্বের অক্ষের জিনিস।"
+   },
+   {
+    "label": "Level 2 — Snap-এর শর্ত",
+    "latex": "\\[ d_{\\text{PID}} = d^{*} \\ \\text{when } |d - d^{*}| \\lt 0.1; \\qquad d_{\\text{PID}} = d \\ \\text{otherwise} \\]",
+    "text": "L96-এর পুরো লজিক দুই টুকরোয়: শর্ত (absolute-value তুলনা) আর কাজ (snap assignment)। শর্ত সত্য হলে PID যে মান পায় সেটা আর মাপা দূরত্ব নয়, টার্গেট নিজেই — L94-এর comment-এর ভাষায় <code>pretend we are exactly at 0.55m</code>। এখানে কোনো hysteresis নেই: কোনো state আলাদা করে জমা থাকে না, প্রতিটা scan-এ শর্তটা তাজা মান দিয়ে নতুন করে মাপা হয়।"
+   },
+   {
+    "label": "Level 3 — Band-এর বীজগণিত",
+    "latex": "\\[ -0.1 \\lt d - 0.55 \\lt 0.1 \\quad \\text{i.e.} \\quad 0.45 \\lt d \\lt 0.65\\ \\mathrm{m} \\]",
+    "text": "absolute value-এর অসমতা দুই পাশে খুললে band বেরোয়: 0.45 থেকে 0.65 m। প্রান্ত দুটো বাদ — strict inequality-র জন্য ঠিক 0.45 বা ঠিক 0.65 হলে snap হয় না। আর interval-টা খোলা বলে band-এর ভিতরের যেকোনো বিন্দু (0.58 হোক, 0.46 হোক) সমানভাবে 0.55 হয়ে যায় — snap-এর পরে PID ভিতরের অবস্থান আলাদা করে জানতেই পারে না। একই strict-তুলনার স্বভাব L70-এর cone test-এও দেখা গিয়েছিল (ঠিক 45.0° beam বাদ)।"
+   },
+   {
+    "label": "Level 4 — PID error শূন্যকরণ",
+    "latex": "\\[ e_{\\text{lin}} = d^{*} - d_{\\text{PID}} = 0.55 - 0.55 = 0, \\qquad K_p = 1,\\ K_i = 0,\\ K_d = 1 \\]",
+    "text": "Snap হলে L102-এর consumer-এর কাছে দুই argument-ই 0.55। Call order (target, current) ধরে error = প্রথমটা থেকে দ্বিতীয়টা (inferred — <code>SinglePID</code>-এর ভেতরটা এই folder-এ নেই), তাই e ঠিক শূন্য। Kp-term শূন্য; Kd-term error-এর পরিবর্তনের উপর চলে — স্থির অবস্থায় সেটাও শান্ত, শুধু snap-এর প্রথম scan-এ ক্ষুদ্র transient আসতে পারে (illustrative)। ফল <code>velocity.linear.x = -0 = 0</code>: band-এর ভিতরে থাকা অবধি robot সামনে-পিছনে কিছুই করে না।"
+   },
+   {
+    "label": "Level 5 — Noise rejection: jitter-এর মৃত্যু",
+    "latex": "\\[ d = d^{*} + \\delta: \\quad \\text{with snap } e_{\\text{lin}} = 0; \\qquad \\text{without snap } e_{\\text{lin}} = -\\delta \\]",
+    "text": "স্থির দাঁড়ানো robot-এর সামনে স্থির object-ও প্রতিটা scan-এ সামান্য ভিন্ন দূরত্ব ফেরায় — সেই ওঠানামা δ (illustrative)। Snap থাকলে |δ| &lt; 0.1 পর্যন্ত পুরো noise এক ঘরে গিলে যায়, প্রতি scan-ে linear.x ঠিক 0। Snap মুছে দিলে error হয় -δ: δ-এর চিহ্ন scan থেকে scan-এ বদলায়, তাই linear.x-এর চিহ্নও বদলায় — চাকা সামনে-পিছনে কাঁপতে থাকে। Control-এর ভাষায় এটা deadband nonlinearity: ছোট signal-কে ইচ্ছা করে শূন্যে ফেলা; L95-এর comment যে <code>jitter back and forth</code> এড়াতে চেয়েছে তার গাণিতিক রূপ এটাই।"
+   },
+   {
+    "label": "Level 6 — Tolerance-এর trade-off",
+    "latex": "\\[ |d_{\\text{rest}} - d^{*}| \\lt \\varepsilon = 0.1\\ \\mathrm{m} \\quad \\text{i.e.} \\quad 0.45 \\lt d_{\\text{rest}} \\lt 0.65\\ \\mathrm{m} \\]",
+    "text": "Deadzone ফ্রি নয় — এটা একটা tolerance ঘোষণা: এই band-এর ভিতরের যেকোনো জায়গায় থেমে robot নিজেকে লক্ষ্যে ধরে নেয়, তাই stand-off-এর সর্বোচ্চ স্থায়ী ভুল প্রায় 0.1 m (illustrative)। ε = 0 করলে (snap মুছলে) tolerance শূন্য, jitter ফেরে; ε বড় করলে শান্তি বাড়ে কিন্তু robot দৃশ্যমানভাবে off-target থেমেও 'locked' বিশ্বাস করে। 0.1 m হলো vendor-এর বাছাই করা মাঝামাঝি মান — কেন ঠিক 0.1, source ব্যাখ্যা করে না (L107-এর 72-এর মতোই explanation-হীন সংখ্যা)। পাশাপাশি L117-এর angular deadzone মিলে দুটো একসঙ্গে দ্বিমাত্রিক acceptance region বানায় — দূরত্ব ও কোণ দুটোই যথেষ্ট কাছে থাকলে robot একেবারে থেমে যায়।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ |0.90 - 0.55| = 0.35 \\geq 0.1 \\quad \\text{no snap (Wave A)} \\]",
+    "text": "Wave A (illustrative): pillar 0.90 m সামনে, +12°-এ। ব্যবধান 0.35 — band-এর অনেক বাইরে, শর্ত মিথ্যা; minDist 0.90-ই থাকে। L102-এর linear PID পায় e = 0.55 - 0.90 = -0.35 (Kp-view, illustrative) — দূরত্ব কমানোর আদেশ আসবে।"
+   },
+   {
+    "latex": "\\[ |0.70 - 0.55| = 0.15 \\geq 0.1 \\quad \\text{no snap (Wave B)} \\]",
+    "text": "Wave B (illustrative): 0.70 m at +20° — মাত্র 0.15 m বেশি দূরত্বেও snap নেই, e = -0.15; robot এখনো সক্রিয়ভাবে এগোবে। Deadzone-এর ছোঁয়া 0.65 m-এর নিচে নামলেই শুরু হয়।"
+   },
+   {
+    "latex": "\\[ |0.58 - 0.55| = 0.03 \\lt 0.1, \\quad d_{\\text{PID}} = 0.55, \\quad e_{\\text{lin}} = 0 \\quad \\text{(Wave C)} \\]",
+    "text": "Wave C (illustrative): 0.58 m, সোজা সামনে (0°)। Snap হয়ে minDist := 0.55; linear error শূন্য, linear.x = 0; minDistID = 0 অপরিবর্তিত। Console-এ তবু <code>minDist: 0.58</code> ছাপা হয় — print (L91) snap-এর (L96) আগে। এটাই held state: stand-off ধরে রাখা, দুই deadzone মিলে robot-কে থামিয়ে রাখা।"
+   },
+   {
+    "latex": "\\[ |0.45 - 0.55| = 0.10, \\quad 0.10 \\lt 0.1 \\ \\text{is false} \\quad \\text{no snap at the edge} \\]",
+    "text": "প্রান্ত-পরীক্ষা (illustrative): মাপা দূরত্ব ঠিক 0.45 (বা ঠিক 0.65) হলে পার্থক্য ঠিক 0.10 — strict তুলনায় শর্ত মিথ্যা, snap নেই; কিন্তু 0.46 হলে পার্থক্য 0.09, snap আছে। Band-এর ঠিক কিনারায় আচরণ লাফিয়ে বদলায় — খোলা interval-এর স্বভাব।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "abs(minDist - self.ResponseDist)",
+    "math": "\\( |d - d^{*}| \\)",
+    "text": "মাপা দূরত্ব আর stand-off-এর বিচ্যুতির magnitude — 'কতটা ভুল জায়গায় আছি' তার একমাত্র মাপ। absolute value নেওয়ায় বেশি-দূর আর বেশি-কাছে দুই দিকই একই শর্তে ধরা পড়ে।"
+   },
+   {
+    "code": "if abs(minDist - self.ResponseDist) &lt; 0.1",
+    "math": "\\( |d - d^{*}| \\lt \\varepsilon,\\ \\varepsilon = 0.1\\ \\mathrm{m} \\)",
+    "text": "Band টেস্ট। 0.1 টা hard-coded literal — <code>ResponseDist</code> (L38) runtime-এ টিউনযোগ্য, কিন্তু এই প্রস্থ নয়; stand-off বদলালে band সরে যায়, মোটা-পাতলা হয় না।"
+   },
+   {
+    "code": "minDist = self.ResponseDist",
+    "math": "\\( d_{\\text{PID}} = d^{*} \\)",
+    "text": "Snap: local variable-কে ওভাররাইট করা — নিচের সব ব্যবহার (L102) এই নতুন মান দেখে। <code>minDistID</code> আলাদা, তাকে কেউ ছোঁয় না।"
+   },
+   {
+    "code": "self.lin_pid.pid_compute(self.ResponseDist, minDist)",
+    "math": "\\( e_{\\text{lin}} = d^{*} - d_{\\text{PID}} \\)",
+    "text": "Consumer — L102, পরের Part। Argument order (target, current); snap থাকলে দুটো সমান, তাই error শূন্য এবং linear.x = 0। SinglePID-এর sign convention এই folder-এ নেই — inferred।"
+   }
+  ],
+  "failure": [
+   "Snap মুছে দিলে বা 0.1-এর জায়গায় 0 বসালে: 0.55 m-এর গা-ঘেঁষে থাকা অবস্থাতেও প্রতি scan-এর ছোট noise linear.x-এর চিহ্ন ঘুরিয়ে দেয় — চাকা সামনে-পিছনে twitch করতে থাকে, chassis দুলে, motor chatter-এ গরম হয়; L95-এর comment যে <code>jitter back and forth</code> আটকাতে চেয়েছিল সেই কাঁপুনিই ফিরে আসে।",
+   "0.1-কে অকারণে বড় করলে (যেমন 0.3): robot 0.25 m থেকে 0.85 m-এর যেকোনো বিন্দুতে থেমে নিজেকে 'locked' ভেবে বসে থাকে — সামনের object থেকে চোখে দেখা দূরত্ব হলেও আর কাছে আসে না, following আচরণ নষ্ট।",
+   "মাপা দূরত্ব ঠিক 0.45 বা ঠিক 0.65 হলে snap পাওয়া যায় না (0.10 টা <code>&lt; 0.1</code> পূরণ করে না) — band-এর ঠিক কিনারায় deadzone নীরবে উঠে যায়, সেখানে আবার ছোট error-এর jitter-ই নিয়ন্ত্রণ করে।",
+   "<code>ResponseDist</code> runtime-এ বদলালে band তার সাথে সরে যায় (যেমন 0.80 হলে [0.70, 0.90]) কিন্তু প্রস্থ 0.1-ই থাকে, কারণ সেটা hard-coded — ছোট stand-off-এ band আপেক্ষিকভাবে মোটা, বড় stand-off-এ পাতলা দেখাবে; আলাদা করে টিউন করার রাস্তা source edit ছাড়া নেই।"
+  ]
+ },
+ "robot": {
+  "correct": "Wave C (illustrative): object 0.58 m সোজা সামনে। L96 minDist-কে 0.55 বসিয়ে দেয়, তাই L102-এর linear PID শূন্য error পায় — linear.x = 0, চাকা সামনে-পিছনে হেলে না, motor শান্ত, robot stand-off-এ দাঁড়িয়ে থাকে। LiDAR প্রতি scan-এ মাপতেই থাকে আর console-এ প্রতি scan-ে <code>minDist: 0.58</code> ছাপা হতে থাকে (print snap-এর আগে) — অথচ চাকা নড়ে না। মাপার সামান্য ওঠানামা এই band-এ গিলে যায়: দূরত্ব 0.50-এ নাকি 0.60-এ, PID-এর কাছে এক। Band-এর বাইরে (illustrative Wave A: 0.90 m) snap হয় না, কাঁচা মানই PID-এ যায়, robot এগিয়ে ব্যবধান কমায় যতক্ষণ না 0.65-এর নিচে নামে।",
+  "incorrect": "Deadzone না থাকলে বা band শূন্য করলে: 0.55 m লক্ষ্যের কাছে দাঁড়ানো অবস্থায় প্রতি scan-এ মাপা দূরত্ব 0.54/0.56 এদিক-ওদিক কাঁপে (illustrative noise) — linear PID-এর error-এর চিহ্ন বদলায়, linear.x এক scan-এ ধনাত্মক, পরেরটায় ঋণাত্মক, চাকা সামনে-পিছনে কাঁপতে থাকে; L95-এর comment-এর ভাষায় jitter, motor-এর দিক থেকে chatter আর অপচয়। উল্টো দিকে 0.1-কে অতিরিক্ত বড় করলে (যেমন 0.3) robot object থেকে 0.25 m দূরেও এসে থেমে যেতে পারে — 'locked' বিশ্বাসে স্পষ্ট off-target দাঁড়িয়ে থাকবে, আর কাছে আসার আদেশ পাঠাবে না। আরেকটা পাঠ-ভুল: console-এ <code>minDist: 0.58</code> দেখে ভাবা যে PID-ও 0.58 পাচ্ছে — আসলে সে পাচ্ছে 0.55, তাই console-এর সংখ্যা দিয়ে আগে থেকে linear.x হিসাব করলে মিথ্যা ভবিষ্যদ্বাণী হবে।"
+ },
+ "animType": null
+}

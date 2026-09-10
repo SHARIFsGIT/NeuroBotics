@@ -1,0 +1,128 @@
+{
+  "n": 13,
+  "id": "part-13",
+  "fname": "laser_Tracker.py",
+  "lang": "python",
+  "enTitle": "Dual PID — Approach & Centering",
+  "start": 97,
+  "end": 114,
+  "flags": [],
+  "explain": [
+    {
+      "a": 97,
+      "b": 99,
+      "text": "L96-এর deadzone snap-এর পরে registerScan-এর এই অংশটা linear PID block। L97 শুধু একটা blank line — দুই ধাপের মাঝে পড়ার ফাঁক, কোনো code নেই। L98-99-এর comment দুটি input পরিষ্কার করে দিচ্ছে: <code>We feed it our Target (0.55m) and our Current Distance (minDist)</code> — target মানে <code>self.ResponseDist</code> (L39-এ declare করা 0.55 m stand-off), current মানে <code>minDist</code> (L77-এ পাওয়া front cone-এর closest beam-এর দূরত্ব)। প্রতিটা /scan message-এ এই জোড়া নতুন করে তৈরি হয়, কারণ এই পুরো function-টা per-scan callback (L56)।"
+    },
+    {
+      "a": 100,
+      "b": 101,
+      "text": "এই দুই লাইনের comment-টাই file-এর সবচেয়ে সূক্ষ্ম sign-প্রশ্নটা তোলে: <code>The negative sign is because if we are too far away, the error is positive, but we need a positive forward speed to drive toward it</code>। অর্থাৎ comment-এর দাবি — দূরে থাকলে error positive। কিন্তু পরের লাইনের call order যদি হয় (target, current) আর SinglePID-এর ভেতরে error = first - second হয়, তাহলে দূরে থাকলে (minDist বড়) error দাঁড়ায় negative — comment-এর এই দাবির সঙ্গে ওই convention পরিষ্কারভাবে খাটে না। মনে রাখো: vendor-এর SinglePID source এই folder-এ নেই (L12-এর star-import যে module থেকে এসেছে সেটা বাইরের), তাই ভেতরের sign এই file থেকে প্রমাণ করা যায় না — নিচের direction-উপসংহার comment-এর intent থেকে inferred।"
+    },
+    {
+      "a": 102,
+      "b": 102,
+      "text": "Linear channel-এর মূল লাইন: <code>velocity.linear.x = -self.lin_pid.pid_compute(self.ResponseDist, minDist)</code>। Call-এর order as written হলো (target, current); controller-টা L47-এর <code>SinglePID(1.0, 0.0, 1.0)</code>। Kp-term view-এ pid প্রায় 1×(0.55 - minDist), আর সামনের minus sign-টা সেটাকে উল্টে দেয়: linear.x ≈ minDist - 0.55। সুতরাং দূরের object (minDist &gt; 0.55) মানে positive linear.x — সামনে এগোনো (approach); কাছের object মানে negative — পিছিয়ে সরা; L96-এর snap-এ minDist = 0.55 হয়ে গেলে ফল শূন্য। আর একটা জিনিস — এখানে কোনো clamp নেই: L33-এর <code>self.linear</code> (declared 0.5) পুরো file-এ আর কোথাও পড়াই হয় না, তাই error যত বড়, output-ও তত বড় হয়ে সোজা <code>/cmd_vel</code>-এ চলে যায়।"
+    },
+    {
+      "a": 103,
+      "b": 106,
+      "text": "L103 blank; এরপর angular PID block-এর comment। L104-105 বলছে <code>We feed it our Target Angle (0 degrees = straight ahead) and the Current Angle (minDistID)</code> — কিন্তু পরের লাইনের actual call এই বর্ণনা মানে না: সেখানে first argument হয় <code>abs(minDistID) / 72</code>, second হয় <code>0</code> — অর্থাৎ normalized |angle| target হিসেবে যায়, 0 current হিসেবে। L106-এর ব্যাখ্যা: <code>Dividing by 72 just scales the angle down to a number the PID likes</code> — 72 সম্পর্কে file-এর এই এক লাইনটুকুই আছে; কেন ঠিক 72, তা কোথাও বলা নেই। এটা একটা bare magic number — এর অর্থ শুধু observable effect থেকেই বোঝা যায় (পরের item-এ)।"
+    },
+    {
+      "a": 107,
+      "b": 107,
+      "text": "Angular channel-এর মূল লাইন: <code>ang_pid_compute = self.ang_pid.pid_compute(abs(minDistID) / 72, 0)</code>। <code>abs()</code> কোণের sign ফেলে দেয় — হিসাব হয় শুধু magnitude-এর, direction নয়; direction পরের if/elif ফিরিয়ে দেবে। Controller-টা L49-এর <code>SinglePID(2.0, 0.0, 2.0)</code>। Observable effect: L70-এর strict <code>&lt;</code>-এর কারণে cone-এর ভেতরে max |minDistID| কখনো 45.0 হয় না — সবে মাত্র নিচে; ফলে PID-এর কাছে যাওয়া target-এর সর্বোচ্চও সবে মাত্র 45/72 = 0.625-এর নিচে। 72-এর মান বদলালে ঠিক এই scale-টাই বদলে যায় — আর কিছু না; কেন 72, সেটা file কিছু বলে না।"
+    },
+    {
+      "a": 108,
+      "b": 111,
+      "text": "L108 blank; L109-এর comment নীতিটা বলে দেয়: object বাঁয়ে থাকলে (positive angle) বাঁ দিকে ঘুরতে হবে। Fused ring-এ কোণ ডিগ্রিতে মাপা (L67), positive মানে front থেকে বাঁ-দিক (CCW)। L110-111: <code>if 0 &lt; minDistID :</code> হলে <code>velocity.angular.z = ang_pid_compute</code> — ROS convention-এ positive angular.z মানে CCW বাঁ ঘোরা, তাই বাঁয়ের object-এর জন্য z = +ang_pid_compute। L107-এর <code>abs()</code>-এ হারিয়ে যাওয়া sign-টাই এই branch হাতে করে আবার লাগানো হচ্ছে।"
+    },
+    {
+      "a": 112,
+      "b": 114,
+      "text": "ডান পাশের শাখা: <code>elif minDistID &lt; 0:</code> হলে <code>velocity.angular.z = -ang_pid_compute</code> — negative angle মানে object ডানে, তখন z negative (CW) হয়, robot ডান দিকে ঘোরে। আর তৃতীয় সম্ভাবনাটা দুই branch-এর ফাঁকে: minDistID ঠিক 0.0 হলে (object একদম সোজা সামনে) কোনো শাখাই চলে না — <code>velocity.angular.z</code> L90-এ বানানো <code>Twist()</code>-এর default 0.0-ই থাকে। ঘোরার কোনো command যায় না, যা এই অবস্থায় ঠিকও বটে।"
+    }
+  ],
+  "math": {
+    "intro": "এই Part-এর গণিত দুটো প্রশ্নের উত্তর দেয়: দূরত্বের error কীভাবে L102-এর minus sign-এর ভেতর দিয়ে একটা signed linear.x হয়ে দাঁড়ায়, আর কোণটা কীভাবে abs(), 72 ভাগ আর if/elif sign branch মিলে angular.z বানায়।",
+    "levels": [
+      {
+        "label": "Level 1 — Symbols ও units",
+        "latex": "\\[ d^{*} = 0.55\\ \\mathrm{m},\\quad d = \\text{minDist},\\quad \\alpha = \\text{minDistID}\\ (\\text{deg}),\\quad s = \\frac{|\\alpha|}{72} \\]",
+        "text": "d* হলো target stand-off — <code>self.ResponseDist</code> (L39), unit মিটার। d হলো front cone-এর closest beam-এর দূরত্ব (L77)। α হলো সেই beam-এর কোণ, ডিগ্রিতে (L79)। s হলো 72 দিয়ে ভাগ করা normalized কোণ — dimensionless। Gains: <code>lin_pid</code> = (Kp, Ki, Kd) = (1, 0, 1) (L47), <code>ang_pid</code> = (2, 0, 2) (L49)। SinglePID-এর ভেতরের সূত্র inferred — vendor source এই folder-এ নেই।"
+      },
+      {
+        "label": "Level 2 — PID-এর মৌলিক সম্পর্ক",
+        "latex": "\\[ u = K_p\\,e + K_i \\int e\\,dt + K_d\\,\\dot{e} \\]",
+        "text": "সাধারণ PID-এর output। দুই controller-এই Ki = 0, তাই integral term নেই; steady দৃশ্যে u ≈ Kp·e। error-এর সংজ্ঞা এই file-এর call order থেকে আসে: <code>pid_compute(first, second)</code> মানে e = first - second (target - current) — এই internal convention-টা inferred, কারণ SinglePID-এর code আমাদের হাতে নেই। Kd-র ভূমিকা শুধু প্রথম call-এর transient-এ দেখা যায় (illustrative)।"
+      },
+      {
+        "label": "Level 3 — Linear channel-এর sign algebra",
+        "latex": "\\[ e_{lin} = d^{*} - d,\\qquad x = -u_{lin} \\approx -K_p\\,(d^{*} - d) = K_p\\,(d - d^{*}) \\]",
+        "text": "L102-এর সামনের minus sign-টা distribute করলে Kp-view-এ linear.x ≈ Kp(d - d*)। দূরে (d &gt; d*) হলে x &gt; 0: সামনে এগোনো। কাছে (d &lt; d*) হলে x &lt; 0: পিছিয়ে সরা। L96-এর deadzone snap d-কে d* বানিয়ে দিলে x = 0। L100-101-এর comment দাবি করে error positive-when-far — (target, current) convention-এ সেই দাবি পরিষ্কারভাবে খাটে না; approach-দিকনির্ণয় comment-এর intent থেকে inferred।"
+      },
+      {
+        "label": "Level 4 — /72 normalization ও কোণের সীমা",
+        "latex": "\\[ e_{ang} = \\frac{|\\alpha|}{72} - 0 = s,\\qquad |\\alpha| \\lt 45 \\;\\Rightarrow\\; 0 \\le s \\lt \\frac{45}{72} = 0.625,\\qquad u_{ang} \\approx 2s = \\frac{|\\alpha|}{36} \\]",
+        "text": "L70-এর strict <code>&lt;</code>-এর কারণে cone-এর ভেতরের কোণ কখনো 45.0 হয় না — সবে নিচে। তাই s-এর সর্বোচ্চ সবে মাত্র 0.625-এর নিচে: PID-এর কাছে যাওয়া target-এর ছাদ এটাই। Kp = 2 হলে u_ang ≈ |α|/36। 72 কেন ঠিক 72 — file কোথাও ব্যাখ্যা করে না; এটা bare magic number, শুধু এই observable effect-টুকুই বলা যায়।"
+      },
+      {
+        "label": "Level 5 — Sign re-attach: piecewise angular.z",
+        "latex": "\\[ z = \\begin{cases} +u_{ang}, & \\alpha \\gt 0\\ \\text{(left, CCW)} \\\\ 0, & \\alpha = 0 \\\\ -u_{ang}, & \\alpha \\lt 0\\ \\text{(right, CW)} \\end{cases} \\]",
+        "text": "L107-এর <code>abs()</code> direction-এর তথ্য ফেলে দেয়; L110-114-এর if/elif সেই direction ফিরিয়ে আনে। α ঠিক 0.0 হলে কোনো শাখাই চলে না — z, <code>Twist()</code>-এর default 0.0-ই থাকে (L90)। ROS convention: positive z মানে CCW বাঁ ঘোরা, negative z মানে CW ডান ঘোরা।"
+      },
+      {
+        "label": "Level 6 — Magnitude envelope ও declared limit",
+        "latex": "\\[ x \\approx d - d^{*}\\ (K_p = 1),\\qquad x \\gt 0.5 \\iff d \\gt 1.05\\ \\mathrm{m};\\qquad |z| \\approx 0.6 \\cdot \\frac{|\\alpha|}{36} = \\frac{|\\alpha|}{60} \\]",
+        "text": "L102-এ clamp নেই এবং <code>self.linear</code> (declared 0.5, L33) কোথাও পড়া হয় না: d = 1.6 m হলে Kp-view x ≈ +1.05 m/s — declared max-এর দ্বিগুণের বেশি। Angular দিকে এই part-এর output পরে L117-এর turn deadzone (u_ang &lt; 0.5 হলে z = 0, মানে Kp-term view-এ |α| &lt; 18°, illustrative) আর L120-এর 60% damping ছুঁয়ে যায় — তাই চূড়ান্ত |z| ≈ |α|/60।"
+      }
+    ],
+    "numeric": [
+      {
+        "latex": "\\[ e_{lin} = 0.55 - 0.90 = -0.35\\ \\mathrm{m},\\qquad u_{lin} \\approx 1 \\times (-0.35) = -0.35,\\qquad x = -u_{lin} = +0.35\\ \\mathrm{m/s} \\]",
+        "text": "Wave A (illustrative): সামনের pillar 0.90 m, +12°। Deadzone snap হয় না (|0.90 - 0.55| = 0.35 ≥ 0.1)। Kp-term view-এ linear.x = +0.35 m/s — মানে approach; প্রথম call-এ Kp আর Kd মিলে same-sign একটা transient যোগ করতে পারে (illustrative)।"
+      },
+      {
+        "latex": "\\[ s = \\frac{12}{72} = 0.1667,\\qquad u_{ang} \\approx 2 \\times 0.1667 = 0.333 \\lt 0.5 \\Rightarrow z = 0 \\]",
+        "text": "Wave A-র কোণ দিয়ে (illustrative): 12° error এখনো ছোট — L117-এর turn deadzone 0.333-কে ধরে ফেলে, তাই z = 0। এই ধাপে robot শুধু দূরত্ব কমায়, ঘোরে না।"
+      },
+      {
+        "latex": "\\[ e_{lin} = 0.55 - 0.70 = -0.15 \\Rightarrow x \\approx +0.15,\\qquad u_{ang} \\approx 2 \\times \\frac{20}{72} = 0.556 \\ge 0.5 \\Rightarrow z = 0.556 \\times 0.6 \\approx +0.33\\ \\mathrm{rad/s} \\]",
+        "text": "Wave B (illustrative): 0.70 m, +20° — দুই output-ই nonzero: সামনে +0.15 m/s, আর L120-এর 60% damping-এর পরে বাঁ দিকে (CCW) প্রায় +0.33 rad/s। Console-এ L91-92-এর minDist/minDistID আর L122-এর angular.z ছাপা হবে।"
+      }
+    ],
+    "mapping": [
+      {
+        "code": "-self.lin_pid.pid_compute(self.ResponseDist, minDist)",
+        "math": "\\( x = -K_p\\,(d^{*} - d) = K_p\\,(d - d^{*}) \\)",
+        "text": "Call order as written: (target, current)। Kp-view-এ minus sign-টা error উল্টে দেয় — দূরের object মানে positive linear.x = approach। Direction-উপসংহার inferred: vendor SinglePID source এই folder-এ নেই; L100-101-এর comment ঠিক এই intent-ই দাবি করে।"
+      },
+      {
+        "code": "self.ang_pid.pid_compute(abs(minDistID) / 72, 0)",
+        "math": "\\( e_{ang} = \\frac{|\\alpha|}{72} - 0 = s \\)",
+        "text": "First argument = normalized |angle| (target), second = 0 (current)। 72 একটা bare magic number — file এর কারণ ব্যাখ্যা করে না; observable effect: max |angle| সবে 45-এর নিচে হলে target সবে 0.625-এর নিচে।"
+      },
+      {
+        "code": "if 0 &lt; minDistID : velocity.angular.z = ang_pid_compute",
+        "math": "\\( \\alpha \\gt 0 \\Rightarrow z = +u_{ang} \\)",
+        "text": "বাঁয়ের object: positive degree মানে front থেকে CCW দিক, আর positive z মানে ROS convention-এ বাঁ ঘোরা — <code>abs()</code>-এ হারানো sign এই branch-এ ফিরে আসে।"
+      },
+      {
+        "code": "elif minDistID &lt; 0: velocity.angular.z = -ang_pid_compute",
+        "math": "\\( \\alpha \\lt 0 \\Rightarrow z = -u_{ang};\\ \\alpha = 0 \\Rightarrow z = 0 \\)",
+        "text": "ডানের object-এর জন্য sign উল্টো হয় (CW ডান ঘোরা)। আর α ঠিক 0.0 হলে কোনো branch-ই চলে না — z, <code>Twist()</code>-এর default 0.0-ই থাকে।"
+      }
+    ],
+    "failure": [
+      "SinglePID-এর internal error-sign যদি উল্টো হয়, বা কেউ L102-এর সামনের minus তুলে দিয়ে comment-এর কথামতো 'ঠিক' করে ফেলে — দূরের object-এ linear.x negative হয়ে যাবে: wheel-রা উল্টো ঘুরবে, robot লক্ষ্য ছেড়ে পিছু হটবে, object যত দূরে তত জোরে পিছিয়ে যাবে। এই দিকনির্ণয় inferred — vendor source এই folder-এ নেই।",
+      "72-এর জায়গায় ভুল সংখ্যা বসালে responsiveness নীরবে বদলে যায়: 36 করলে target-এর ছাদ দাঁড়ায় প্রায় 1.25 এবং L117-এর deadzone threshold কোণ 18° থেকে নেমে আসে 9°-এ (Kp-term view, illustrative) — ছোট বিচ্যুতিতেই robot ঘুরতে শুরু করবে; উল্টো দিকে 144 করলে threshold ওঠে 36°-এ — বড় বিচ্যুতি পর্যন্ত সোজা থাকবে। File 72-এর কারণ বলে না, তাই এই tuning ভাঙলে ধরাও কঠিন।",
+      "L102-এ কোনো clamp নেই এবং declared <code>self.linear</code> = 0.5 (L33) কোথাও পড়া হয় না: 1.6 m দূরের object মানে Kp-view linear.x ≈ +1.05 m/s (illustrative) — declared max-এর দ্বিগুণের বেশি command সরাসরি /cmd_vel-এ যাবে, robot হঠাৎ লাফিয়ে এগোবে।"
+    ]
+  },
+  "robot": {
+    "correct": "লেখা অবস্থায় চালালে (illustrative Wave A থেকে Wave B): lidar-এর fused /scan-এ সামনের closest object ধরা পড়ে, 0.90 m দূরে থাকলে দুই wheel-ই সামনে ঘুরে robot প্রায় +0.35 m/s এগোয় — 12° বিচ্যুতি এখনো turn deadzone-এর ভেতরে, তাই ঘূর্ণন শূন্য। Object 0.70 m আর +20°-এ গেলে ডান wheel দ্রুত ও বাঁ wheel ধীর হয়ে robot বাঁ দিকে (CCW) প্রায় +0.33 rad/s ঘুরতে শুরু করে। Console-এ প্রতি scan-এ minDist, minDistID আর (L122-এ) angular.z ছাপা হতে থাকে; লক্ষ্য 0.55 m stand-off-এ object-কে সামনে রেখে আটকে থাকা।",
+    "incorrect": "Sign-এর সিদ্ধান্ত উল্টো হলে (vendor internal উল্টো, বা L102-এর minus তুলে দিলে) দূরের object দেখে wheel-রা পেছনে ঘুরবে — robot object থেকে দূরে সরে যাবে, /cmd_vel-এ negative linear.x যাবে, console-এ minDist বাড়তেই থাকবে। Clamp না থাকায় বড় error-এ (যেমন 1.6 m, illustrative) wheel-রা declared 0.5 m/s-এর বদলে প্রায় +1.05 m/s command পাবে — প্রথম দর্শনেই robot লাফিয়ে এগোবে। আর 72-এর ভুল মান হলে ছোট কোণেও ঘুরবে বা বড় কোণেও সোজা থাকবে — tracking আলগা হয়ে object cone-এর ধারে হারিয়ে যাবে।"
+  },
+  "animType": "pidDial"
+}

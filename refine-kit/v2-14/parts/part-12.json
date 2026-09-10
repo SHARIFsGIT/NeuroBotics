@@ -1,0 +1,172 @@
+{
+ "n": 12,
+ "id": "part-12",
+ "fname": "follow_line.py",
+ "enTitle": "Mouse ROI & the Steering Brain",
+ "lang": "python",
+ "start": 232,
+ "end": 290,
+ "flags": [],
+ "explain": [
+  {
+   "a": 232,
+   "b": 236,
+   "text": "<code>def onMouse(self, event, x, y, flags, param):</code> — OpenCV-র mouse callback, যার নাম process-এর L304-এ <code>cv.setMouseCallback(self.windows_name, self.onMouse, 0)</code> দিয়ে 'frame' window-র সঙ্গে বাঁধা হয় (শুধু 'init' state-এ, L302-303)। mouse-এর প্রতিটা ঘটনায় OpenCV এই method-কে ডেকে দেয়: event-এ ঘটনার নম্বর, x আর y-তে তখনকার cursor অবস্থান। <code>if event == 1:</code> — মান 1 মানে বাঁ বোতাম নামা (OpenCV-র EVENT_LBUTTONDOWN নাম-ধ্রুবকের সংখ্যা; নাম-মানগুলো vendor সংজ্ঞা — illustrative)। নামামাত্র তিনটা কাজ: <code>self.Track_state = 'init'</code> state machine-কে ROI-আঁকা মোডে ফেলা, <code>self.select_flags = True</code> দিয়ে drag শুরুর নিশান টানা, আর <code>self.Mouse_XY = (x,y)</code> — anchor বিন্দু জমানো (source-এ কমার পরে কোনো ফাঁক নেই, যেমন আছে তেমনই)। নিচের তিনটা if পাশাপাশি, elif নয় — এক mouse event একাধিক শর্তেই ঢুকতে পারে।"
+  },
+  {
+   "a": 237,
+   "b": 239,
+   "text": "<code>if event == 4:</code> — মান 4 মানে বাঁ বোতাম ছাড়া (EVENT_LBUTTONUP)। drag শেষ: <code>self.select_flags = False</code> দিয়ে পরের অংশের live-আপডেট শর্তটা বন্ধ, আর <code>self.Track_state = 'mouse'</code> — নতুন এক state, যার নাম process-এর কোনো নির্দিষ্ট elif-শাখার সঙ্গেই সরাসরি মেলে না। ফল: L319-এর বড় শর্ত <code>if self.Track_state != 'init' and len(self.hsv_range) != 0:</code> সত্য হয়ে গিয়ে mask বানানো চলতে থাকে (L320), কিন্তু L334-এর 'tracking' শাখা না খোলা পর্যন্ত কোনো execute thread ওড়ে না। মানে ROI আঁকা শেষ হলেই robot চলতে শুরু করে না — 'mouse' হলো mask দেখে যাচাই করার স্থবির state; চালু হবে SPACE (action 32) কিংবা L167-170-এর 3-second auto-arm 'tracking'-এ নামলে।"
+  },
+  {
+   "a": 240,
+   "b": 243,
+   "text": "বোতাম চাপা থাকা অবস্থায় প্রতিটা mouse-move event-এ এই অংশ চলে: <code>if self.select_flags == True:</code> — মানে ব্যবহারকারী এখনো টেনে যাচ্ছেন। <code>self.cols = min(self.Mouse_XY[0], x), min(self.Mouse_XY[1], y)</code> জমা দেয় (ছোট x, ছোট y) কোণা-জোড়া, আর <code>self.rows = max(self.Mouse_XY[0], x), max(self.Mouse_XY[1], y)</code> (বড় x, বড় y) — তারপর <code>self.Roi_init = (self.cols[0], self.cols[1], self.rows[0], self.rows[1])</code> চার-সংখ্যার tuple (x0, y0, x1, y1) বানায়। min/max জোড়ার কাজ দিক-নির্বিশেষে আয়ত সোজা করা: ডান-নিচ থেকে বাঁ-উপরে উল্টো টানলেও বাক্স একই হয়। নাম দুটো সামান্য বিভ্রান্তিকর — cols-এ শুধু column নয়, y-ও আছে; ব্যবহার অনুযায়ী এরা বাঁ-উপর আর ডান-নিচ কোণা, আর process-এর L306-307 ঠিক এই জোড়া দিয়েই নীল রেখা আর সবুজ আয়ত আঁকে।"
+  },
+  {
+   "a": 244,
+   "b": 246,
+   "text": "L244 ফাঁকা; তারপর <code>def execute(self, point_x, color_radius):</code> — এই Part-এর দ্বিতীয় মস্তিষ্ক, steering brain। ডাক আসে process-এর L336 থেকে: <code>threading.Thread(target=self.execute, args=(self.circle[0], self.circle[2])).start()</code> — প্রতিটা tracking frame-এ একটা নতুন thread তৈরি করে execute চালু করা হয় (প্রতি frame-এ নতুন thread — FACTS §9.8-এ নথিভুক্ত source-বৈশিষ্ট্য)। argument দুটো আসে vendor line_follow-এর ফেরত circle = (cx, cy, r) থেকে: point_x হলো লাল রেখার centroid-এর x, color_radius সেই অঞ্চলের আকার-জাতীয় মাপ। এই app-এ (folder 14) এই driving-ই gmapping-কে ঘুরে ঘুরে map বানানোর চলার-খাবার জোগায় — keyboard teleop-এর বিকল্প হাত। L246 ফাঁকা।"
+  },
+  {
+   "a": 247,
+   "b": 251,
+   "text": "<code>if self.Joy_active == True:</code> — joystick-এর হাত। /JoyState topic-এর Bool (L38 আর L40-এ একই subscription দুবার তৈরি — FACTS §9.4) JoyStateCallback-এ এই পতাকা বসায়। True হলে প্রথম কাজ <code>if self.Start_state == True:</code> দেখা: pause-এর প্রথম frame-এ <code>self.PID_init()</code> — L220-230-এর controller দুটো নতুন করে তৈরি — আর <code>self.Start_state = False</code>, যাতে pause চলাকালীন পরের frame-গুলো আর বারবার PID বানাতে না বসে। তারপর <code>return</code> — এই frame-এ আর কিছু নেই: কোনো হিসাব নেই, কোনো publish নেই। joystick ধরলেই following থেমে থাকে, ছেড়ে দিলে পরের frame L252-এ নেমে আবার চালু — কিন্তু PID তখন টাটকা: pause-এর প্রতিটা episode-তে controller-এর আগের জমা (vendor simplePID-র ভেতরের, illustrative) মুছে যায়।"
+  },
+  {
+   "a": 252,
+   "b": 253,
+   "text": "<code>self.Start_state = True</code> — normal পথে flag-টা ফের উঠে যায়, যাতে পরের joystick-pause-এর প্রথম frame আবার PID_init চালাতে পারে; process-এর L338-340-ও এই flag নামায় (tracking-এ circle খালি হলে), তাই দুই জায়গা মিলে এর জীবন ঘোরে। এরপর প্রথম বড় যাচাই: <code>if color_radius == 0: </code> — L253-এর শেষে source-এর নিজের একটা extra space আছে, যেমন আছে তেমনই রেখে পড়া হচ্ছে। শর্ত সত্য মানে vendor line_follow এই frame-এ রেখার মতো পর্যাপ্ত লাল অঞ্চলই পায়নি — লাল line দৃশ্যমান নেই। লক্ষণীয় তথ্য: color_radius execute-এর ভেতরে আর কোথাও খরচই হয় না — পুরো কাজ এই শূন্য-যাচাইটুকুই।"
+  },
+  {
+   "a": 254,
+   "b": 255,
+   "text": "দুই line-এ line-হারানোর সম্পূর্ণ প্রতিক্রিয়া। আগে <code>print(\"Not Found\")</code> — terminal-এ প্রতিটা এমন frame-এ এক line ছাপা পড়ে। তারপর <code>self.largemodel_arm_done_pub.publish( String(data='follow_line_clear_future_done'))</code> — L50-এ বানানো /action_feedback publisher-এ (String টাইপ) একটা নির্দিষ্ট বার্তা: follow_line_clear_future_done। এটা এই node-কে ডেকে রাখা upstream state machine-কে জানানোর নিয়ত সংকেত — ভাবটা 'আমার following-দায়িত্বের ভবিষ্যৎ-তালিকা পরিষ্কার, পরের সিদ্ধান্ত তোমার'। publisher-এর নামটাই (largemodel_arm_done_pub) বলে দেয় এই node একটা বড় স্বয়ংক্রিয় প্রক্রিয়ার এক অংশ হিসেবে বসানো।"
+  },
+  {
+   "a": 256,
+   "b": 257,
+   "text": "L256 ফাঁকা; তারপর <code>self.pub_cmdVel.publish(Twist())</code> — খালি Twist মানে সব field শূন্য: linear শূন্য, angular শূন্য। /cmd_vel-এ এই শূন্য-বার্তা গেলে চালক-স্তর robot-কে পুরোপুরি থামিয়ে দেয়। থামাটা 'একবারের' নয় — line না ফিরলে প্রতিটা tracking frame নতুন thread-এ এসে আবার একই শূন্য publish করবে, তাই থামা ধরে থাকে; লাল রেখা ফিরলেই else-শাখার স্বাভাবিক হিসাব আবার শুরু।"
+  },
+  {
+   "a": 258,
+   "b": 260,
+   "text": "<code>else:</code> — line পাওয়া গেছে, এবার চালানোর পালা। দুটো খালি বার্তা-বাক্স প্রস্তুত: <code>twist = Twist()</code> (/cmd_vel-এর টাইপ, এখন সব field 0) আর <code>b = UInt16()</code> (/beep-এর টাইপ — L36-এর buzzer publisher-এর সঙ্গী; constructor খুললেই মান 0, মানে বাজনা-বন্ধ অবস্থা)। এরপরের কয়েকটা line twist-এর ভেতর ভরবে হিসাব-করা মান, আর b-এর ভাগ আসবে সামনে বাধা আছে কি না তার উপর।"
+  },
+  {
+   "a": 261,
+   "b": 262,
+   "text": "চালানোর হৃদয়: <code>[z_Pid, _] = self.PID_controller.update([(point_x - 320)*1.0/16, 0])</code>। PID_controller এসেছে L221-225-এর PID_init থেকে: two-channel simplePID, লক্ষ্য [0, 0], লাভ Kp = 50/1000 = 0.05, Ki = 0, Kd = 10/1000 = 0.01। update-কে দেওয়া হচ্ছে ত্রুটি-জোড়া: প্রথম channel-এ <code>(point_x - 320)*1.0/16</code> — 640-pixel-চওড়া ছবির (L294-এর resize) কেন্দ্র 320 থেকে centroid-এর দূরত্ব, 16 দিয়ে ভাগ করা; দ্বিতীয় channel-এ সর্বদা 0, এই node সেটা কাজেই লাগায় না। ফেরত আসা দুই আউটপুটের প্রথমটা z_Pid-এ নেওয়া, দ্বিতীয়টা <code>_</code>-এ ফেলে দেওয়া — Python-এর 'আমার দরকার নেই' রীতি। simplePID নিজে follow_common থেকে wildcard-আমদানি (L11) — vendor code, ভেতরের হিসাব illustrative। L262-তে শুধু comment হয়ে থাকা পুরনো রূপ: <code>[(point_x - 10)*1.0/16, 0]</code> — এক সময়ের কেন্দ্র ছিল 10, এখন 320।"
+  },
+  {
+   "a": 263,
+   "b": 265,
+   "text": "দিক-নির্বাচক তিনটা line। <code>if self.img_flip == True: twist.angular.z = -z_Pid #-z_Pid</code> — img_flip পতাকা (শুরুর মান False, L96) বলে দেয় camera আয়নার মতো উল্টো বসানো কি না; সেই ক্ষেত্রে process-এর L296 ছবিটাকে cv.flip(1) দিয়ে উল্টে নেয়, আর এখানে ঘূর্ণনের চিহ্নও উল্টে যায়। স্বাভাবিক বসানো camera-য় <code>else: twist.angular.z = +z_Pid</code> — PID-র আউটপুট যেমন, তেমনই। মাঝের L264 শুধু comment: <code>#else: twist.angular.z = (twist.angular.z+z_Pid)*0.2</code> — পুরনো মানের সঙ্গে মিশিয়ে 0.2 গুণের এক বাতিল খসড়া। চিহ্নটাই আসল প্রশ্ন: line ডানে সরলে robot-কে ডানে ঘুরতে হবে কি বাঁয়ে — ভুল পথ বাছলে সংশোধন নয়, বিপরীত দুলুনি আসে।"
+  },
+  {
+   "a": 266,
+   "b": 268,
+   "text": "তিনটা line-এর দুটোই comment, তৃতীয়টা ফাঁকা — execute-এর প্রাচীন স্তর। L266 <code>#point_x = point_x</code> নিজেকেই নিজের মধ্যে বসানো — কার্যত কিছুই না, খসড়ার দাগ। L267 <code>#twist.angular.z=-(point_x-320)*1.0/128.0</code> ইতিহাসের সবচেয়ে মূল্যবান দাগ: PID বসানোর আগে লেখক সরাসরি proportional নিয়ন্ত্রণ চালাতেন — ত্রুটির 1/128 অংশ, চিহ্ন উল্টো — একটাই expression-এ সম্পূর্ণ স্টিয়ারিং। এখন সেই সূত্র মৃত, কাজটা PID_controller-এর হাতে; কিন্তু মন্তব্যটা বুঝিয়ে দেয় বর্তমান হিসাবের পূর্বপুরুষ কে ছিল। Python এগুলোর কিছুই চালায় না — শুধু পাঠকের জন্য রেখে দেওয়া।"
+  },
+  {
+   "a": 269,
+   "b": 270,
+   "text": "<code>twist.linear.x = 0.1</code> — সামনের গতি এই এক সংখ্যাই, আর তা hardcoded। declare_param-এর linear parameter-এর (মান 0.18, L213-214 — যেটা আবার L93-এর 0.2-কে মুছে বসেছিল) সঙ্গে এর কোনো যোগ নেই: self.linear এই function-এ পড়াই হয় না, drive-গতির জন্য parameter-টা কার্যত মৃত (FACTS §9.6) — মানে ros2 param দিয়ে linear বদলালেও follow-গতি বদলাবে না, বদলাতে হলে এই line-টাই বদলাতে হবে। এরপর থামার প্রহরী: <code>if self.front_warning > 10:</code> — front_warning সংখ্যাটা ভরে registerScan (L122-131): প্রতিটা /scan1 message-এ (কাঁচা single-lidar topic, এই folder-এর merged /scan নয়) সামনের 60° cone-এ (LaserAngle 60: |angle| < 30° বা > 330°) যে beam-গুলোর দূরত্ব 0-এর বেশি এবং 0.375 m-এর (ResponseDist 0.25-এর 1.5 গুণ) ভেতরে, তাদের গোনা হয়। 10-এর বেশি মানে 11 বা অধিক beam একসঙ্গে কাছে — সামনে সত্যিই কিছু আছে।"
+  },
+  {
+   "a": 271,
+   "b": 275,
+   "text": "বাধা ধরা পড়লে পাঁচটা line-এর প্রতিক্রিয়া। <code>print(\"Obstacles ahead !!!\")</code> — terminal-এ সতর্কবার্তা। <code>self.pub_cmdVel.publish(Twist())</code> — খেয়াল করো: publish হয় twist-কে নয়, একটা নতুন খালি Twist-কে; অর্থাৎ এই frame-এ 0.1 গতিও যাবে না, PID-র স্টিয়ারিং-ও নয় — শুধু থামা। <code>self.Buzzer_state = True</code> — পতাকা তোলা (পরে বাজনা বন্ধ করতে লাগবে)। <code>b.data = 1</code> — UInt16 বাক্সে বাজাও-সংকেত, আর <code>self.pub_Buzzer.publish(b)</code> — /beep-এ গিয়ে buzzer বেজে ওঠে। যত frame ধরে গণনাটা 10-এর উপরে থাকবে, তত frame এই সারি চলবে — robot দাঁড়িয়ে দাঁড়িয়ে বাজাতে থাকবে।"
+  },
+  {
+   "a": 276,
+   "b": 281,
+   "text": "<code>else:</code> — সামনে পরিষ্কার, চলন্ত পথ। প্রথম কাজ buzzer-এর হিসাব: <code>if self.Buzzer_state == True:</code> মানে আগে বাজছিল, এখন বন্ধ করতে হবে। <code>b.data = 0</code> করে <code>for i in range(3): self.pub_Buzzer.publish(b)</code> — বন্ধ-নির্দেশ একবারে নয়, পরপর তিনবার /beep-এ যায় (একটাই line-এ লেখা for-loop): একটা message কোথাও হারালেও বাকি দুটো বাজনা বন্ধ করে দেবে — এমন খুঁটিনাটি-জাতীয় নিরাপত্তা। শেষে <code>self.Buzzer_state = False</code> — পতাকা নামানো, যাতে পরের পরিষ্কার frame-গুলোতে আর অকারণ বন্ধ-বার্তা না যায়। L281 পুরোটা শুধু whitespace (16টা space, tab নয়) — source-এ যেমন আছে তেমনই দুই ভাবের মাঝের ফাঁকা দাগ।"
+  },
+  {
+   "a": 282,
+   "b": 284,
+   "text": "এবার স্টিয়ারিংয়ের শেষ ছাঁকনি: <code>if abs(point_x-320)&lt;40:</code> — centroid কেন্দ্রের 40 pixel-এর মধ্যে হলে <code>twist.angular.z=0.0</code> — PID যা-ই হিসাব করে থাক, তা মুছে সোজা হয়ে যাওয়া। কাজটা ছোট-দুলুনি দমনের: line প্রায় মাঝে থাকলে অল্প এদিক-ওদিক হওয়া স্বাভাবিক, প্রতিটাতে ঘুরালে robot সাপের মতো দুলত; 40-pixel সীমার ভেতরের নড়া উপেক্ষা করে চলা সোজা হয়। ক্রম মনে রাখো: L261-265 আগে z-এ মান বসায়, এই line পরে তা মুছে দেয় — শেষ লেখাই জেতে। L283 শুধু comment: <code>#if abs(point_x-30)&gt;40:</code> — আবারও পুরনো কেন্দ্র 10/30-এর দিনের খসড়া। আর শর্তটা কড়া 'কম' — ত্রুটি ঠিক 40 হলে 40 < 40 মিথ্যা, স্টিয়ারিং থাকে।"
+  },
+  {
+   "a": 285,
+   "b": 286,
+   "text": "<code>if self.Joy_active == False:</code> হলে <code>self.pub_cmdVel.publish(twist)</code> — joystick ধরা নেই মানে এটাই স্বাভাবিক সত্য শর্ত, তাই প্রতিটা tracking frame-এ ঠিক এই একটা line দিয়েই robot-এর আদেশ বেরোয়: linear.x 0.1, আর angular.z হয় PID-র মান, নয়তো deadzone-এর শূন্য। /cmd_vel-এ বার্তা যাওয়ার হার ঠিক frame-এর হার — প্রতিটা synced ছবিজোড়া এক thread, প্রতিটা thread এক publish। সারা execute-এ চাকার দিকে যাওয়া স্বাভাবিক আদেশ আর কোথাও নেই।"
+  },
+  {
+   "a": 287,
+   "b": 290,
+   "text": "<code>else:</code> — Joy_active True কল্পনা করে রাখা শাখা, কিন্তু দুই স্তরে মৃত। প্রথমত, L247-251 এমন অবস্থাতেই আগে return করে বেরিয়ে যায়, তাই নিয়ন্ত্রণ এখানে পৌঁছাতেই পারে না; দ্বিতীয়ত, ভেতরে <code>twist.angular.z=0.0</code> — একটা local চলকের ঘূর্ণন শূন্য করা হলো, কিন্তু কোনো publish নেই (FACTS §9.8): শূন্য করা twist কেউ পাঠায় না, চাকাও শোনে না। লেখক সম্ভবত 'joystick ধরা থাকলে ঘুরবে না' ভেবে লিখেছিলেন, কিন্তু থামানোর আসল কাজ উপরের return-ই করে। L289 আবার whitespace-only line, L290 ফাঁকা — execute-এর শেষ দাগ; তারপর L291-এ process শুরু।"
+  }
+ ],
+ "math": {
+  "intro": "execute-এর পুরো স্টিয়ারিং-হিসাব মোট চারটা সংখ্যার উপর দাঁড়িয়ে: কেন্দ্র 320, ভাগকারী 16, deadzone 40, আর থামার সীমা 0.375 m-এ 11+ beam। নিচের ধাপগুলোতে pixel-ত্রুটি থেকে rad/s পর্যন্ত পুরো স্রোতটা হিসাব করা হলো।",
+  "levels": [
+   {
+    "label": "Level 1 — Pixel-ত্রুটি ও চিহ্ন",
+    "latex": "\\[ e = x_c - 320, \\qquad x_c \\in [0, 640] \\]",
+    "text": "ছবি L294-এ 640x480 করে resize হয়, তাই জ্যামিতিক কেন্দ্র x = 320। point_x (centroid) কেন্দ্রের ডানে হলে e ধনাত্মক, বাঁয়ে হলে ঋণাত্মক — চিহ্নটাই পরে ঘূর্ণনের দিক ঠিক করবে। পুরো নিয়ন্ত্রণের একমাত্র ইনপুট এই এক সংখ্যা।"
+   },
+   {
+    "label": "Level 2 — PID input ও লাভ",
+    "latex": "\\[ u = \\frac{(x_c - 320) \\cdot 1.0}{16} = \\frac{e}{16}, \\qquad K_p = \\frac{50}{1000} = 0.05, \\quad z_{\\mathrm{PID}} \\approx K_p \\, u = \\frac{e}{320} \\]",
+    "text": "L261-এ ত্রুটিকে 16 দিয়ে ভাগ করে PID-কে দেওয়া হয়; লাভ আসে L223-এর হিসাব থেকে: FollowLinePID tuple-এর 50, scale 1000 দিয়ে ভাগ হয়ে Kp = 0.05। P-অংশ হিসেবে দুই ধাপ মিলে ফল অতি সরল: z = e/320 — অর্থাৎ প্রতি 320 pixel ত্রুটিতে 1 rad/s। Ki = 0, Kd = 10/1000 = 0.01; D-অংশ vendor simplePID-র ভেতরে কীভাবে খরচ হয়, তা illustrative।"
+   },
+   {
+    "label": "Level 3 — Deadzone",
+    "latex": "\\[ |e| < 40 \\;\\Rightarrow\\; \\omega_z = 0, \\qquad \\text{band} = \\frac{80}{640} = 12.5\\% \\]",
+    "text": "L282-284: কেন্দ্রের দুই পাশে 40 pixel পর্যন্ত ত্রুটিকে শূন্যই ধরা হয় — PID যা বলুক, L284 পরে চলে বলে তা-ই জেতে। মোট 80 pixel মানে ছবির পুরো প্রস্থের 12.5% এক 'সোজা চলার' অঞ্চল; এর ভেতরের কাঁপুনি চাকায় পৌঁছায়ই না।"
+   },
+   {
+    "label": "Level 4 — থামার জ্যামিতি",
+    "latex": "\\[ r_i \\le 0.375\\ \\mathrm{m}, \\quad |\\theta_i| < 30^{\\circ} \\ \\text{or}\\ |\\theta_i| > 330^{\\circ}, \\quad N > 10 \\;\\Rightarrow\\; v = 0,\\ \\mathrm{buzzer} = 1 \\]",
+    "text": "registerScan প্রতিটা /scan1 message-এ গুনে দেয় সামনের 60° cone-এ (|angle| < 30° বা > 330°) কত beam-এর দূরত্ব শূন্য নয় অথচ 0.25 x 1.5 = 0.375 m-এর ভেতরে; execute থামায় সেই গণনা 10 ছাড়ালেই — মানে কমপক্ষে 11টা beam একসঙ্গে কাছে। একটা নিঃসঙ্গ beam নয়, দলবদ্ধ সিদ্ধান্ত।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ e = 384 - 320 = 64, \\quad u = 64/16 = 4.0, \\quad z \\approx 0.05 \\times 4.0 = 0.2\\ \\mathrm{rad/s} \\]",
+    "text": "line-এর মাঝ কেন্দ্র থেকে 64 pixel (ছবির প্রস্থের 10%) ডানে হলে PID-র P-অংশ দাঁড়ায় প্রায় 0.2 rad/s; img_flip False হলে L265 সেটাই +0.2 করে বসায় — সামনের গতি 0.1 m/s থাকে অপরিবর্তিত। ত্রুটি দ্বিগুণ (128 pixel) হলে মোড়ও প্রায় দ্বিগুণ (0.4 rad/s) — P-নিয়ন্ত্রণের সরল সমানুপাত।"
+   },
+   {
+    "latex": "\\[ e = 32 \\Rightarrow u = 2.0,\\ z \\approx 0.1\\ \\mathrm{rad/s}; \\qquad |32| < 40 \\Rightarrow \\omega_z = 0 \\]",
+    "text": "দুই নিয়মের সংঘর্ষের বাস্তব উদাহরণ: PID বলছে 0.1 rad/s ঘোরো, কিন্তু 32 pixel ত্রুটি 40-এর সীমার ভেতরে, তাই L284 তা মুছে শূন্য করে দেয়। ক্রমই ভাগ্য নির্ধারক — PID-র বসানো আগে, deadzone-এর মোছা পরে। ত্রুটি 40 হলে 40 < 40 মিথ্যা, সে ক্ষেত্রে z থেকে যায় প্রায় 0.125 rad/s।"
+   },
+   {
+    "latex": "\\[ 0.25 \\times 1.5 = 0.375\\ \\mathrm{m}; \\quad N = 10: 10 > 10\\ \\text{false}; \\quad N = 11: 11 > 10\\ \\text{true} \\Rightarrow \\text{stop} \\]",
+    "text": "registerScan-এর সীমা ResponseDist 0.25-এর 1.5 গুণ = 0.375 m, আর execute-এর শর্ত কড়াভাবে 10-এর বেশি। সামনের cone-এ 10টা beam কাছে থাকলে robot চলতেই থাকে; 11টা হলেই থামা আর buzzer। কঠোর গণনা-শর্ত, দূরত্ব-শর্ত নয় — একটা beam একা কাছে এসে robot থামাতে পারে না।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "(point_x - 320)*1.0/16",
+    "math": "\\( u = (x_c - 320) \\cdot \\tfrac{1}{16} \\)",
+    "text": "L261-এর ভাগটাই PID-র খাবার। ভাগের আগের 1.0 গুণ Python 2 আমলের অভ্যেস — এখন / নিজেই float দেয়, ফল বদলায় না; 16-ই আসল স্কেল: 640-pixel প্রস্থকে PID-র কাজের মাপে নামিয়ে আনা।"
+   },
+   {
+    "code": "self.FollowLinePID[0] / 1.0 / (self.scale)",
+    "math": "\\( K_p = \\tfrac{50}{1000} = 0.05 \\)",
+    "text": "L223, PID_init-এর ভেতরে: FollowLinePID tuple (50, 0, 10)-এর প্রথম সংখ্যা scale 1000 দিয়ে ভাগ হয়ে আসল লাভ হয়। declare_param-এর Kp parameter 60 কখনো এই পথে আসে না — get_param এই file-এ ডাকাই হয় না।"
+   },
+   {
+    "code": "if abs(point_x-320)<40:",
+    "math": "\\( |x_c - 320| < 40 \\Rightarrow \\omega_z = 0 \\)",
+    "text": "L282: একই ত্রুটি-রাশি, দ্বিতীয় ব্যবহার — PID-র আউটপুটের উপর চূড়ান্ত নিষেধাজ্ঞা। L261 যেখানে ত্রুটিকে চালনায় পরিণত করে, এখানে ছোট ত্রুটিকে অস্বীকার করা হয়।"
+   },
+   {
+    "code": "if self.front_warning > 10:",
+    "math": "\\( N_{\\mathrm{beam}} \\ge 11 \\Rightarrow v = 0,\\ \\mathrm{buzzer} = 1 \\)",
+    "text": "L270: registerScan-এর গণনার সঙ্গে execute-এর থামার যোগ। যেহেতু সংখ্যা প্রতিটা scan message-এ শূন্য থেকে নতুন করে গোনা হয়, 11+ beam এক scan-জুড়ে ধরে রাখতে হয় — দুএকটা খন্ড রিডিং যথেষ্ট নয়।"
+   }
+  ],
+  "failure": [
+   "চিহ্ন উল্টালে সংশোধন নয়, পালানো হয়: img_flip False-এর camera-য় ভুল করে -z_Pid শাখা চালালে (বা উল্টো বসানো camera-য় +z_Pid) line ডানে সরলে robot বাঁয়ে ঘোরে — ত্রুটি বাড়ে, PID আরও জোরে ওই ভুল দিকে ঘোরায়, কয়েক frame-এর মধ্যে centroid 640-এর কিনারা ছুঁয়ে 'Not Found', আর সঙ্গে সঙ্গে পুরো থামা। লক্ষণ চেনা যায়: robot রেখা দেখেও তার থেকে মুখ ফিরিয়ে দৌড়ায়।",
+   "ধ্রুবকগুলো গুলিয়ে ফেলা বহুল: (১) থামার দূরত্ব 0.25 m ভাবা — আসলে যাচাই 0.25 x 1.5 = 0.375 m-এ, robot প্রত্যাশার চেয়ে আগেভাগে থামে; (২) একটা কাছের beam-ই থামাবে ভাবা — চাই-ই 11+ beam (>10), তাই সরু খুঁটি কাছে এসেও গণনা 10-এ আটকে থাকলে robot এগোতেই থাকে; (৩) L261-এর 16-এর ভাগ বাদ দিলে u = e হয়ে যায় — তখন Kp x e = 0.05 x 64 = 3.2 rad/s, ছবির এক-দশাংশ দূরত্বেই এমন অসম্ভব ঘূর্ণন-আদেশ যে robot জোরে এক পাশে ঘুরে রেখা হারিয়ে ফেলে।"
+  ]
+ },
+ "robot": {
+  "correct": "বাস্তব robot-এ execute চলে প্রতিটা tracking frame-এ একটা করে নতুন thread-এ (L336), আর এই app-এ (folder 14) সেই চলাই gmapping-এর map-এর খাবার জোগায়। লাল রেখা দৃশ্যমান থাকলে ফল একটাই: robot 0.1 m/s সমান গতিতে এগোয়, ঘূর্ণন PID-র হিসাবে — মাঝ থেকে 64 pixel দূরে হলে প্রায় 0.2 rad/s (P-অংশ), আর ঠিক মাঝের 40-pixel অঞ্চলে স্টিয়ারিং শূন্য, সোজা দৌড়। joystick-এর বোতাম ধরলে (/JoyState True) প্রতিটা frame নিঃশব্দে return করে — চলা তখন হাতের আদেশে — আর ছেড়ে দিলে প্রথম frame-এ PID টাটকা হয়ে following ফেরে। রেখা দৃশ্যের বাইরে গেলে terminal-এ 'Not Found', /action_feedback-এ follow_line_clear_future_done, আর শূন্য Twist-এ robot থেমে যায়। সামনের 60° cone-এ 11 বা বেশি beam 0.375 m-এর ভেতরে এলে (/scan1 — কাঁচা single-lidar, merged /scan নয়) 'Obstacles ahead !!!' ছাপা, চাকা শূন্য, buzzer বাজতে থাকে; পথ খুললে তিনবার বন্ধ-বার্তায় চুপ হয়। একটা জরুরি বাস্তব সত্য: linear parameter-এর 0.18 ros2 param দিয়ে বদলালেও follow-গতি বদলায় না — গতি এই file-এর L269-এ লেখা 0.1।",
+  "incorrect": "বহুল ভুল প্রত্যাশা চারটে। (১) 'linear parameter বদলে follow-গতি মেলে' — আসলে গতি L269-এ hardcoded 0.1; self.linear (0.18) drive-পথে পড়াই হয় না। (২) 'Kp parameter 60 দিয়ে স্টিয়ারিং শক্ত-দুর্বল করা যায়' — declare_parameter-এর Kp কার্যত মৃত; PID_init FollowLinePID tuple-এর 50-ই ব্যবহার করে (get_param কেউ ডাকে না), তাই ros2 param set Kp 60 করলেও লাভ 0.05-ই থাকে। (৩) 'joystick ধরা থাকলে L287-289-এর else robot থামায়' — শাখাটি দুই স্তরে মৃত: Joy_active True হলে L247-251 আগেই return করে, আর শাখার ভেতরে কোনো publish-ই নেই; থামানোর কৃতিত্ব ওই return-এর। (৪) 'সামনে কিছু 0.25 m-এ এলেই থামবে' — থামার সীমা 0.375 m এবং চাই 11+ beam একসঙ্গে; পাতলা বাধা গণনা 10-এ রেখে দিলে robot এগোতেই থাকে, আবার মেঝের নিচু জিনিসও cone-এ পড়লে দলবদ্ধভাবে থামাতে পারে। আর মনে রেখো: চিহ্নের ভুল (img_flip শাখা) রেখার দিকে ঘোরায় না, উল্টো দিকে — সে লক্ষণ দেখলেই parameter নয়, L263-265 পরীক্ষা করো।"
+ },
+ "animType": "steer14"
+}

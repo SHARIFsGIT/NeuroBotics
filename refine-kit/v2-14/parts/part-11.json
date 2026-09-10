@@ -1,0 +1,197 @@
+{
+ "n": 11,
+ "id": "part-11",
+ "fname": "follow_line.py",
+ "enTitle": "Synced Frames, Arm Mirror & Parameters",
+ "lang": "python",
+ "start": 147,
+ "end": 230,
+ "flags": [],
+ "explain": [
+  {
+   "a": 147,
+   "b": 148,
+   "text": "<code>def callback(self,color_frame,depth_frame):</code> — এটাই synchronized callback: constructor-এর L56-57-এ <code>ApproximateTimeSynchronizer</code>-এ ভর্তি দুই message_filters Subscriber (RGB আর depth) 0.5 second-এর slop-এর ভেতর জোড়া মিললে ঠিক এই method-টাকে একটা জোড়া নিয়ে ডাকে — <code>color_frame</code> আর <code>depth_frame</code> দুটোই একসাথে আসে, একটার পরে একটা নয়। Camera একটাই হলেও দুই stream-এর নিজের নিজের timing থাকে; জোড়া-না-মেলা frame-এ depth-এর সাথে আগের রঙের ছবি মেশা হতো, ফলে tag-এর দূরত্ব ভুল পড়ত — synchronizer-এর কাজ সেই ভুল আটকানো। L148-এর comment-টা চীনা ভাষায়, source-এ যেমন আছে তেমনই: <code># 将画面转为 opencv 格式</code> — অর্থ: \"frame-টাকে opencv format-এ রূপান্তর করো\"। মানে এর পরের কাজগুলো ROS message থেকে OpenCV-র array-তে রূপান্তর। আরেকটা ছোট বিষয়: এই comment লাইনটা ৮টা space দিয়ে ইনডেন্ট করা, অথচ পাশের সব লাইন TAB দিয়ে — vendor code-এ এমন মিশ্রণ চলতে দেখা যায়, আমরা যেমন পেয়েছি তেমনই পড়ছি।"
+  },
+  {
+   "a": 149,
+   "b": 150,
+   "text": "<code>rgb_image = self.rgb_bridge.imgmsg_to_cv2(color_frame,'rgb8')</code> — ROS-এর Image message-কে OpenCV-র numpy array বানানো; 'rgb8' encoding বলে দিচ্ছে channel-এর ক্রম R-G-B, প্রতিটা 8-bit। এখানে ব্যবহৃরত rgb_bridge-টা constructor-এর L59-এ আলাদা করে বানানো (depth_bridge আলাদা, L60) — একই CvBridge দুবার বানানো খরচ তুচ্ছ, কিন্তু আলাদা রাখলে দুই pipeline-এর debug ঝামেলা কমে। পরের লাইন <code>rgb_image = np.copy(rgb_image)</code> — রূপান্তরের সাথে সাথেই একটা পূর্ণ কপি: bridge-এর ভেতরের buffer-এ সরাসরি আঁকডাকড়ি করলে পরের ব্যবহারকারী পুরনো message-এর উপর লিখে ফেলতে পারত; defensive copy দিয়ে নিজের ছবিটা নিজের দখলে নেওয়া। এই কপিটাই নিচে AprilTag-এর লাল-সবুজ আঁকিবাঁকির ক্যানভাস।"
+  },
+  {
+   "a": 151,
+   "b": 153,
+   "text": "L151 ফাঁকা লাইন — রঙ আর depth-এর ব্লক আলাদা করে দেখানোর separator। <code>depth_image = self.depth_bridge.imgmsg_to_cv2(depth_frame, encoding[1])</code> — এবার depth stream-এর রূপান্তর, encoding হিসেবে <code>encoding[1]</code>, মানে L21-এর list-এর দ্বিতীয় ঘর '32FC1' (32-bit float, এক channel)। প্রথম ঘর '16UC1' এই file-এ কোথাও ব্যবহৃত হয় না — vendor camera দুই ধরনের depth format দিতে পারে বলে দুটোই তালিকায় রাখা, ব্যবহার কেবল একটার। 32FC1 হওয়াটা গুরুত্বপূর্ণ: দূরত্ব এখানে পূর্ণসংখ্যা নয়, float — মান millimeter-এ। L153-এর <code>#depth_to_color_image = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=1.0), cv2.COLORMAP_JET)</code> লাইনটা comment-কাটা — depth-এর উপর JET colormap বসিয়ে রঙিন দূরত্ব-ছবি বানানোর পরীক্ষা-code ছিল, বন্ধ করে রাখা হয়েছে; চালু করলে প্রতি frame-এ একটা অতিরিক্ত ভারী রূপান্তর যোগ হতো, আচরণ বদলাতো না।"
+  },
+  {
+   "a": 154,
+   "b": 155,
+   "text": "<code>depth_img = cv2.resize(depth_image, (640, 480))</code> — depth-কে ঠিক 640x480 grid-এ নামানো/তোলা হলো। Camera-র native resolution যা-ই হোক, এর পরের সব হিসাব এই মাপেই: RGB-ও process()-এ একই 640x480-এ resize হয় (L294), তাই depth pixel আর রঙের pixel একই ঠিকানায় বসে — পরে Remove mode-এ <code>self.depth_image_info[int(center_y),int(center_x)]</code> (L357) দিয়ে tag-এর কেন্দ্র-পিক্সেলের দূরত্ব সরাসরি তোলা যায়। তারপর <code>self.depth_image_info = depth_img.astype(np.float32)</code> — dtype নিশ্চিত করে self-এর attribute-এ জমা: এটাই এই file-এর একমাত্র live depth-ভাণ্ডার, মান millimeter-এ (L357-এ 1000 দিয়ে ভাগ করে meter বানানো হয়)। নামের '_info' প্রতারণা করে — এটা metadata নয়, গোটা depth image-ই।"
+  },
+  {
+   "a": 156,
+   "b": 158,
+   "text": "L156-এ code নেই — শুধু ৮টা space-এর একটা লাইন, source-এর নিজস্ব whitespace-দাগ, যেমন আছে তেমনই থাকবে। আসল কাজ L157-এ: <code>self.tags = self.at_detector.detect(cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY), False, None, 0.025)</code> — রঙের ছবিটা আগে <code>cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)</code> দিয়ে সাদাকালো করা হয় (AprilTag detector mono ছবি চায়), তারপর constructor-এর L62-69-এ সাজানো detector (family tag36h11, 8 thread, quad_decimate 2.0) চালানো হয়। বাকি তিনটা argument vendor API-র স্বভাব মেনে যায় (illustrative, dt_apriltags-এর doc থেকে): False = pose-session ফেরত চাই না, None = camera calibration পাঠানো হয়নি, 0.025 = tag-এর ধরা আকার। ফল সরাসরি <code>self.tags</code>-এ জমা, কারণ process()-এর Remove mode-এ এই তালিকাই পড়া হবে। L158-এ <code>self.tags = sorted(self.tags, key=lambda tag: tag.tag_id)</code> — tag_id ধরে ছোট থেকে বড় সাজানো, যাতে একাধিক tag দেখা গেলে <code>self.tags[0]</code> সবসময় সবচেয়ে ছোট id-টাই হয়; এই লাইনের শেষে source-এ একটা অদৃশ্য trailing space-ও আছে।"
+  },
+  {
+   "a": 159,
+   "b": 159,
+   "text": "<code>draw_tags(rgb_image, self.tags, corners_color=(0, 0, 255), center_color=(0, 255, 0))</code> — পাওয়া tag-গুলো ছবির উপরে আঁকা হলো। function-টা L23-এ <code>from M3Pro_demo.vutils import draw_tags</code> থেকে এসেছে — vendor module, ভেতরের implementation এই folder-এ নেই, তাই illustrative; call-টা যা বলে তাই নিশ্চিত: প্রতিটা tag-এর চার কোণে কোণা-চিহ্ন, কেন্দ্রে বিন্দু। রঙের tuple-গুলো RGB ক্রমে (কারণ এই pipeline পুরোটা rgb8-এ কাজ করে): <code>corners_color=(0, 0, 255)</code> মানে লাল কোণা, <code>center_color=(0, 255, 0)</code> মানে সবুজ কেন্দ্র। এই আঁকা সনাক্তকরণ-হিসাবে কিছু বদলায় না — pixel-মান দেখতে সাহায্যের জন্য, আর এখানে আঁকা বলেই পরে imshow-র window-তে বস্তুটা চোখে পড়ে।"
+  },
+  {
+   "a": 160,
+   "b": 165,
+   "text": "এই ছয় লাইন এই file-এর সবচেয়ে বড় dead-code রহস্য। L160 আবার শুধু-space-এর লাইন, তারপর L161-এ comment <code>#depth_image</code>, তারপর L162-163-এ L152-153-এর হুবহু কপি — একই <code>self.depth_bridge.imgmsg_to_cv2(depth_frame, encoding[1])</code> রূপান্তর, একই comment-কাটা colormap লাইন। L164-এ <code>frame = cv2.resize(depth_image, (640, 480))</code> এবং L165-এ <code>depth_image_info = frame.astype(np.float32)</code> — কিন্তু খেয়াল করো, সামনে <code>self.</code> নেই: এই <code>depth_image_info</code> একটা লোকাল variable, function শেষ হলেই মানটা ফেলে দেওয়া হয়, পুরো file-এ আর কেউ এটা পড়ে না। আসল কাজকর depth-ভাণ্ডার L155-এর <code>self.depth_image_info</code>-ই। template থেকে code কপি করার সময়ের কাটাকাটি-দাগ এটা — ব্যাখ্যা করলাম, কিন্তু quote-এ যেমন আছে তেমনই রাখলাম, ঠিক করিনি। খরচটা বাস্তব অবশ্য: প্রতিটা synced frame-এ একটা অতিরিক্ত সম্পূর্ণ conversion + resize-এর CPU ব্যয়, ফল শূন্য।"
+  },
+  {
+   "a": 166,
+   "b": 166,
+   "text": "<code>action = cv2.waitKey(1)</code> — OpenCV-র 'frame' window-টা 1 millisecond-এর জন্য keyboard-র দিকে তাকায়। প্রতি frame-এ একবার, মানে প্রতি second-এ কয়েকবার। চাপা key-র ASCII মান action-এ জমা হয়ে সোজা নিচের <code>self.process(rgb_image,action)</code>-এ যায় — সেখানেই 32 (SPACE) tracking চালু করে, 'i'/'r'/'q' নিজের কাজ করে। waitKey-র আরেকটা গোপন দায়িত্ব: imshow-এর window আসলে এই poll-ই বাঁচিয়ে রাখে — এই লাইন না থাকলে window প্রায়ই আঁকতেই চাইত না। 1 ms বলে এখানে দাঁড়িয়ে থাকার ভান নেই — non-blocking, camera-র গতিই loop-এর গতি।"
+  },
+  {
+   "a": 167,
+   "b": 170,
+   "text": "3-second-এর arming-টা এখানে। <code>if self.count==True and self.Start_==True:</code> — দুটোই flag: <code>count</code> constructor-এর L107-এ True সেট হয়েছে (নাম শুনে মনে হয় গোনা-মাপা সংখ্যা, আসলে boolean), <code>Start_</code> L105-এ True। ভেতরে <code>if (time.time() - self.start_time)>3:</code> — start_time সেট হয়েছিল L106-এ, মানে গোনা শুরু node-জন্ম থেকে; শর্তটা কিন্তু যাচাই হচ্ছে প্রতিটা synced frame-এ। node জন্মানোর ৩ second পার হওয়ার পরের প্রথম frame-টাতেই দুটো কাজ: <code>self.Track_state = 'tracking'</code> — state machine সোজা follow mode-এ, আর <code>self.count = False</code> — একবারই, দ্বিতীয়বার নয়। অর্থাৎ robot চাবি ছোঁয়া ছাড়াই নিজে থেকে লাইন-ফলো শুরু করে দেয়; SPACE-ও আগে চেপে tracking-এ যাওয়া যায়, কিন্তু অপেক্ষা করলে ৩ second পরে নিজেই যাবে — হাত robot-এর পথ থেকে সরিয়ে রাখো।"
+  },
+  {
+   "a": 171,
+   "b": 172,
+   "text": "<code>result_img,bin_img = self.process(rgb_image,action)</code> — এখানেই গোটা state-machine-এর দরজা: process() (L291 থেকে) Track_state অনুযায়ী ROI-আঁকা, HSV-পড়া, লাইন-মাস্ক, execute()-এর thread-ছোড়া, AprilTag pivot — সব চালায়, আর ফেরত দেয় সাজানো ছবি আর binary mask (mask না বানালে খালি list)। callback-এর বাকি দায়িত্ব শুধু সেই ফল দেখানো। <code>result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)</code> — ভেতরের পুরো pipeline RGB ক্রমে কাজ করে ('rgb8' থেকে শুরু করে draw_tags-এর রঙ পর্যন্ত), কিন্তু cv.imshow BGR ধরে নিয়ে আঁকে; না বদলালে লাল-সবুজ জায়গা বদলে যেত। display-র জন্য নিরীহ এক লাইনের অনুবাদ, হিসাবের উপর কোনো প্রভাব নেই।"
+  },
+  {
+   "a": 173,
+   "b": 174,
+   "text": "<code>if len(bin_img) != 0: cv.imshow('frame', ManyImgs(1, ([result_img, bin_img])))</code> — binary mask বানানো থাকলে (মানে লাইন-সনাক্তকরণ চলছিল) দুই ছবি পাশাপাশি জুড়ে এক window-তে দেখানো হয়। <code>ManyImgs</code> এই file-এ define করা নেই — L11-এর wildcard <code>from M3Pro_demo.follow_common import *</code> থেকে আসে, vendor module (ভেতরের জোড়া-বিন্যাস illustrative; প্রথম argument 1 সাধারণ অর্থে এক সারি)। mask খালি থাকলে <code>else:cv.imshow('frame', result_img)</code> — শুধু মূল ছবি; খেয়াল করো colon-এর পরে space নেই, source-এ যেমন তেমনই quote করলাম। দুই স্টাইলেই window-এর নাম 'frame' — process()-এর init state-এ namedWindow-ও এই নামেই খোলে, তাই keyboard-ইনপুট আর আঁকা এক window-এ বাঁধা।"
+  },
+  {
+   "a": 175,
+   "b": 176,
+   "text": "L175 ফাঁকা রেখা দিয়ে callback-এর পালা শেষ, শুরু helper-এর। <code>def pubSixArm(self, joints, id=6, angle=180.0, runtime=2000):</code> — ছয় joint-এর কোণ-তালিকা নিয়ে ArmJoints message বানিয়ে পাঠানোর function। default চারটাই মানে বহন করে: <code>id=6</code> আর <code>angle=180.0</code> — কিন্তু নিচের শরীরে এই দুটো নাম আর একবারও ব্যবহৃত হয় না, dead parameter; শুধু <code>runtime</code> কাজে লাগে (L184)। মজার ছোঁয়া: angle-এর default 180.0 আর L178-এর hardcode 180 কাকতালীয়ভাবে এক সংখ্যা — কিন্তু সংযোগ নেই, body কখনোই angle পড়ে না। এই function-এর প্রথম কাজে নামই constructor-এ — L52-55-এর blocking wait loop এটাই ডেকে ডেকে home pose-এ আটকে ছিল, যতক্ষণ না arm driver arm6_joints subscribe করে।"
+  },
+  {
+   "a": 177,
+   "b": 178,
+   "text": "<code>arm_joints =ArmJoints()</code> — খালি message তৈরি (equal-চিহ্নের পরে space নেই, source-এর নিজস্ব ছাপ, ঠিক না করে যেমন তেমন)। তারপর সবচেয়ে গুরুত্বপূর্ণ লাইন: <code>arm_joints.joint1 = 180 - joints[0]</code> — joint1-এর মান সোজা পাঠানো হয় না, 180 থেকে বিয়োগ করে আয়না-মানে পাঠানো হয়। হিসাব সরল: base joint-এর 90 হলে 180-90 = 90 — অর্থাৎ init_joints-এর [90, ...] শুরুতে কিছুই বোঝা যায় না; কিন্তু 60 পাঠালে যায় 120, 120 পাঠালে যায় 60 — দিক উল্টে যায়। কারণ হিসেবে বোঝা যায় servo-টা robot-এর শরীরে উল্টো মুখ করে বসানো, তাই code-এ সংখ্যা-মানে সাজিয়ে নেওয়া; কিন্তু এই file-ে pubSixArm কেবল দুই জায়গায় ডাকা হয়েছে (L53, L55), দুটোতেই init_joints — মানে এখানে সবসময় 90-ই ফেরত যায়, আয়নাটা চোখে পড়ে না। ভবিষ্যতে অন্য মান পাঠালে এই লাইনটাই প্রথম চমক দেবে।"
+  },
+  {
+   "a": 179,
+   "b": 183,
+   "text": "বাকি পাঁচটা joint সরাসরি চলে যায়: <code>arm_joints.joint2 = joints[1]</code> থেকে <code>arm_joints.joint6 = joints[5]</code> পর্যন্ত হুবহু বিয়োগ-যোগ ছাড়া কপি — কোনো আয়না নেই, কোনো clamp নেই। মানে \"আয়না\" পুরো arm-এর নয়, শুধু joint1-এর — যেটা base-এর ঘোরা, তাই শুধু তার দিক-হিসাবই সংশোধন দরকার ছিল বলে মনে করে তৈরি করেছে vendor। সীমাও এখানে নেই: এই file keyboard teleop-এর মতো 0..180 clamp বা joint5-এর 0..270 clamp করে না — যা পাঠাবে তা-ই ArmJoints-এ বসে যাবে, সীমা-পাহারা (থাকলে) নিচের arm driver-এর হাতে। init_joints-এর ক্ষেত্রে [90, 90, 12, 20, 90, 0] — মানে joint3 = 12, joint4 = 20, joint6 = 0 এই রাস্তায় ঠিক সেই মানগুলোই পৌঁছায়।"
+  },
+  {
+   "a": 184,
+   "b": 185,
+   "text": "<code>arm_joints.time = runtime</code> — নড়ানোর সময়-বাজেট, একক millisecond; default 2000 মানে arm-কে বলা হয় এই pose-এ যেতে জোর করে ২ second সময় নিতে (keyboard teleop-এর মোটা নড়াচড়ায় 500, জরুরি ব্রেকে 100 দেখেছি — এই file-এর constructor-ও এই default 2000-ই ব্যবহার করে; README-র L13-এর ম্যানুয়াল arm pub কিন্তু 1500 ব্যবহার করে, তুলনা করে দেখো)। তারপর <code>self.pub_SixTargetAngle.publish(arm_joints)</code> — ঠিকানা <code>arm6_joints</code> topic (publisher তৈরি L44-এ, queue 10)। যে arm driver node এই topic শোনে সে-ই সংখ্যাগুলো servo-র ভাষায় অনুবাদ করে; এই file-এর দায়িত্ব message ঠিকঠাক বানিয়ে পাঠানো পর্যন্ত।"
+  },
+  {
+   "a": 186,
+   "b": 188,
+   "text": "L186 ফাঁকা রেখা, তারপর <code>def declare_param(self):</code> — এই function constructor-এর L73-এ একবারই ডাকা হয়, তাই এখানেকার সব declare+read node-জন্মের মুহূর্তেই সমেত শেষ। এর পর থেকে L200 পর্যন্ত ছয়টা HSV parameter, তারপর PID-এর তিনটা, শেষে আরও পাঁচটা — মোট ১৪টা। ধরন হুবহু এক ছন্দে: <code>self.declare_parameter(\"Hmin\",0)</code> দিয়ে নাম+default নথিভুক্ত, পরের লাইনে <code>self.Hmin = self.get_parameter('Hmin').get_parameter_value().integer_value</code> দিয়ে মান পড়ে attribute-এ তোলা। declare আগে, read পরে — ROS 2-এ parameter নামে ডাকা যায় তখনই যখন declare করা আছে; এই জোড়া-জোড়া লাইন সেই নিয়মের হাতে-নাতে দেখানো রূপ। L188-এর <code>#HSV</code> label-টা শুধু পাঠকের পথ-চিহ্ন।"
+  },
+  {
+   "a": 189,
+   "b": 194,
+   "text": "HSV-র নিচের তিন সীমা: Hmin = 0, Smin = 85, Vmin = 126 — মানে লাইনের রঙ ধরার ছাঁকনির নিম্নসীমা Hue 0, Saturation 85, Value 126 থেকে শুরু। কেবল আলাদা আলাদা declare+read নয়, এই নামগুলোর আরেকটা জীবন আছে: process()-এর init state-এ তুমি mouse দিয়ে ROI আঁকলে color.Roi_hsv সেখান থেকে নতুন HSV range বের করে, আর L331-332-এ ঠিক এই ছয়টা নামের parameter-ই <code>set_parameters</code> দিয়ে নতুন মানে বসে যায় — মানে এই declare-গুলো শুধু default-এর থাকা নয়, calibration-এর ফল বসবে-এমন নাম-ঠিকানাও। তাই সংখ্যা তিনটাকে \"ভুলে যাওয়া default\" ভাবা ঠিক হবে না — hsv_text file থাকলে identify state সেটাই আগে পড়ে।"
+  },
+  {
+   "a": 195,
+   "b": 200,
+   "text": "উপরের তিন সীমা: Hmax = 9, Smax = 253, Vmax = 253। নিচ-উপর মিলিয়ে পড়লে ছাঁকনি দাঁড়ায় H 0..9, S 85..253, V 126..253 — আর OpenCV-তে Hue 0-9-এর ঘরটা লাল-এরই এক প্রান্ত (Hue-চাকতির 0-এর কাছের কমলা-লাল অঞ্চল): মানে এই default-এ calibrate করা লাইনটা লাল রঙের। S-র নিচে 85 আর V-র নিচে 126 কিন্তু অন্যরকম বুদ্ধি — এগুলো বেশি আলো/ছায়া-পড়া pixel-কে বাদ দেওয়ার সুর বাঁচানো, আর উপরের 253 ধরে রাখা oversaturation-ও গ্রহণ করে। ছয়টা সংখ্যাই default মাত্র — ROI আঁকা বা সংরক্ষিত hsv_text থাকলে বদলে যায়, তবে এই মানগুলোই node প্রথম জন্মানোর সময় line_follow-এর ছাঁকনি হয়ে দাঁড়ায়।"
+  },
+  {
+   "a": 201,
+   "b": 207,
+   "text": "L201-এর label-টা আবার ৮ space-এ ইনডেন্ট করা <code>#PID</code> (পাশের লাইনগুলো TAB-এ — আগের মিশ্রণের আরেক নমুনা)। এরপর তিন জোড়া একই ছন্দে: <code>self.declare_parameter(\"Kp\",60)</code>, <code>self.declare_parameter(\"Ki\",0)</code>, <code>self.declare_parameter(\"Kd\",20)</code>, প্রতিটার পরেই integer_value পড়ে self.Kp/self.Ki/self.Kd-তে তোলা। কিন্তু এখানেই এই file-এর সবচেয়ে শিক্ষণীয় ফাঁদ: এই তিনটা attribute চালনার PID বানাতে কোনোদিনই ব্যবহৃত হয় না — NEVER WIRED। স্টিয়ারিং-PID বানায় PID_init() (L95 থেকে, L220-এ সংজ্ঞা), আর সে পড়ে FollowLinePID tuple (50, 0, 10) — L91-এ বসানো, declare-এর পরেই। মানে ros2 param-এ node-টার Kp দেখায় 60, অথচ আসল controller চলছে 50 দিয়ে। L412-এর get_param() হলে tuple-টা (Kp,Ki,Kd) দিয়ে আবার গড়ে দিত — কিন্তু পুরো file-ে get_param-কে ডাকা হয়নি। Declared আর effective এক নয়: এই পার্থক্যটা মনে না রাখলে পরে tuning-এ ভুল ঘুরে পাবে।"
+  },
+  {
+   "a": 208,
+   "b": 212,
+   "text": "<code>#other</code>-এর পর বাকি পাঁচটা। <code>self.declare_parameter(\"scale\",1000)</code> — PID gain-এর scale-ভাগ্য বহনকারী সংখ্যা (PID_init-এ /1000, math block-এ পুরো হিসাব); constructor-এর L90-ও self.scale = 1000 বসায়, দুই জায়গায় একই মান — কোনো টানাটানি নেই। <code>self.declare_parameter(\"LaserAngle\",60)</code> আর <code>integer_value</code> পড়া — মানে LaserAngle পূর্ণসংখ্যা 60, 60.0 নয়; L113-এর print-ও তাই ঠিক <code>60</code>-ই ছাপায় (এই জায়গায় 60.0 ভাবাটা একটা প্রচলিত ভুল পড়া)। Constructor-এর L94-এ <code>#self.LaserAngle = 60</code> comment-এ কাটা বসে আছে — মানটা জোগায় এই parameter-ই। registerScan-এ এটা কাজে নামে: LaserAngle*0.5 = 30 মানে সামনের 60-degree cone (|angle| < 30 বা > 330) সেখানেই obstacle-গোনা হয় — এই Part-এ শুধু ঘোষণা, ব্যবহারের দৃশ্য callback-পার্টে।"
+  },
+  {
+   "a": 213,
+   "b": 218,
+   "text": "শেষ তিন জোড়া। <code>self.declare_parameter(\"linear\",0.18)</code> আর double_value পড়া — FACTS-14 §8-এর canonical হিসাবে effective linear মান 0.18 (L93-এ আলাদা করে 0.2 বসানো থাকলেও parameter-টাই জয়ী মান)। কিন্তু আসল মর্ম অন্য জায়গায়: execute()-এর L269-এ <code>twist.linear.x = 0.1</code> hardcode করা — এই self.linear চাকার গতি ঠিক করতে কোনোদিনই ব্যবহৃত হয় না; 0.18 হোক বা 0.2, robot চলে 0.1-এ। তারপর <code>self.declare_parameter(\"ResponseDist\",0.25)</code> — obstacle-পাহারার ভিত্তি-দূরত্ব; registerScan-এ 0.25 * 1.5 = 0.375 meter-এর ভেতরের beam গোনে। শেষে <code>self.declare_parameter('refresh',False)</code> (একমাত্র এখানেই single-quote) আর bool_value পড়া — declare করে রাখা হলো, এই file-এর ভেতরে আর কেউ এই parameter-কে পড়ে না; L97-এর attribute-ও আলাদাভাবে False-ই ছিল। declare-এর মর্যাদা আর ব্যবহারের মর্যাদা আলাদা জিনিস — এই শেষ পাঁচটার মধ্যে দুটোই (linear, refresh) ঘোষিত-কিন্তু-নীরব।"
+  },
+  {
+   "a": 219,
+   "b": 221,
+   "text": "L219 ফাঁকা রেখা, তারপর <code>def PID_init(self):</code> — দুটো controller গড়ে তোলার কারখানা। এটাকে ডাকা হয় তিন জায়গা থেকে: constructor-এর L95 (জন্মসূত্রে একবার), execute()-এর L249 (Joy-তে ছোঁয়া পড়লে — pause-এর প্রতিটা শুরুতে PID আবার শূন্য থেকে), আর Reset()-এর L404। অর্থাৎ pause/reset করলে integral-জমা ইত্যাদি ভেতরের অবস্থা নতুন করে শুরু হয় (vendor বাস্তবায়ন অনুযায়ী, illustrative)। <code>self.PID_controller = simplePID(</code> — simplePID এই file-এ নেই, L11-এর wildcard follow_common থেকে আসে; call-এর আকার থেকে যা নিশ্চিত তা হলো এটা একাধিক argument-এ দুই ঘরের list নেয় আর পরে update() দুই-চ্যানেল আউটপুট ফেরায় (execute-এর L261-এ [z_Pid, _] ধ্বংসকরণ তারই প্রমাণ)। চারটা argument: টার্গেট, Kp-তালিকা, Ki-তালিকা, Kd-তালিকা।"
+  },
+  {
+   "a": 222,
+   "b": 225,
+   "text": "প্রথম argument <code>[0, 0],</code> — দুই চ্যানেলের টার্গেটই শূন্য: লাইন-ফলোয় \"ভুল\" মানে কেন্দ্র 320 থেকে কত দূরে, আর লক্ষ্য সেই অফসেট শূন্য করা। এরপর তিনটা gain-তালিকা, প্রতিটাতে <code>/ 1.0 / (self.scale)</code> — মানে প্রথমে 1.0 দিয়ে ভাগ (integer-ভাগফল এড়ানোর float-রাস্তা, অঙ্কে কিছু বদলায় না) তারপর scale = 1000 দিয়ে ভাগ। সংখ্যায়: <code>[self.FollowLinePID[0] / 1.0 / (self.scale), 0]</code> মানে Kp = 50/1000 = 0.05, তারপর Ki = 0/1000 = 0, শেষে <code>[self.FollowLinePID[2] / 1.0 / (self.scale), 0])</code> মানে Kd = 10/1000 = 0.01 — প্রতিটা list-এর দ্বিতীয় ঘর 0, অর্থাৎ চ্যানেল-২র কোনো gain নেই, controller-টা কার্যত এক-চ্যানেল (দ্বিতীয় ঘরটা শুধু আসন ভরাট)। L225-এর শেষে source-এ দুটো trailing space আছে — ব্যাখ্যায় নামল, quote-এ যেমন তেমন। কেন 1000 দিয়ে ভাগ, তার পূর্ণ হিসাব math block-এ।"
+  },
+  {
+   "a": 226,
+   "b": 230,
+   "text": "দ্বিতীয় controller: <code>self.Remove_PID_controller = simplePID(</code> — AprilTag-সরানো mode-এর জন্য। আদল হুবহু আগেরটার, তবে দুটো পার্থক্য। এক, উৎস tuple RemovePID = (40, 0, 15.0) (L92): <code>[self.RemovePID[0] / 1.0 / (self.scale), self.RemovePID[0] / 1.0 / (self.scale)]</code> মানে Kp = 40/1000 = 0.04, Ki = 0, আর শেষ লাইনে <code>[self.RemovePID[2] / 1.0 / (self.scale), self.RemovePID[2] / 1.0 / (self.scale)])</code> মানে Kd = 15.0/1000 = 0.015। দুই, প্রতিটা মান তালিকায় দুবার করে লেখা — Remove controller-এ দুই চ্যানেলেই একই gain (দুই দিকের সমন্বয় চাই), FollowLine-য় দ্বিতীয় ঘর শূন্য ছিল। টার্গেট [0, 0] (L227)। এটাই remove_obstacle (L390)-এ ব্যবহৃত হয় — tag-এর কেন্দ্রকে (320, 400)-এর ঘরে আনতে; সেখানের আউটপুট-বিনিময়ের swap-এর গল্প সেই Part-এ। L230-এর শেষে একটা trailing space, আর এর ঠিক পরের L231-টা পুরোটাই দুটো TAB-এর ফাঁকা লাইন — এই Part-এর সীমানা ওখানেই শেষ।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটাই প্যাটার্নের ব্যাখ্যা: PID_init মানুষের মাপের পূর্ণসংখ্যা gain (50, 10, 40, 15.0) নিয়ে তার উপর self.scale = 1000 দিয়ে ভাগ করে আসল controller gain (0.05, 0.01, 0.04, 0.015) বানায়। প্রশ্ন তিনটে — কেন ভাগ, কেন ঠিক 1000, আর ফলে চাকার আদেশ কোন মাপে পড়ে।",
+  "levels": [
+   {
+    "label": "Level 1 — scale-ভাগের সূত্র",
+    "latex": "\\[ k_{\\mathrm{eff}} = \\frac{k_{\\mathrm{raw}}}{\\mathrm{scale}} = \\frac{k_{\\mathrm{raw}}}{1000} \\]",
+    "text": "raw gain-গুলো tuple-এ পূর্ণসংখ্যা সুবিধায় রাখা (L91: FollowLinePID = (50, 0, 10), L92: RemovePID = (40, 0, 15.0)) — পড়তে ও tuning-নোটে সহজ। simplePID-কে দেওয়ার আগে L223-230-এ প্রতিটাকে 1000 দিয়ে ভাগ করে ছোট দশমিকে নামানো হয়। scale নিজেই একটা declared parameter (L209, মান 1000) — মান বদলালে সব gain একসাথে, একই অনুপাতে বদলায়: একটা ঘুঁটি ঘুরিয়ে গোটা নিয়ন্ত্রণের আকার বদল।"
+   },
+   {
+    "label": "Level 2 — দুই-চ্যানেল vector-আকার",
+    "latex": "\\[ \\mathbf{r} = [0,\\,0], \\qquad \\mathbf{K}_p = \\left[\\tfrac{50}{1000},\\,0\\right], \\quad \\mathbf{K}_i = \\left[\\tfrac{0}{1000},\\,0\\right], \\quad \\mathbf{K}_d = \\left[\\tfrac{10}{1000},\\,0\\right] \\]",
+    "text": "simplePID-র প্রতিটা argument নিজেই দুই ঘরের list — প্রতি চ্যানেলে আলাদা gain রাখার ব্যবস্থা। FollowLine controller-এ দ্বিতীয় ঘর সবই শূন্য, মানে চ্যানেল-২ কার্যত অকেজো — execute()-এর L261-এ <code>[z_Pid, _]</code> ধ্বংসকরণও বলে দেয় দ্বিতীয়টা ফেলে দেওয়া হয়। Remove controller-এ উল্টোটা: প্রতিটা মান দুবার লেখা (L228-230), দুই চ্যানেলেই একই gain 0.04 / 0 / 0.015 — কারণ tag-কে দুই অক্ষেই সরাতে হয়।"
+   },
+   {
+    "label": "Level 3 — আউটপুট কোন মাপে পড়ে",
+    "latex": "\\[ u = K_p\\, e, \\qquad e = \\frac{c_x - 320}{16}, \\qquad u = 0.05 \\times \\frac{c_x - 320}{16} \\]",
+    "text": "execute()-এর L261-এ controller-এর ইনপুট হলো লাইনের কেন্দ্র c_x-এর ছবির কেন্দ্র 320 থেকে অফসেট, 16 দিয়ে ভাগ করা — যেন 640-পিক্সেলের পুরো বিস্তার মোটামুটি -20 থেকে +20-এর error-এ পৌঁছায়। তখন Kp_eff = 0.05 দিয়ে গুণ করলে আউটপুট সর্বোচ্চ প্রায় 0.05 x 20 = 1.0 rad/s — ঠিক যতটা মাপের মোড়-নেওয়ার আদেশ একটা লাইন-ফলো robot-এর জন্য অর্থবহ। ভাগটা না থাকলে গুণফল হতো 50 x 20 = 1000 rad/s — এককেই অর্থহীন। এটাই /1000-এর কাজ: gain-কে পূর্ণসংখ্যা খাতায় লিখে রাখা, কিন্তু controller-কে দেওয়ার সময় বাস্তব এককে (rad/s-জাতীয় আদেশ) নামিয়ে আনা।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ K_p = \\frac{50}{1000} = 0.05, \\qquad K_i = \\frac{0}{1000} = 0, \\qquad K_d = \\frac{10}{1000} = 0.01 \\]",
+    "text": "FollowLinePID (50, 0, 10)-এর তিনটা gain-ই L223-225-এ একে একে 1000 দিয়ে ভাগ হয়ে simplePID-তে ঢোকে — এই তিনটাই লাইন-ফলোয়ের স্টিয়ারিং-এর আসল শক্তি। লক্ষ করো, declare করা Kp = 60 parameter এই হিসাবে নেই — tuple-এর 50-ই এখানে কাজ করছে।"
+   },
+   {
+    "latex": "\\[ K_p^{(\\mathrm{rm})} = \\frac{40}{1000} = 0.04, \\qquad K_d^{(\\mathrm{rm})} = \\frac{15.0}{1000} = 0.015 \\]",
+    "text": "RemovePID (40, 0, 15.0) — AprilTag-সরানো mode-এর দুই-চ্যানেল controller। একই scale, তাই দুই controller-এর মেজাজ তুলনীয় থাকে: Remove-এর Kp লাইন-ফলোয়ের চেয়ে সামান্য কম (0.04 বনাম 0.05), কিন্তু damping ঢের বেশি (0.015 বনাম 0.01) — জিনিস ধরে টানার কাজে ঝাঁকুনি-বিরোধী ভারী হাত।"
+   },
+   {
+    "latex": "\\[ c_x = 352 \\;\\Rightarrow\\; e = \\frac{352 - 320}{16} = 2.0 \\;\\Rightarrow\\; u_P = 0.05 \\times 2.0 = 0.10\\ \\mathrm{rad/s} \\]",
+    "text": "একটা বাস্তব মানের হিসাব (ইনপুট-সূত্রটা execute()-এর L261 থেকে, এই Part-এর বাইরে কিন্তু এখানেকার gain-ই খরচ হয়): লাইনের কেন্দ্র ছবির কেন্দ্র থেকে 32 পিক্সেল ডানে হলে error = 2.0, আর শুধু P-term-ই মোড়ের আদেশ দেয় 0.10 rad/s মাপের — অর্থাৎ প্রতি second-এ প্রায় 5.7 degree ঘোরার নির্দেশ। দিকের চিহ্ন img_flip (L263/L265) ঠিক করে, মান দাঁড়ায় এখানেই।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "[0, 0],",
+    "math": "\\( \\mathbf{r} = [0,\\,0] \\)",
+    "text": "L222 (আর Remove-এ L227)-এর টার্গেট-vector: দুই চ্যানেলেই লক্ষ্য শূন্য। লাইন-ফলোয় error-এর মানে কেন্দ্র 320 থেকে সরে থাকা, তাই লক্ষ্য সবসময় শূন্য-অফসেট — controller-এর কাজ সেই শূন্যে ফেরানো।"
+   },
+   {
+    "code": "[self.FollowLinePID[0] / 1.0 / (self.scale), 0]",
+    "math": "\\( k_p = 50/1000 = 0.05 \\)",
+    "text": "L223: L91-এর tuple-এর প্রথম মান scale-ভাগে নেমে আসল Kp হয়। এখানে FollowLinePID[0] = 50 — declared Kp parameter-এর 60 নয়; tuple আর parameter-এর এই পাল্লা tuple-ই জেতে।"
+   },
+   {
+    "code": "[self.FollowLinePID[2] / 1.0 / (self.scale), 0])",
+    "math": "\\( k_d = 10/1000 = 0.01 \\)",
+    "text": "L225: damping-ও একই রাস্তায় — 10/1000 = 0.01। লাইন হঠাৎ বাঁক নিলে যে শক্তি দ্রুত মোড় নিতে সাহায্য করে আর কাঁপুনি আটকায়, তার মাপ এই দশমিকটাই।"
+   },
+   {
+    "code": "[self.RemovePID[2] / 1.0 / (self.scale), self.RemovePID[2] / 1.0 / (self.scale)])",
+    "math": "\\( k_d^{(\\mathrm{rm})} = 15/1000 = 0.015 \\) (দুই চ্যানেলেই)",
+    "text": "L230: Remove controller-এ একই হিসাব দুইবার লেখা — প্রতিটা gain দুই চ্যানেলে একবার করে। একটাই সূত্র, দুই আসনে বসানো: tag-ধরার কাজে x-দিক আর y-দিক দুটোই সমান মেজাজে সাড়া দেয়।"
+   }
+  ],
+  "failure": [
+   "scale-ভাগ ভুলে গেলে (বা scale parameter-এ 1 বসিয়ে দিলে) gain পূর্ণসংখ্যা মাপেই থেকে যায়: Kp = 50 হলে error 2.0-এর বিপরীতে আদেশ 100 rad/s, আর সর্বোচ্চ error 20 ধরলে 1000 rad/s — প্রথম বাঁকেই robot বিদ্যুৎ-গতিতে ঘুরে যাওয়ার আদেশ পায়; বাস্তবে driver-এর সীমা বা নিরাপত্তা-কাটা যা-ই ঘটুক, লাইন-ফলো ভেঙে পড়ে। একই ভুলের উল্টো লক্ষণ হিসাব পড়ার সময়ে: tuple-এর 50-কেই আসল gain ভেবে নিলে সব ব্যাখ্যা হাজার গুণ বড় দেখায়।",
+   "ভাগটা gain-এ নয়, error-এ করে দিলে (ধরো (c_x - 320)/16-এর বদলে আরও 1000 দিয়ে ভাগা) error নেমে আসে 0.002 মাপে, আর 0.05 x 0.002 = 0.0001 rad/s — লাইন ছেড়ে গেলেও স্টিয়ারিং-এর সাড়া প্রায় শূন্য, robot প্রায় সোজা এগিয়ে লাইন হারিয়ে ফেলে। সংখ্যার জায়গাটা বদলালে (gain-এ ভাগ নয়, ইনপুটে ভাগ) বিপর্যয়টা কম দৃশ্যমান কিন্তু কার্যে সমান — একক-ভার সবসময় gain-এর ঘরেই থাকা চাই।"
+  ]
+ },
+ "robot": {
+  "correct": "বাস্তব robot-এ এই Part-এর প্রতিটা অংশ চলে প্রতি synced frame-সঙ্গে (0.5 second-এর ভেতর জোড়া-মেলা color+depth জোড়া): রঙের ছবি RGB array-তে, depth 640x480 float32 millimeter-এ self.depth_image_info-তে জমে, AprilTag (tag36h11) খুঁজে লাল কোণা-সবুজ কেন্দ্র আঁকা হয়, window-তে দেখায়। node জন্মানোর ৩ second পরের প্রথম frame-এই Track_state নিজে থেকে 'tracking' হয়ে যায় — robot কারো আদেশ ছাড়াই লাইন-ফলো শুরু করে দেয়। Arm-এর দিকে pubSixArm এই file-এ কেবল init_joints [90,90,12,20,90,0] নিয়ে ডাকা হয়, আর 180 - 90 = 90 হওয়ায় আয়নাটা home-এ চুপচাপ থাকে — arm ঠিক জায়গাতেই যায়। Parameter-এর আসল প্রভাব: HSV default লাল লাইন (H 0-9), LaserAngle পূর্ণসংখ্যা 60 (print-এও 60), ResponseDist 0.25 (মানে obstacle-সতর্কতা 0.375 meter-এ), আর স্টিয়ারিং-PID-র আসল gain 0.05 / 0 / 0.01 — declared Kp 60 নয়, FollowLinePID tuple-এর 50-এর scale-ভাগা রূপ।",
+  "incorrect": "প্রথম প্রচলিত ভুল প্রত্যাশা: ros2 param set /follow_line Kp 80 করলেই স্টিয়ারিং বদলে যাবে — হয় না; Kp parameter declare হয়ে বসে আছে, কিন্তু get_param() কেউ ডাকেনি, FollowLinePID tuple (50, 0, 10)-ই জিতে থাকে, controller-এর Kp থাকে 0.05। একইভাবে linear parameter-কে চাকার গতি ভাবা — robot আসলে চলে execute()-এর hardcode করা 0.1-এ, self.linear পথে চাকায় কখনোই পৌঁছায় না। দ্বিতীয় ভুল: arm-এ যা পাঠাবেন তা-ই joint-প্রাপ্তি হবে — joint1-এ নয়, 60 পাঠালে servo পায় 120; আয়নাটা home (90)-এ লুকানো থাকে বলে টেস্ট-এ ধরাই পড়ে না, প্রথম non-home command-এই চমক লাগে। তৃতীয় ভুল: শুরু করতে SPACE লাগবে ভেবে robot-এর সামনে হাত রাখা — ৩ second পরেই সে নিজে থেকে এগোতে শুরু করে। আর একটা নীরব ভুল: দ্বিতীয় depth-ব্লকের (L161-165) কোনো ফল আছে ভাবা — সেটা লোকাল variable-এ মরে যায়, দূরত্ব-পাঠের একমাত্র উৎস L155-এর self.depth_image_info।"
+ },
+ "animType": null
+}

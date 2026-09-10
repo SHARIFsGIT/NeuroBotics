@@ -1,0 +1,197 @@
+{
+ "n": 6,
+ "id": "part-06",
+ "fname": "yahboom_keyboard.py",
+ "enTitle": "Node Constructor, Raw Keys & Arm Safety",
+ "lang": "python",
+ "start": 66,
+ "end": 148,
+ "flags": [],
+ "explain": [
+  {
+   "a": 66,
+   "b": 68,
+   "text": "L66-এ <code>class YahboomKeyboard(Node):</code> — এই file-এর একমাত্র class, rclpy-র Node base class-কে উত্তরাধিকার নিয়ে। L67 <code>def __init__(self, name):</code> constructor, আর L68 <code>super().__init__(name)</code> সেই নামটাকেই ROS 2 graph-এ node হিসেবে রেজিস্টার করে — main-এর L152 থেকে আসে নাম <code>\"yahboom_keyboard_ctrl\"</code>; ros2 node list-এ node-টা এই নামেই দেখা যাবে। Constructor-এর ভেতরের ক্রমটা মনে রাখো — প্রথমে publisher, তারপর parameter, তারপর state, সবার শেষে arm home-এ ফেরানো: এই Part-এর বাকি লাইনগুলো ঠিক সেই ক্রমে নামবে, আর node তোলার মুহূর্তে একবারই চলবে।"
+  },
+  {
+   "a": 69,
+   "b": 71,
+   "text": "L69 ফাঁকা, L70-এর <code># Publishers</code> নামফলকের নিচে তিন publisher-এর প্রথমটি: <code>self.pub_cmd_vel = self.create_publisher(Twist, 'cmd_vel', 1)</code> — চাকার velocity channel। দুটো জিনিস আলাদা করে দেখো। এক, topic-এর নাম <code>'cmd_vel'</code> relative — শুরুতে কোনো slash নেই, তাই নামটা node-এর namespace-এর নিচে resolve হয়; namespace না থাকলে (সাধারণ ক্ষেত্রে) সেটা /cmd_vel-ই। এই folder-এর follow_line কিন্তু একই জিনিস লিখেছে slash দিয়ে, absolute করে — /cmd_vel; namespace-হীন সাধারণ চালানোয় দুই লেখার ফল এক, তবে কারো namespace চালু থাকলে দুই দরজা আলাদা হয়ে যেত। দুই, শেষ argument 1 — queue depth: এই channel শুধু সবচেয়ে নতুন একটা command ধরে রাখে; velocity-তে পুরনো command নতুনটার চেয়ে দামি নয়, আর main লুপ প্রতি iteration-এ আবার publish করে বলে স্রোত সবসময় টাটকা থাকে।"
+  },
+  {
+   "a": 72,
+   "b": 73,
+   "text": "বাকি দুই publisher — arm-এর দুই দরজা। <code>self.pub_arm_single = self.create_publisher(ArmJoint, \"arm_joint\", 100)</code> একটি joint-এর আদেশ (id, joint, time), আর <code>self.pub_arm_all = self.create_publisher(ArmJoints, \"arm6_joints\", 100)</code> ছয় joint একসঙ্গে। <code>\"arm6_joints\"</code> নামটা চেনা হওয়া চাই: README-র L13-এর one-shot command ঠিক এই topic-এই লেখে, আর follow_line-এর pubSixArm-ও এখানেই লেখে — সবাই এক দরজায় দাঁড়িয়ে arm driver-কে ডাকে। depth-এর তফাতটাও অর্থবহ: cmd_vel-এর 1-এর বদলে এ দুটিতে 100 — velocity-তে শেষ কথাটাই যথেষ্ট, কিন্তু arm-এর প্রতিটি 5-ডিগ্রি ধাপ arm driver পর্যন্ত পৌঁছানোই ভালো; একটা ধাপ ঝরে গেলে হাত মাঝপথে থেমে থাকতে পারে। ছোট প্রসঙ্গ: 'cmd_vel' single quote-এ, এ দুটি double quote-এ — Python-এ দুইয়ের অর্থ এক, নিছক হাতের লেখার মিশ্রণ।"
+  },
+  {
+   "a": 74,
+   "b": 77,
+   "text": "L75-এর <code># Parameters (Safety Speed Limits)</code> comment-টি নিজেই উদ্দেশ্য বলে দিচ্ছে — গতির নিরাপত্তা-সীমা। <code>self.declare_parameter(\"linear_speed_limit\", 1.0)</code> আর <code>self.declare_parameter(\"angular_speed_limit\", 5.0)</code> — দুটি parameter default মান নিয়ে declare হলো: linear 1.0 m/s, angular 5.0 rad/s। declare-এর গুরুত্ব: এদের বাইরে থেকে override করা যায় — command line-এ linear_speed_limit:=0.5 ধরনের মান দিলে ছাদ অর্ধেকে নামবে; override না দিলে default-ই থাকে। এই দুই সংখ্যাই পরের Part-এর L190-191-এর min ছাদ দুটি হয়ে দাঁড়াবে — গতির key যতই চাপা হোক, speed 1.0-এর ওপরে আর turn 5.0-এর ওপরে যাবে না।"
+  },
+  {
+   "a": 78,
+   "b": 79,
+   "text": "Declare-এর ঠিক পরেই পড়ে ফেরানো — দুটি লম্বা chain: <code>self.linear_speed_limit = self.get_parameter(\"linear_speed_limit\").get_parameter_value().double_value</code> আর L79-এ angular-টির জন্য হুবহু একই। ধাপে ধাপে ভাঙলে: <code>get_parameter</code> ফেরায় Parameter object, তার <code>get_parameter_value()</code> value wrapper দেয়, তার <code>double_value</code> field-টিই Python-এর float — 1.0 বা 5.0। অর্থাৎ declare আর read-back একসঙ্গে: override থাকলে overridden মানটিই attribute-এ বসে, না থাকলে default। class নিজের কপি রেখে দেয় বলে লুপের L190-191-এ প্রতিবার parameter-কে আর জিজ্ঞেস করতে হয় না।"
+  },
+  {
+   "a": 80,
+   "b": 82,
+   "text": "L81-এর <code># State Trackers</code>-এর নিচে arm-এর single source of truth জন্মায়: <code>self.arm_joints = [90, 90, 0, 0, 90, 90]</code> — ছয়টি সংখ্যা, একক ডিগ্রি, ক্রমে joint1 থেকে joint6: এটাই home pose। এই list-টিই পুরো class-এর কর্মক্ষম স্মৃতি — step_arm_joint এখানেই যোগ করে (L102), clamp-গুলো এখানেই ফিরে লেখে (L106, L108, L110), reset_arm পুরোটা নতুন করে বসায় (L124), emergency_stop বর্তমান মান এখান থেকেই পড়ে (L141-146)। আরেকটা খেয়াল: এই folder-এর follow_line-এর home এক নয় — ওখানকার init_joints [90, 90, 12, 20, 90, 0]; দুই node দুই রকম home পছন্দ করে, তাই একই robot-এ দুই program হাত দুই ভঙ্গিতে দাঁড় করায়।"
+  },
+  {
+   "a": 83,
+   "b": 86,
+   "text": "L83 <code>self.settings = termios.tcgetattr(sys.stdin)</code> — terminal-এর বর্তমান setting-এর একটা snapshot, কোনো raw-mode বদলের আগেই তোলা। এটাই পরে দুই জায়গায় ফেরত বসানোর মানক: getKey-র L95 প্রতি পাঠের পরে, আর main-এর finally-র L240 বিদায়বেলায় — না রাখলে terminal raw অবস্থায় আটকে থেকে যেত। তারপর L85-এর comment <code># Initialize arm to home position safely</code> যা বলে, L86 <code>self.reset_arm()</code> তা-ই করে: constructor-এর ভেতর থেকেই reset_arm-কে ডাকা হলো। অর্থাৎ node তোলার মুহূর্তেই arm সত্যিই home-এ চলে যায় — একটা key-ও না চাপা পড়ে তার আগে, menu-র ছাপাও (main-এর L161) constructor শেষ হওয়ার পরে। ফল: এই node শুরু করলেই হাত নড়বে — এটাই ইচ্ছাকৃত নকশা, quirk নয়।"
+  },
+  {
+   "a": 87,
+   "b": 90,
+   "text": "লুপের হৃদস্পন্দন এখানে বাঁচে। L88 <code>def getKey(self):</code> — key পড়ার পুরো machine-টি এক method-এ। L89 <code>tty.setraw(sys.stdin.fileno())</code> terminal-কে raw mode-এ ফেলে: চাপা key Enter-এর অপেক্ষা না করেই পড়া যায়, echo হয় না, আর সবচেয়ে গুরুত্বপূর্ণ — Ctrl+C আর signal নয়, terminal সেটাকে <code>'\\x03'</code> অক্ষর হিসেবে পৌঁছে দেয়। L90 <code>rlist, _, _ = select.select([sys.stdin], [], [], 0.1)</code> — stdin পড়ার-মতো হলো কি না, চরম 0.1 সেকেন্ড অপেক্ষা; ফেরানো তিনটির মধ্যে প্রথমটি (ready list) rlist-এ নেওয়া, বাকি দুটি underscore-এ বর্জিত। এই 0.1-ই পুরো program-এর clock: key না এলে method ফাঁকা string নিয়ে ফেরে, main লুপ ঘোরে সেকেন্ডে প্রায় 10 বার — cmd_vel-এর প্রকাশনাও তাই প্রায় 10 Hz।"
+  },
+  {
+   "a": 91,
+   "b": 94,
+   "text": "L91 <code>if rlist:</code> — তালিকা খালি না হলে অর্থাৎ অন্তত একটি অক্ষর অপেক্ষা করছে। L92 <code>key = sys.stdin.read(1)</code> ঠিক এক অক্ষর পড়ে — একটি keypress, কোনো line-buffering নেই; একই key যতবার চাপা হবে, ততবার আলাদা পাঠ। না এলে else-এর L94 <code>key = ''</code> — এই দশমাংশ সেকেন্ডে কেউ কিছু চাপেনি। সেই ফাঁকা string-ই পরের Part-এর deadman-এর খাবার: পরপর খালি পাঠ জমলে 5-তম পর্যন্ত এলে x, y, th শূন্য হয়ে যায় (L211-214)।"
+  },
+  {
+   "a": 95,
+   "b": 96,
+   "text": "L95 <code>termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)</code> — জমা রাখা setting ফিরিয়ে আনা। TCSADRAIN-এর ব্যবস্থা: লেখার বাকি output আগে শেষ হোক, তারপর setting বদলাও। এভাবে প্রতিটি getKey call terminal-কে একবার raw করে, পড়ে, আবার স্বাভাবিক করে — সেকেন্ডে দশবার এই দোলা চলতে থাকে। raw অবস্থায় Ctrl+C-ও শুধু একটা অক্ষর, তাই কোথাও আটকে গিয়ে node মাঝপথে মরলে terminal অস্বস্তিকর অবস্থায় থেকে যেত — L240-এর শেষ-রক্ষণ সেই জন্যই। L96 <code>return key</code> — এক অক্ষর, নয়তো ফাঁকা string; কোনো ব্যতিক্রম নেই, কোনো Enter নেই।"
+  },
+  {
+   "a": 97,
+   "b": 99,
+   "text": "L98 <code>def vels(self, speed, turn):</code> — নাম বড়, কাজ ছোট: দুই সংখ্যাকে এক লাইনের রিপোর্ট বানানো। L99 <code>return f\"Current Speed -> Linear: {speed:.2f} m/s | Angular: {turn:.2f} rad/s\"</code> — f-string, আর :.2f মানে দশমিকের পরে ঠিক দুই ঘর: শুরুর speed 0.2 আর turn 1.0 হলে ছাপা পড়ে Current Speed -> Linear: 0.20 m/s | Angular: 1.00 rad/s। string-এর ভেতরের -> নিছক ছাপার অলংকার। এটি ছাপা হয় দুই জায়গায় — শুরুতে একবার (L162), আর প্রতিটি গতি-key চাপার পরে (L192) — চোখের সামনে গতির মান বদলানো দেখার একমাত্র জানালা।"
+  },
+  {
+   "a": 100,
+   "b": 102,
+   "text": "Arm-এর প্রতিটি চাপের প্রক্রিয়াকরণ এখানে। L101 <code>def step_arm_joint(self, joint_id, delta):</code> — joint_id 1 থেকে 6 (menu-র নম্বর), আর caller-রা delta পাঠায় ±5 (L195-208)। L102 <code>self.arm_joints[joint_id - 1] += delta</code> — index-এর হিসাব: menu গুনে 1 থেকে, Python list গুনে 0 থেকে, তাই <code>joint_id - 1</code>; joint1 বসে 0 ঘরে, joint6 বসে 5 ঘরে। আর += লাইনটা লক্ষ করো: সীমার বাইরের মানও এক মুহূর্তের জন্য এখানে বসে — 270-এ দাঁড়ানো joint 5-এ এলে 275; কিন্তু ঠিক পরের অংশ সেটাকে মুছে সীমান্তবর্তী মান বসিয়ে দেয়, তাই সীমার বাইরের সংখ্যা কখনো এই method-এর বাইরে যায় না।"
+  },
+  {
+   "a": 103,
+   "b": 106,
+   "text": "L104-এর comment নিজেই সাবধানবাণী: <code># Safety limits to prevent breaking the arm</code> — ভাঙা আটকানোর সীমা। L105 <code>if joint_id == 5:</code> — wrist-rotation joint-টির আলাদা চুক্তি; L106 <code>self.arm_joints[joint_id - 1] = max(0, min(270, self.arm_joints[joint_id - 1]))</code> — জানালা 0 থেকে 270 ডিগ্রি। পড়ার নিয়ম ভেতর থেকে বাইরে: আগে ভেতরের min উপরের ছাদ 270-এ টানে, তারপর বাইরের max মেঝে 0-তে ঠেলে তোলে; মাঝে থাকলে মান অপরিবর্তিত ফেরে। 270 কেন — wrist-rotation অক্ষটি প্রায় তিন-চতুর্থাংশ বৃত্ত ঘোরার স্বাধীনতা চায়, ছয় joint-এর মধ্যে এরই জানালা সবচেয়ে চওড়া। menu-তে এই সংখ্যার কোনো উল্লেখ নেই — পুরো file-এ জানালাটা শুধু এই লাইনই জানে।"
+  },
+  {
+   "a": 107,
+   "b": 110,
+   "text": "L107 <code>elif joint_id == 6:</code> — gripper; L108 <code>self.arm_joints[joint_id - 1] = max(30, min(180, self.arm_joints[joint_id - 1]))</code> — জানালা 30 থেকে 180 ডিগ্রি, ছয়টির মধ্যে সবচেয়ে সরু, আর একমাত্র joint যার মেঝে 0 নয়: gripper কখনো পুরো 0 পর্যন্ত বন্ধ হয় না, 180-এর ওপরেও খোলে না — আঙুল আর motor রক্ষার বন্দোবস্ত। L109-এর <code>else:</code> বাকি সবার — joint 1 থেকে 4 — L110 <code>self.arm_joints[joint_id - 1] = max(0, min(180, self.arm_joints[joint_id - 1]))</code> — জানালা 0 থেকে 180। চওড়ায় তিন রকম: 270 (j5), 150 (j6), 180 (বাকিরা) — একই ছাঁচে তিন রকম ধ্রুবক, তিন রকম যান্ত্রিক সত্য।"
+  },
+  {
+   "a": 111,
+   "b": 115,
+   "text": "সীমা মেরে সাজানো মান এবার message হয়ে যায়। L112 <code>arm_msg = ArmJoint()</code> — single-joint message-এর ফাঁকা খাম; L113 <code>arm_msg.id = joint_id</code> — কোন joint, সেই নম্বর; L114 <code>arm_msg.joint = int(self.arm_joints[joint_id - 1])</code> — clamp-করা মান, সঙ্গে int-কাস্ট: শূন্যের দিকে কেটে পূর্ণসংখ্যা বানানো; তবে home 90 আর delta 5 দুটোই পূর্ণসংখ্যা বলে মানটা আগে থেকেই 5-এর গুণিতক পূর্ণসংখ্যা — কাস্টটা কার্যত বাড়তি জাঁচ মাত্র, কোনো দশমিক কাটে না। L115 <code>arm_msg.time = 500</code> — প্রতিটি 5-ডিগ্রি ধাপ পেতে অর্ধেক সেকেন্ড সময়; arm এক চাপে লাফ দেয় না, ছোট করে সরে।"
+  },
+  {
+   "a": 116,
+   "b": 118,
+   "text": "L116 <code>self.pub_arm_single.publish(arm_msg)</code> — খামটি depth-100 channel দিয়ে arm driver-এর হাতে চলে গেল। L117 ফাঁকা, তারপর L118 <code>action = \"Opening\" if delta > 0 else \"Closing\"</code> — conditional expression: delta ধনাত্মক হলে Opening, ঋণাত্মক হলে Closing। শব্দদ্বয় গ্রিপারের ভাষা — ডিফল্ট হিসেবে লেখা হয়েছে — সেটাই পরের দুই লাইনে বদলে যাবে; অর্থাৎ এই লাইনের ফল শুধু joint 6-এর ক্ষেত্রেই টিকে থাকে।"
+  },
+  {
+   "a": 119,
+   "b": 121,
+   "text": "L119 <code>if joint_id != 6:</code> — joint 6 ছাড়া সবার জন্য L120 <code>action = \"Up\" if delta > 0 else \"Down\"</code> Opening/Closing-কে সরিয়ে বসে; ফলে ছাপার শব্দ হয় joint অনুযায়ী: joint 1-5 পায় Up/Down, joint 6 পায় Opening/Closing — menu-র নিজের ভাষার সঙ্গে মিলে গিয়ে (menu-তে g/h-এর পাশে Close/Open, বাকিদের পাশে Down/Up)। L121 <code>print(f\"[ARM] Joint {joint_id} -> {action} -> {arm_msg.joint} deg\")</code> — ছাপা হয় clamp-করা মানটাই (arm_msg.joint), তাই সীমানায় পৌঁছে একই লাইন বারবার ফিরে আসে: Joint 5 -> Up -> 270 deg, আবার 270 deg — সংখ্যা আর বাড়ে না।"
+  },
+  {
+   "a": 122,
+   "b": 125,
+   "text": "L123 <code>def reset_arm(self):</code> — দুই রকম ডাকে সাড়া দেয়: constructor-এর L86 (node তোলার মুহূর্তে) আর r/R key-র L210; emergency_stop-এর ভেতরে এটি নেই। L124 <code>self.arm_joints = [90, 90, 0, 0, 90, 90]</code> — পুরো list-কে নতুন করে home-এ বসানো; আগের যত আংশিক অবস্থা ছিল, সব ভুলে যায়। L125 <code>arm_msg = ArmJoints()</code> — এবার ছয়-joint-এর খাম, কারণ home মানে ছয়জনকেই একসঙ্গে পাঠানো।"
+  },
+  {
+   "a": 126,
+   "b": 129,
+   "text": "পরের ছয় লাইন খাম ভরার কাজ — প্রথম চারটি এই পাল্লায়: <code>arm_msg.joint1 = self.arm_joints[0]</code> (L126), <code>arm_msg.joint2 = self.arm_joints[1]</code> (L127), <code>arm_msg.joint3 = self.arm_joints[2]</code> (L128), <code>arm_msg.joint4 = self.arm_joints[3]</code> (L129)। মান সরাসরি যায় — কোনো রূপান্তর নেই; এই folder-এর follow_line-এর pubSixArm এখানেই আলাদা: ওটা পাঠানোর আগে joint1-কে 180 থেকে বিয়োগ করে আয়না-মান বানায়; এই teleop-এ কোনো আয়না নেই, list-এ যা আছে তাই খামে যায়।"
+  },
+  {
+   "a": 130,
+   "b": 133,
+   "text": "L130 <code>arm_msg.joint5 = self.arm_joints[4]</code> আর L131 <code>arm_msg.joint6 = self.arm_joints[5]</code> — ছয়টি ঘরই ভরা শেষ। L132 <code>arm_msg.time = 2000</code> — পুরো ফেরার পথ পেতে দুই পূর্ণ সেকেন্ড: ধাপের 500 আর জোর করে থামানোর 100-এর পাশে home-ই সবচেয়ে ধীর, ইচ্ছাকৃত নরম ফেরা। L133 <code>self.pub_arm_all.publish(arm_msg)</code> — arm6_joints channel-এ প্রকাশ; README L13-এর one-shot command-ও এই একই দরজায় ঠোকে — দুই পথ, এক ঠিকানা।"
+  },
+  {
+   "a": 134,
+   "b": 138,
+   "text": "L134 <code>print(\"[SYSTEM] Arm reset to Home Position.\")</code> — reset বড়বড় করে জানায়। তার বিপরীতে পরের method প্রায় নীরব: L136 <code>def emergency_stop(self):</code> — ভেতরে কোথাও কোনো print নেই। L137-এর নম্বর-দেওয়া comment <code># 1. Stop Wheels</code>, আর L138 <code>self.pub_cmd_vel.publish(Twist())</code> — default-নির্মিত Twist-এর প্রতিটি field শূন্য, তাই এই একটি publish মানেই velocity এখনই শূন্য; depth-1 channel-এ বসে এই একটাই খাম সবার শেষ কথা বলে দেয়।"
+  },
+  {
+   "a": 139,
+   "b": 143,
+   "text": "L139-এর comment নিজেই কৌশলটি ব্যাখ্যা করে: <code># 2. Stop Arm (Send current positions with 100ms time to force immediate braking)</code> — বর্তমান অবস্থা পাঠাও, 100 ms সময় দিয়ে, জোর করে থামাও; comment-এর 100ms আর code-এর 100 একই সংখ্যা, এককটি এখানেই প্রকাশ পায় — millisecond। L140 <code>arm_msg = ArmJoints()</code>, তারপর L141-143 <code>arm_msg.joint1 = self.arm_joints[0]</code> থেকে joint3 পর্যন্ত — খেয়াল করো, মান home নয়: বর্তমান অবস্থা, সরাসরি জীবন্ত list থেকে। কেলেঞ্জাটাও এখানেই — arm-কে যেখানে আছে সেখানেই থাকতে বলা হচ্ছে, অথচ মাত্র এক-দশমাংশ সেকেন্ডের বাজেটে: যাওয়ার পথ নেই, শুধু জমে যাওয়া।"
+  },
+  {
+   "a": 144,
+   "b": 148,
+   "text": "L144-146-এ joint4, joint5, joint6 — একইভাবে বর্তমান মান বসে। L147 <code>arm_msg.time = 100</code> — পুরো file-এর সবচেয়ে ছোট সময়-খাম: ধাপ 500, home 2000, জোর করে থামানো 100। L148 <code>self.pub_arm_all.publish(arm_msg)</code> — প্রকাশ শেষ, কোনো ছাপা নেই: console-এ কোনো সংবাদ আসে না, robot এমনিই থেমে যায়। এই method-টিকে ডাকে তিনটি জায়গা — pause-এ ঢুকতে (L172), SPACE চাপলে (L177), আর লুপ ভেঙে বিদায়বেলায় finally-তে (L239); অর্থাৎ program-এর প্রতিটি বন্ধের পথ এই নীরব থামানো দিয়েই যায়।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত এক জোড়া function-কে ঘিরে: max আর min পরস্পরের ভেতরে বসে clamp বানায়, আর তিনটি joint-গোষ্ঠীর তিন রকম জানালা — joint 5-এ [0, 270], joint 6-এ [30, 180], বাকিদের [0, 180], সবই ডিগ্রিতে। হিসাবের ক্রমটাও জরুরি — আগে += দিয়ে যোগ, তারপর clamp, শেষে int-কাস্ট। প্রশ্ন তিনটি: সীমানায় ঠিক কী ঘটে, home 90 থেকে কত চাপে কোথায় পৌঁছায়, আর সাজানো ভুল হলে কী বিপদ।",
+  "levels": [
+   {
+    "label": "Level 1 — clamp-এর খণ্ডিত রূপ",
+    "latex": "\\[ \\mathrm{clamp}_{[lo,\\,hi]}(x) = \\max\\!\\big(lo,\\ \\min(hi,\\ x)\\big) = \\begin{cases} lo, & x < lo \\\\ x, & lo \\le x \\le hi \\\\ hi, & x > hi \\end{cases} \\]",
+    "text": "মূল্যায়ন ভেতর থেকে: আগে ভেতরের min উপরের ছাদে টানে — x ছাদের নিচে থাকলে x-ই থাকে; তারপর বাইরের max মেঝে ঠেলে তোলে। ফল তিন টুকরো: মেঝের নিচে থাকলে lo, জানালার ভেতরে থাকলে x অপরিবর্তিত, ছাদের ওপরে হলে hi। L106, L108, L110 — তিনটিই এই এক ছাঁচ, শুধু lo আর hi-এর সংখ্যা আলাদা।"
+   },
+   {
+    "label": "Level 2 — সীমানায় saturation",
+    "latex": "\\[ x = hi: \\qquad \\max\\!\\big(lo,\\ \\min(hi,\\ hi+\\delta)\\big) = \\max(lo,\\ hi) = hi \\]",
+    "text": "একবার জানালার কিনারায় দাঁড়ালে সেখানেই থাকতে হয়: 270-এ থাকা joint 5-এ আরেকটি +5 চাপ গণিতে 275 বানায়, কিন্তু min সেটাকে 270-এ নামায়, max সেখানেই রাখে — ফল 270। আর যেহেতু clamp-করা মানটাই list-এ ফিরে লেখা হয়, পরের চাপ শুরু করে আবার সেই 270 থেকেই; এজন্যই L121-এর ছাপায় সীমানায় পৌঁছে একই সংখ্যা বারবার ফিরে আসে, key যত চাপই হোক।"
+   },
+   {
+    "label": "Level 3 — home থেকে চাপ-গণনা",
+    "latex": "\\[ N_{\\mathrm{up}} = \\frac{hi - 90}{5}, \\qquad N_{\\mathrm{down}} = \\frac{90 - lo}{5} \\]",
+    "text": "home 90, ধাপ 5 — তাই উপরের কিনারায় পৌঁছাতে (hi - 90)/5 চাপ, নিচের কিনারায় (90 - lo)/5 চাপ। বসিয়ে দেখা যায়: joint 1-4 দুই দিকেই 18 চাপ (90 থেকে 180 ওপরে, 90 থেকে 0 নিচে); joint 5 ওপরে (270 - 90)/5 = 36 চাপ, নিচে 18; joint 6 ওপরে 18, নিচে (90 - 30)/5 = 12। একই home থেকে তিন জানালায় তিন রকম দূরত্ব — gripper-টাই সবচেয়ে তাড়াতাড়ি কিনারায় ছোঁয়।"
+   },
+   {
+    "label": "Level 4 — যোগ আগে, clamp পরে, int শেষে",
+    "latex": "\\[ j_{\\mathrm{raw}} = j + \\delta, \\qquad j' = \\mathrm{clamp}_{[lo,\\,hi]}(j_{\\mathrm{raw}}), \\qquad m = \\mathrm{int}(j') \\]",
+    "text": "তিন ধাপের চেইন: L102-এর += এক মুহূর্তের জন্য সীমার বাইরের মানও বসায় (275 বা -5), clamp সঙ্গে সঙ্গে সেটাকে জানালার ভেতরে ফিরিয়ে list-এ লেখে, আর L114-এর int-কাস্ট message field-এ বসানোর আগের শেষ জাঁচ। home 90 আর delta 5 দুটোই পূর্ণসংখ্যা, তাই সব j' আগে থেকেই 5-এর গুণিতক — int কখনো কিছু কাটে না; থাকে শুধু নিশ্চয়তা হিসেবে। বাইরে যায় শুধু চূড়ান্ত m — সীমার বাইরের সংখ্যা কখনো publish হয় না।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 90 + 5 \\times 36 = 270; \\qquad \\text{press 37: }\\ 270 + 5 = 275,\\ \\ \\min(270,\\ 275) = 270,\\ \\ \\max(0,\\ 270) = 270 \\]",
+    "text": "'0' key (L204-এর step_arm_joint(5, 5)) terminal-এর auto-repeat-এ ধরে রাখলে 36 চাপে joint 5 ঠিক কিনারায় 270; 37-তম চাপে যোগফল 275 হলেও দুই স্তরের সীমা তাকে 270-এই ফেরায়। এরপর প্রতিটি চাপে ছাপা হতে থাকে [ARM] Joint 5 -> Up -> 270 deg — একই লাইন, বারবার: key কাজ করছে, arm শুধু আর যাওয়ার জায়গা পায় না।"
+   },
+   {
+    "latex": "\\[ 90 - 5 \\times 12 = 30; \\qquad \\text{press 13: }\\ 30 - 5 = 25,\\ \\ \\min(180,\\ 25) = 25,\\ \\ \\max(30,\\ 25) = 30 \\]",
+    "text": "'g' key (step_arm_joint(6, -5), L207) 12 চাপে gripper-কে ঠিক মেঝে 30-এ নামায়; 13-তম চাপে 25 হলেও max তাকে ফিরিয়ে তোলে। লক্ষণীয় খুঁটিনাটি: এই ক্ষেত্রে ভেতরের min-এর কোনো কাজ নেই — 25 তো আগেই 180-এর নিচে — সীমা টানে শুধু বাইরের max; অর্থাৎ নিচের কিনারায় দুই স্তরের মধ্যে সক্রিয় একটিই। আর এই 30-ই gripper আঙুলের শেষ ঠেকনা — 0 পর্যন্ত বন্ধ হওয়ার পথ এই লাইনে নেই।"
+   },
+   {
+    "latex": "\\[ 90 - 5 \\times 18 = 0; \\qquad \\text{press 19: }\\ 0 - 5 = -5,\\ \\ \\min(180,\\ -5) = -5,\\ \\ \\max(0,\\ -5) = 0 \\]",
+    "text": "'1' key (step_arm_joint(1, -5), L195) 18 চাপে joint 1-কে মেঝে 0-এ নামায়; 19-তম চাপে ঋণাত্মক -5-ও তৈরি হয়, ভেতরের min তাকে আটকায় না (ছাদ নিম্নমুখী মান দেখেই না), কিন্তু বাইরের max মেঝেই শেষ কথা বলে — ফল 0। তিনটি জানালাই এভাবে দুই দিকে বাঁধা: যোগ যত দূরেই যাক, প্রকাশিত মান ঋণাত্মক হয় না, ছাদও ভেদ করে না।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "self.arm_joints[joint_id - 1] = max(0, min(270, self.arm_joints[joint_id - 1]))",
+    "math": "\\( j_5' = \\max\\!\\big(0,\\ \\min(270,\\ j_5 + \\delta)\\big), \\quad \\delta = \\pm 5 \\)",
+    "text": "L106 — joint 5-এর একচেটিয়া জানালা [0, 270]; menu-র 9/0 জোড়ার প্রতিটি চাপ এই সূত্রের এক বার প্রয়োগ। 270 সংখ্যাটা পুরো file-এ কেবল এই এক লাইনেই বাঁচে।"
+   },
+   {
+    "code": "self.arm_joints[joint_id - 1] = max(30, min(180, self.arm_joints[joint_id - 1]))",
+    "math": "\\( j_6' = \\max\\!\\big(30,\\ \\min(180,\\ j_6 + \\delta)\\big) \\)",
+    "text": "L108 — একমাত্র joint যার মেঝে 0 নয়; gripper-এর জানালা [30, 180], প্রস্থ 150 — ছয়টির মধ্যে সবচেয়ে সরু। g/h key-র প্রতিটি চাপ এই সূত্র দিয়েই ছাঁকুন।"
+   },
+   {
+    "code": "self.arm_joints[joint_id - 1] += delta",
+    "math": "\\( j_{\\mathrm{raw}} = j + \\delta, \\qquad \\delta \\in \\{-5,\\ +5\\} \\)",
+    "text": "L102 — যোগ আগে, সীমা পরে; তিনটি clamp-লাইনই এই +=-এর ফলকে ঘিরে দাঁড়িয়ে আছে। menu-র 5 deg / press কথার 5-টা এই delta-ই, L195-208 থেকে আসে।"
+   },
+   {
+    "code": "arm_msg.joint = int(self.arm_joints[joint_id - 1])",
+    "math": "\\( m = \\mathrm{int}(j') \\)",
+    "text": "L114 — প্রকাশের আগের শেষ ধাপ: clamp-করা মানকে পূর্ণসংখ্যা field-এ বসানো। j' যেহেতু আগেই 5-এর গুণিতক পূর্ণসংখ্যা, রূপান্তরটা কার্যত ফাঁকা অবস্থাতেই কাজ করে — message-এর জন্য নিছক নিশ্চয়তা।"
+   }
+  ],
+  "failure": [
+   "নেস্টিং-এর ভূমিকা উল্টে লেখা — min(0, max(270, x)) ধরনের সাজ: ভেতরের max(270, x) যা-ই হোক ফল অন্তত 270, তারপর বাইরের min(0, ...) তাকে 0-তে নামায় — অর্থাৎ যেকোনো x-এর জন্য ফল চিরকাল 0। joint-টা 90-এ থাকুক বা চাপে 95-এ উঠতে চাকুক, প্রকাশিত মান 0 — হাত এক লহমায় মেঝেতে গিয়ে পিন হয়ে বসে। উল্টো বিনিময়ে max(270, min(0, x)) লিখলে ফল চিরকাল 270 — ছাদে পিন। নিয়মের ছড়া: ভেতরে hi-এর min, বাইরে lo-এর max — ভূমিকা উল্টালে জানালা নয়, একটা বিন্দু হয়ে যায়।",
+   "ভুল ধ্রুবক — সব joint-এ একই 0..180 জানালা ধরে নেওয়া। তাতে দুই ভুল পূর্বাভাস আসে: '0' ধরে রাখা কেউ ভাবে 18 চাপের পরে joint 5 থেমে যাবে (180-এ), অথচ আসল জানালা 270 — হাত আরও 18 চাপ চলতে থাকে; আর gripper-কে নিয়ে ভাবা হয় 0 পর্যন্ত পুরো বন্ধ হবে, অথচ মেঝে 30 — 12 চাপের পরেই থেমে যায়। সীমানার সংখ্যা না জানলে Level 3-এর চাপ-গণনার হিসাসই প্রতিটি জায়গায় ভুল দিকে যায়।"
+  ]
+ },
+ "robot": {
+  "correct": "আসল robot-এ README L7-এর ros2 run yahboomcar_ctrl yahboom_keyboard চালানোর সঙ্গে সঙ্গে এই Part একবার চলে: তিন publisher প্রস্থত হয়, দুই speed-limit সংখ্যা attribute-এ জমে, terminal-এর setting সঞ্চিত হয়, আর সবার শেষে <code>self.reset_arm()</code> — arm সত্যিই home [90, 90, 0, 0, 90, 90]-এ ফেরে, 2000 ms ধরে ধীরে, console-এ [SYSTEM] Arm reset to Home Position. ছাপা পড়ে; একটা key-ও এর আগে পড়েনি। এরপর থেকে প্রতি 0.1 সেকেন্ডে একটি key পড়া হয় — Enter ছাড়াই, Ctrl+C '\\x03' অক্ষর হয়ে। arm key প্রতি চাপে 5 ডিগ্রি নাড়ায় 500 ms সময়ে, clamp ছয় joint-কেই নিজের জানালায় আটকে রাখে — কিনারায় পৌঁছলে একই মান ছাপতে থাকে; s দিয়ে pause-এ ঢোকা বা SPACE চাপলে emergency_stop চলে — চাকায় zero Twist, arm-এ বর্তমান অবস্থা 100 ms-এ — robot মুহূর্তে জমে যায়, console নীরব। gmapping SLAM-এর দিন এই node-ই robot-এর হাত-পা: SLAM চালু রেখে এর base key দিয়ে ঘুরে ঘুরে map বাড়ানো হয়, আর node নামানোর সময় finally-র emergency_stop robot-কে থামা অবস্থায় রেখে দেয়।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: node তুললে arm যেখানে আছে সেখানেই থাকবে — আসলে L86-এর constructor-call প্রথম key-এর অনেক আগেই হাত home-এ নিয়ে নেয়; SLAM চলাকালে মাঝপথে teleop আবার তোলা হলে হাত হঠাৎ নড়ে উঠে সামনের জিনিস সরাতে পারে, তাই arm-এর পথ আগে খালি রাখা জরুরি। দ্বিতীয়: Ctrl+C চাপলে সাধারণ terminal-interrupt-এর মতো node বন্ধ হয়ে যাবে ভাবা — raw mode-এ Ctrl+C signal নয়, '\\x03' অক্ষর; L215/L220-এর চেক না থাকলে node চাপটাকে চিনেও বন্ধ হতো না। তৃতীয়: emergency_stop-কে home-এ ফেরানো ভাবা — এটা home পাঠায় না, বর্তমান অবস্থাই 100 ms-এ জমিয়ে দেয়; home চাইলে r key (2000 ms-এর ধীর ফেরা) আলাদা লাগবে। চতুর্থ: সীমানার ভুল ধারণা — joint 5 অন্যদের মতো 180-এ থামবে (আসলে 270 পর্যন্ত চলে), বা gripper পুরো বন্ধ হবে 0 পর্যন্ত (আসলে মেঝে 30); আর কিনারায় key চেপে ধরে রেখে key নষ্ট ভাবা — console একই সংখ্যা ছাপছে, কারণ arm জানালার কিনারায় দাঁড়িয়ে, মান আর বাড়ার জায়গা নেই।"
+ },
+ "animType": null
+}

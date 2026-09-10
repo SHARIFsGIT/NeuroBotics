@@ -1,0 +1,247 @@
+[
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 176,
+  "lns": [
+   176
+  ],
+  "kind": "event",
+  "cap": "এবার ঘটনাটা ঘটে: import ফুরাল, আর <code>ros2 run</code> executable-এর entry point (setup.py-র console_scripts, illustrative) ঠিক এই <code>main</code>-কে ডাকল — <code>def main():</code> ছিল module-এর শেষ module-level statement। দুই pass-এর সীমান্ত এই লাইন: এ পর্যন্ত সব define, L177 থেকে সত্যি চলার পালা।",
+  "op": "call main entry point",
+  "dbg": [
+   [
+    "bind",
+    "def main(): — last module-level statement"
+   ],
+   [
+    "entry",
+    "setup.py console_scripts -> main (illustrative)"
+   ],
+   [
+    "event",
+    "import done, launcher calls main()"
+   ]
+  ],
+  "fx": "def main():   · entry point fires after import",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">constructor: L1 to L42</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/ira_laser_tools</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/yahboom_laser_filter</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">def registerScan bound (not run)</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">def main bound</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import pass</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"236\" y=\"56\" width=\"168\" height=\"112\" rx=\"5\" fill=\"#161b22\" stroke=\"#1f6feb\"/><text x=\"320\" y=\"70\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance.py IMPORT</text><text x=\"248\" y=\"86\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">improt done  (L14, typo as-is)</text><text x=\"248\" y=\"97\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">RAD2DEG = 180/pi = 57.29578</text><text x=\"248\" y=\"108\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">class laserAvoid(Node) L17</text><text x=\"248\" y=\"119\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def JoyStateCallback L49</text><text x=\"248\" y=\"130\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def registerScan L53</text><text x=\"248\" y=\"141\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def exit_pro L168 · def main L176</text><text x=\"248\" y=\"154\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">defs bound - none executed yet</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">main pass next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">শেষ def — main pass এবার সত্যি চলবে।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 177,
+  "lns": [
+   177,
+   178,
+   179
+  ],
+  "kind": "struct",
+  "cap": "main-এর ভেতরের প্রথম তিন লাইন এই মুহূর্তেও শুধু function object-এর bytecode — একটাও চলেনি: L177 <code>rclpy.init()</code>, L178 <code>laser_avoid = laserAvoid(\"laser_Avoidance_a1\")</code> (নামে <code>_a1</code> সাফিক্স), L179 <code>print (\"start it\")</code> — L14-এর মতোই বন্ধনীর আগে space। পরের ধাপে ঢুকে এগুলো একে একে সত্যি চলবে।",
+  "op": "compile main body lines",
+  "dbg": [
+   [
+    "state",
+    "L177-L179 compiled in main, not yet run"
+   ],
+   [
+    "first",
+    "rclpy.init()"
+   ],
+   [
+    "second",
+    "laser_avoid = laserAvoid(\"laser_Avoidance_a1\")"
+   ],
+   [
+    "third",
+    "print (\"start it\") — space after print"
+   ]
+  ],
+  "fx": "laser_avoid = laserAvoid(\"laser_Avoidance_a1\")   · L178, compiled not run"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 177,
+  "lns": [
+   177
+  ],
+  "kind": "event",
+  "cap": "main pass-এর প্রথম সত্যি কাজ — L177: <code>rclpy.init()</code>। import pass-এ লাইনটা শুধু লেখা ছিল; এখন ROS 2-র global context তৈরি হলো, যার উপরে পরের প্রতিটা node, subscription, publisher দাঁড়াবে। জীবনের শেষে L187-এর <code>rclpy.shutdown()</code> এই context-টাকেই বন্ধ করবে — init আর shutdown একই file-এর দুই প্রান্তে।",
+  "op": "init rclpy context",
+  "dbg": [
+   [
+    "call",
+    "rclpy.init() — first line of main to execute"
+   ],
+   [
+    "creates",
+    "global default context"
+   ],
+   [
+    "teardown",
+    "rclpy.shutdown() at L187 closes it"
+   ]
+  ],
+  "fx": "rclpy.init()   · main pass begins for real"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 178,
+  "lns": [
+   178
+  ],
+  "kind": "event",
+  "cap": "Constructor ডাক পেল — L178: <code>laser_avoid = laserAvoid(\"laser_Avoidance_a1\")</code>। import pass-এ যে __init__ (L18-L47) শুধু define হয়ে বসে ছিল, সেটাই এখন দৌড় শুরু করল; নামের শেষে <code>_a1</code> সাফিক্স, <code>ros2 node list</code> কমান্ডে এই নামই দেখাবে (illustrative)। পরের ধাপ থেকে L19-L47 একে একে exec হবে।",
+  "op": "construct laserAvoid node",
+  "dbg": [
+   [
+    "call",
+    "laserAvoid(\"laser_Avoidance_a1\")"
+   ],
+   [
+    "node name",
+    "laser_Avoidance_a1 — _a1 suffix"
+   ],
+   [
+    "enters",
+    "__init__ L19-L47 runs now"
+   ],
+   [
+    "local",
+    "laser_avoid holds the object in main()"
+   ]
+  ],
+  "fx": "laser_avoid = laserAvoid(\"laser_Avoidance_a1\")   · __init__ runs now",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">ctor run</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/ira_laser_tools</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/yahboom_laser_filter</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">def registerScan bound (not run)</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">def main bound</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">node wired</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"236\" y=\"60\" width=\"74\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"273\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">/scan fused</text><rect x=\"330\" y=\"60\" width=\"74\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#6e40c8\" stroke-width=\"1\"/><text x=\"367\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">/JoyState</text><line x1=\"273.0\" y1=\"77.0\" x2=\"296.0\" y2=\"100.0\" stroke=\"#7ee787\" stroke-width=\"1.2\"/><line x1=\"367.0\" y1=\"77.0\" x2=\"344.0\" y2=\"100.0\" stroke=\"#d2a8ff\" stroke-width=\"1.2\"/><rect x=\"252\" y=\"100\" width=\"136\" height=\"18\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"320\" y=\"111.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance_a1</text><line x1=\"321.0\" y1=\"118.0\" x2=\"321.0\" y2=\"134.0\" stroke=\"#ff7b72\" stroke-width=\"1.2\"/><rect x=\"272\" y=\"134\" width=\"98\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#da3633\" stroke-width=\"1\"/><text x=\"321\" y=\"143.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">/cmd_vel</text><line x1=\"369.0\" y1=\"142.0\" x2=\"392.0\" y2=\"142.0\" stroke=\"#8b949e\" stroke-width=\"1.2\" stroke-dasharray=\"2 2\"/><rect x=\"390\" y=\"133\" width=\"24\" height=\"18\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"402\" y=\"144.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">wheels</text><text x=\"320\" y=\"172\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">2 subscriptions in - 1 publisher out</text><text x=\"320\" y=\"205\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">spin opens - events decide everything</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">node জন্মাচ্ছে — নাম এলো main থেকে।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 19,
+  "lns": [
+   19
+  ],
+  "kind": "event",
+  "cap": "__init__-এর প্রথম লাইন L19 এবার সত্যি চলে: <code>super().__init__(name)</code> — L3-এর <code>from rclpy.node import Node</code> থেকে পাওয়া base class-এর constructor চালু, \"laser_Avoidance_a1\" নামে node-টা context-এ রেজিস্টার হলো। এটা না চললে পরের কোনো <code>create_subscription</code> বা <code>create_publisher</code> সম্ভব হতো না।",
+  "op": "init node base class",
+  "dbg": [
+   [
+    "call",
+    "super().__init__(name)"
+   ],
+   [
+    "arg",
+    "name = laser_Avoidance_a1"
+   ],
+   [
+    "base",
+    "Node — imported at L3"
+   ],
+   [
+    "effect",
+    "node registered with the context"
+   ]
+  ],
+  "fx": "super().__init__(name)   · name = laser_Avoidance_a1"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 23,
+  "lns": [
+   23
+  ],
+  "kind": "event",
+  "cap": "<code>self.sub_laser = self.create_subscription(LaserScan, \"/scan\", self.registerScan, 1)</code> — <code>/scan</code> মানে folder 10-এর পুরো chain-এর শেষ ধারা: merger-এর 360 ring, তারপর filter-এর জানালা — এই node-এর সব সিদ্ধান্ত ওই stream-এর উপরে দাঁড়িয়ে।",
+  "op": "subscribe to fused /scan",
+  "dbg": [
+   [
+    "topic",
+    "/scan — merged + filtered output (folder 10 chain)"
+   ],
+   [
+    "callback",
+    "self.registerScan"
+   ],
+   [
+    "qos depth",
+    "1"
+   ]
+  ],
+  "fx": "self.sub_laser = self.create_subscription(LaserScan, \"/scan\", self.registerScan, 1)",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">wired</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">pub /cmd_vel</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">node wired</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"236\" y=\"60\" width=\"74\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"273\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">/scan fused</text><rect x=\"330\" y=\"60\" width=\"74\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#6e40c8\" stroke-width=\"1\"/><text x=\"367\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">/JoyState</text><line x1=\"273.0\" y1=\"77.0\" x2=\"296.0\" y2=\"100.0\" stroke=\"#7ee787\" stroke-width=\"1.2\"/><line x1=\"367.0\" y1=\"77.0\" x2=\"344.0\" y2=\"100.0\" stroke=\"#d2a8ff\" stroke-width=\"1.2\"/><rect x=\"252\" y=\"100\" width=\"136\" height=\"18\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"320\" y=\"111.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance_a1</text><line x1=\"321.0\" y1=\"118.0\" x2=\"321.0\" y2=\"134.0\" stroke=\"#ff7b72\" stroke-width=\"1.2\"/><rect x=\"272\" y=\"134\" width=\"98\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#da3633\" stroke-width=\"1\"/><text x=\"321\" y=\"143.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">/cmd_vel</text><line x1=\"369.0\" y1=\"142.0\" x2=\"392.0\" y2=\"142.0\" stroke=\"#8b949e\" stroke-width=\"1.2\" stroke-dasharray=\"2 2\"/><rect x=\"390\" y=\"133\" width=\"24\" height=\"18\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"402\" y=\"144.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">wheels</text><text x=\"320\" y=\"172\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">2 subscriptions in - 1 publisher out</text><text x=\"320\" y=\"205\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">spin opens - events decide everything</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">দুই কান, এক মুখ।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">সব সিদ্ধান্ত এই তারে বাঁধা।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 38,
+  "lns": [
+   38,
+   39
+  ],
+  "kind": "event",
+  "cap": "<code>ResponseDist</code> জোড়াও একই প্যাটার্ন — L38-এ <code>declare_parameter(\"ResponseDist\",0.3)</code> (কত কাছে কিছু এলে সেটা warning, মিটারে), L39-এ পড়ে <code>self.ResponseDist = 0.3</code>। এর খরচ পরে: L69/L74/L79-এ <code>self.ResponseDist*1.5</code> মানে 0.45 m-এর ভেতরে beam পড়লেই সেটা গণনায় যাবে।",
+  "op": "declare ResponseDist parameter",
+  "dbg": [
+   [
+    "declare",
+    "ResponseDist default 0.3 m"
+   ],
+   [
+    "read",
+    "self.ResponseDist = 0.3"
+   ],
+   [
+    "use",
+    "L69/L74/L79 gate = 0.3*1.5 = 0.45 m"
+   ]
+  ],
+  "fx": "self.ResponseDist = self.get_parameter('ResponseDist').get_parameter_value().double_value   · 0.3 m",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">params</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">conut = 3</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">configured</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"240\" y=\"58\" width=\"160\" height=\"96\" rx=\"5\" fill=\"#161b22\" stroke=\"#30363d\"/><text x=\"320\" y=\"72\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">4 parameters + state</text><text x=\"248\" y=\"86\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">linear 0.2 m/s · angular 0.2 rad/s</text><text x=\"248\" y=\"97\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">LaserAngle 20.0 deg (front cone)</text><text x=\"248\" y=\"108\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">ResponseDist 0.3 m</text><text x=\"248\" y=\"119\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">gate = 0.3 x 1.5 = 0.45 m (code)</text><text x=\"248\" y=\"130\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">comment says 0.825 - stale</text><text x=\"248\" y=\"143\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">conut = 3 · Joy_active False</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">threshold: more than 3 beams = wall</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">চারটা parameter + তিনটা counter।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">comment-এর 0.825 পুরনো — code সত্য।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 179,
+  "lns": [
+   179
+  ],
+  "kind": "event",
+  "cap": "Constructor শেষ, main এখন L179-এ: <code>print (\"start it\")</code>। L14-এর <code>print (\"improt done\")</code>-এর মতোই বন্ধনীর আগে একটা space আছে — দুটোই চলতি Python-এ বৈধ। terminal-এ এই লাইন দেখা মানে L18-L47-এর পুরো setup — subscription, publisher, চার জোড়া parameter — error ছাড়াই পেরিয়ে এসেছে।",
+  "op": "print start banner",
+  "dbg": [
+   [
+    "when",
+    "after laserAvoid() constructor returns"
+   ],
+   [
+    "output",
+    "start it"
+   ],
+   [
+    "proof",
+    "L18-L47 setup finished without error"
+   ]
+  ],
+  "fx": "print (\"start it\")   · setup survived"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 181,
+  "lns": [
+   181
+  ],
+  "kind": "event",
+  "cap": "এখন থেকে main thread এখানেই পার্ক হয়ে যাবে — L181: <code>rclpy.spin(laser_avoid)</code>। executor নিয়ন্ত্রণ নিল; এর পরের সব কাজ ঘটনা-চালিত: <code>/scan</code>-এ message এলে <code>registerScan</code>, <code>/JoyState</code>-এ এলে <code>JoyStateCallback</code> ছুটে আসবে। পরের লাইনগুলো (L182+) তখনই চলবে যখন spin ছেড়ে দেবে — মানে Ctrl+C-তে।",
+  "op": "spin node forever",
+  "dbg": [
+   [
+    "call",
+    "rclpy.spin(laser_avoid)"
+   ],
+   [
+    "state",
+    "main thread blocked in executor"
+   ],
+   [
+    "events",
+    "/scan -> registerScan, /JoyState -> callback"
+   ]
+  ],
+  "fx": "rclpy.spin(laser_avoid)   · main thread parks here",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">spin</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">conut = 3</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">rclpy.spin - event loop open</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#1f6feb\">spinning</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"252\" y=\"70\" width=\"136\" height=\"16\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"320\" y=\"80.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">rclpy.spin(laser_avoid)</text><text x=\"320\" y=\"102\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">event loop open - waiting</text><rect x=\"236\" y=\"116\" width=\"78\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"275\" y=\"125.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">/scan waits</text><rect x=\"326\" y=\"116\" width=\"78\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#6e40c8\" stroke-width=\"1\"/><text x=\"365\" y=\"125.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">/JoyState waits</text><text x=\"320\" y=\"152\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#484f58\">single-threaded: one callback at a time</text><text x=\"320\" y=\"166\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#484f58\">sleep() inside a callback blocks the rest</text><text x=\"320\" y=\"205\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">first scan arrives next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">spin খুলে গেল।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">এখন থেকে সব ঘটনা event।</text>"
+ }
+]

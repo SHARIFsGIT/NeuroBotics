@@ -1,0 +1,110 @@
+{
+  "n": 8,
+  "id": "part-08",
+  "fname": "laser_Warning.py",
+  "enTitle": "State & the Aggressive PID",
+  "lang": "python",
+  "start": 44,
+  "end": 48,
+  "flags": [],
+  "explain": [
+    {
+      "a": 44,
+      "b": 44,
+      "text": "L44 হলো constructor-এর শেষ block-এর নামফলক: <code># --- STATE TRACKERS &amp; PID CONTROLLER ---</code>। এর নিচের চারটি লাইনে দুটি জিনিস জন্মায় — একটি state flag আর একটি PID controller। এই block শেষ হলে L19-এ শুরু হওয়া <code>__init__</code>-ও শেষ: subscription দুটি (L24, L26), publisher দুটি (L30, L32), parameter-চারটি (L35-42) সব আগেই তৈরি — node-টি এখন প্রথম <code>/scan</code> message-র অপেক্ষায় সম্পূর্ণ armed।"
+    },
+    {
+      "a": 45,
+      "b": 45,
+      "text": "L45 <code>self.Joy_active = False</code> — node-এর জন্মলগ্ন state। <code>/JoyState</code> subscription (L26) থেকে JoyStateCallback (L50-52) এসে এটি বদলায়: মানুষ joystick ধরলে True, ছেড়ে দিলে আবার False। ডিফল্ট False মানে চালু হওয়ার প্রথম মুহূর্ত থেকেই AI autonomous — L81-এর gate (<code>if self.Joy_active :</code>) এখনো বন্ধ নয়, তাই প্রথম <code>/scan</code> থেকেই steering চালু। উল্টো দিকটিও গুরুত্বপূর্ণ: flag-এর মান কেউ না বদলালে এই default-ই কায়েম থাকে — কোনো timeout বা স্বয়ংক্রিয় পুনরায়-সেট নেই।"
+    },
+    {
+      "a": 46,
+      "b": 46,
+      "text": "L46-এর comment হুবহু: <code># This PID controller controls the steering wheel to keep the closest object centered.</code> — কিন্তু <b>steering wheel</b> অংশটি stale wording, যেমন আছে তেমনই উদ্ধৃত, সমর্থন করা হলো না: differential-drive robot-এ কোনো steering wheel নেই; মোড় আসে দুই চাকার গতির পার্থক্য থেকে, আর সেই নির্দেশ L30-এর <code>/cmd_vel</code> message-এর <code>angular.z</code> field-ই বহন করে। বাক অংশটুকু ঠিক — PID-টির লক্ষ্য সবচেয়ে কাছের object-কে সামনে কেন্দ্রে আনা; wheel ঘোরানো নয়, পুরো শরীর ঘুরে সেই কাজটি হয়।"
+    },
+    {
+      "a": 47,
+      "b": 47,
+      "text": "L47 <code># It is tuned a bit more aggressively than the tracker (3.0, 0.0, 5.0)</code> — এটি একটি আসল cross-folder reference: tracker মানে folder 12-এর laser_Tracker, যার angular PID ছিল <code>SinglePID(2.0, 0.0, 2.0)</code> (Kp = 2, Kd = 2)। এখানে Kp = 3 আর Kd = 5 — দুটিই বড়, তাই comment-এর \"a bit more aggressively\" দাবিটি সংখ্যায় সমর্থিত। এই কড়া টিউনিং কেন দরকার, তার পরিমাপযোগ্য ফল নিচের math-অংশে: deadzone 12 ডিগ্রি বনাম tracker-এর 18 ডিগ্রি, আর turn ceiling ±0.9375 rad/s বনাম ±0.75 rad/s।"
+    },
+    {
+      "a": 48,
+      "b": 48,
+      "text": "L48 <code>self.ang_pid = SinglePID(3.0, 0.0, 5.0)</code> — এই file-এর <b>একমাত্র</b> PID; linear PID-এর কোনো অস্তিত্বই এখানে নেই (tracker-এর lin_pid-এর মতো কিছু নেই), আর সে কারণেই পরে <code>linear.x</code> কখনো সেটই হয় না — robot সবসময় জায়গায় ঘুরে (L123-এর comment নিজেই স্বীকার করে)। <code>SinglePID</code> class-টি L13-এর star-import থেকে এসেছে; vendor module-টি এই folder-এ নেই, তাই তিনটি positional argument-কে (Kp, Ki, Kd) ধরা হচ্ছে inferred হিসেবে। এই object-এর একটিই কাজজায়গা: L103-এ <code>pid_compute(abs(minDistID) / 72, 0)</code>।"
+    }
+  ],
+  "math": {
+    "intro": "constructor-এর এই এক লাইনে তিনটি সংখ্যা (3.0, 0.0, 5.0) ঠিক করে দেয় robot-এর প্রতিটি মোড় কেমন হবে। এই Part-এর গণিত সেটাই খোলে: generic PID law-টি কী, Ki = 0 কোন শক্তিটি কেটে দেয়, বড় Kd = 5 ঠিক কখন জ্বলে ওঠে, আর guard কেন tracker-এর চেয়ে কড়া gain নিয়েছে।",
+    "levels": [
+      {
+        "label": "Level 1 — Symbols ও একক",
+        "latex": "\\[ u(t),\\quad e(t),\\quad K_p = 3.0,\\quad K_i = 0.0,\\quad K_d = 5.0 \\]",
+        "text": "u হলো controller-এর আউটপুট, e হলো error — কতটা ভুল দিকে তাকিয়ে আছি। এই file-এ e আসে dimensionless আকারে: L103-এ <code>abs(minDistID) / 72</code>, মানে degree-সংখ্যাকে 72 দিয়ে ভাগ। 72 কেন 72 — file কোথাও ব্যাখ্যা করে না, bare magic number। u পরে <code>angular.z</code>-এর স্কেলে যায় (rad/s, তার আগে L118-এর ×0.5 damping পেরিয়ে)।"
+      },
+      {
+        "label": "Level 2 — Generic PID law",
+        "latex": "\\[ u(t) = K_p\\,e(t) + K_i \\int_0^t e(\\tau)\\,\\mathrm{d}\\tau + K_d\\,\\frac{\\mathrm{d}e(t)}{\\mathrm{d}t} \\]",
+        "text": "তিনটি term তিন দিকে তাকায়: P দেখে বর্তমান error, I জমায় রাখে অতীতের পুরো ভাগ, D আঁচ করে error এখন কোন দিকে যাচ্ছে। SinglePID-এর ভেতরের implementation অজানা (vendor module এই folder-এ নেই, inferred), কিন্তু constructor-এর তিনটি gain এই law-এর তিন সহগ হিসেবেই বসে — সেটাই সব downstream আচরণের ভিত্তি।"
+      },
+      {
+        "label": "Level 3 — Ki = 0 কী কেটে দেয়",
+        "latex": "\\[ K_i = 0 \\;\\Longrightarrow\\; u(t) = K_p\\,e(t) + K_d\\,\\frac{\\mathrm{d}e}{\\mathrm{d}t} \\]",
+        "text": "integral term পুরোপুরি অনুপস্থিত — controller-এর কোনো স্মৃতি নেই, প্রতিটি scan নিজের হিসাব নিজেই করে। লাভ: windup হয় না — object দীর্ঘক্ষণ এক পাশে আটকে থাকলেও জমা হওয়া error হঠাৎ বিস্ফোরিত হয়ে চাকায় ধাক্কা দেয় না। মূল্য: ছোট কিন্তু স্থায়ী error কেউ জমিয়ে তুলে শুধরে দেয় না। guard-এর কাজ অবশ্য অপেক্ষা নয় — প্রতিটি scan-এ হুমকির দিকে ঘুরে তাকানো; সেখানে PD-ই যথেষ্ট।"
+      },
+      {
+        "label": "Level 4 — Discrete scan আর বড় Kd",
+        "latex": "\\[ u_k \\;=\\; 3\\,e_k \\;+\\; 5\\,\\frac{e_k - e_{k-1}}{\\Delta t} \\]",
+        "text": "<code>pid_compute</code> প্রতি scan-এ একবার ডাকা হয়, তাই derivative-কে পার্থক্য-কে-সময়-দিয়ে-ভাগ দিয়ে approximate করতে হয় (illustrative)। দৃশ্য বদলালে — নতুন object প্রথম scan-এ cone-এ ঢুকলে — e এক ধাপে লাফিয়ে ওঠে, আর ঠিক সেই step change-এই Kd = 5 term-টি একটি same-sign transient যোগ করে। Kp-এর তুলনায় Kd বড় হওয়ায় প্রথম call-এর এই ধাক্কাটি চোখে পড়ে; পরের scan-গুলোতে e শান্ত হলে হিসাব আবার নিচের Kp-view-এ ফেরে।"
+      },
+      {
+        "label": "Level 5 — Kp-view বন্ধ রূপ",
+        "latex": "\\[ u = 3\\cdot\\frac{|a|}{72} = \\frac{|a|}{24},\\qquad |u| < 0.5 \\;\\Longleftrightarrow\\; |a| < 12^{\\circ} \\]",
+        "text": "transient কেটে যাওয়ার পর steady হিসাব pure proportional: e = |a|/72 ঢুকলে u = |a|/24 (illustrative)। L115-এর deadzone <code>abs(ang_pid_compute) &lt; 0.5</code> তাই |a| < 12 ডিগ্রিতে রূপ নেয়। ঠিক সীমানায় |a| = 12 হলে u = 0.5 — strict <code>&lt;</code> মিথ্যা হওয়ায় beam-টি পাস করে যায়, ×0.5 damping-এর পর z = ±0.25 rad/s। আর cone-এর কিনারা ছুঁতে ছুঁতে (|a| যখন 45-এর নিচ দিকে) u পৌঁছায় 1.875-এ, z পৌঁছায় ±0.9375 rad/s-এ — এটাই guard-এর turn ceiling; exactly 45.0-র beam L68-এর strict শর্তে বাদই পড়ে।"
+      },
+      {
+        "label": "Level 6 — Guard বনাম tracker: কড়া টিউনিংয়ের ফল",
+        "latex": "\\[ K_p:\\ \\frac{3}{2} \\;\\Longrightarrow\\; \\text{deadzone } \\frac{12^{\\circ}}{18^{\\circ}},\\qquad \\text{ceiling } \\frac{\\pm 0.9375}{\\pm 0.75}\\ \\frac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+        "text": "tracker (folder 12) নিয়েছিল Kp = 2 আর damping ×0.6; guard নিয়েছে Kp = 3 আর damping ×0.5। ফল দুই মাথায়: deadzone 18 ডিগ্রি থেকে সঙ্কুচিত হয়ে 12 ডিগ্রি — guard আরও ছোট বাঁকে সাড়া দেয়; ceiling 0.75 থেকে উঠে 0.9375 rad/s — জরুরি মুহূর্তে আরও দ্রুত ঘোরে। tracker-এর কাজ ছিল শান্তভাবে লক্ষ্য অনুসরণ করা; guard-এর কাজ হুমকির দিকে সঙ্গে সঙ্গে ঘুরে তাকানো আর প্রয়োজনে বাজনার সাথে নজর রাখা — L47-এর \"aggressively\" শব্দটির সত্যতা এই দুটি সংখ্যাতেই খুঁজে পাওয়া যায়।"
+      }
+    ],
+    "numeric": [
+      {
+        "latex": "\\[ e = \\frac{14}{72} = 0.194,\\qquad u = 3 \\times 0.194 = 0.583,\\qquad z = 0.5 \\times 0.583 = +0.292\\ \\frac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+        "text": "illustrative Wave A (pillar 0.90 m, +14 ডিগ্রি, বাঁদিকে): L48-এর gain-গুলো প্রথম কাজে নামলে এই সংখ্যাগুলো আসে। u = 0.583 deadzone পাস করে (0.5-এর উপরে), ×0.5 damping-এর পর চাকার কাছে যায় +0.292 rad/s — robot স্থির জায়গায় বাঁদিকে ধীরে ঘোরে। দৃশ্য বদলের প্রথম call-এ Kd- transient একই দিকে একটু ঠেলে দিতে পারে (illustrative)।"
+      },
+      {
+        "latex": "\\[ e = \\frac{8}{72} = 0.111,\\qquad u = 3 \\times 0.111 = 0.333,\\qquad 0.333 < 0.5 \\;\\Rightarrow\\; z = 0.0 \\]",
+        "text": "illustrative Wave F (0.80 m @ +8 ডিগ্রি, পরিষ্কার সামনে): একই PID, কিন্তু error ছোট হওয়ায় Kp = 3-ও u-কে 0.5-এর ঘরে তুলতে পারে না — deadzone গিলে দেয়, z = 0.0। robot ঘুরবে না; object 0.55 m-এর বাইরে বলে beep-ও বাজবে না — সব ঠিক থাকার নীরব ছবি।"
+      },
+      {
+        "latex": "\\[ u_{\\max} = 3 \\times \\frac{45}{72} = 1.875,\\qquad z_{\\max} = \\pm\\,0.9375\\ \\frac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+        "text": "illustrative ceiling: cone-এর সীমানার কাছে |a| 45-এর নিচ দিকে গেলে (exactly 45.0-র beam strict <code>&lt;</code> শর্তে বাদ)। একই জায়গায় tracker-এর ছাদ ছিল 2 × (45/72) × 0.6 = 0.75 rad/s — guard-এর ঘোরা প্রায় 25% দ্রুত, L47-এর কড়া টিউনিংয়ের সরাসরি মাপ।"
+      }
+    ],
+    "mapping": [
+      {
+        "code": "self.ang_pid = SinglePID(3.0, 0.0, 5.0)",
+        "math": "\\( K_p = 3.0,\\; K_i = 0.0,\\; K_d = 5.0 \\)",
+        "text": "তিনটি positional argument-ই generic PID law-এর তিন সহগ। ক্রমটি (Kp, Ki, Kd) — inferred: SinglePID-এর vendor module এই folder-এ নেই, ভেতরটা দেখা যাচ্ছে না; তাই এই ক্রম নিয়ে সতর্ক থাকতে হয়।"
+      },
+      {
+        "code": "ang_pid_compute = self.ang_pid.pid_compute(abs(minDistID) / 72, 0)",
+        "math": "\\( u = 3\\,e + 5\\,\\dot{e},\\qquad e = |a|/72 \\)",
+        "text": "এই object-টির একমাত্র call — L103-এ, error হিসেবে degree-কে 72 দিয়ে ভাগ করা dimensionless মান, দ্বিতীয় argument target শূন্য। L48-এ বসানো gain-গুলো ঠিক এই এক লাইন দিয়েই চাকার কাছে পৌঁছায়; এর পরে sign branch (L106-110), deadzone (L115), damping (L118) — সব এই u-এর উপরে দাঁড়িয়ে।"
+      }
+    ],
+    "failure": [
+      "Joy_active-এর default True করে দিলে জন্মের প্রথম scan থেকেই L81-82 চলে যেত: প্রতিটি scan-এ zero Twist — চাকা সারাজীবন brake-এ, obstacle যত কাছেই আসুক কোনো মোড় নেই, beep-ও নেই (L83-এর return alarm-এর আগেই), আর print trio-ও আসে না বলে console নীরব — দেখতে মনে হয় node মরে গেছে।",
+      "tracker-এর নরম gain (2.0, 0.0, 2.0) এখানে বসালে deadzone-এর ধার 18 ডিগ্রিতে সরে যেত: illustrative Wave A-র +14 ডিগ্রির obstacle-এর জন্য u = 2 × (14/72) = 0.389, যা 0.5-এর নিচে — z = 0.0, অর্থাৎ বাধা মাত্র 14 ডিগ্রি পাশে থাকলেও guard চুপচাপ বসে থাকত।",
+      "Ki &gt; 0 রাখলে object দীর্ঘক্ষণ এক পাশে আটকে থাকা মাত্র integral term error জমিয়ে রাখত, তারপর হঠাৎ overshoot — steering wheel না থাকায় পুরো chassis এক পাশ থেকে আরেক পাশে দুলতে থাকত, আর প্রতি scan-এ জমা চলতে থাকায় দোলন সহজে থামত না। Ki = 0 রাখাই windup-মুক্ত রাখার উপায়।",
+      "Kd = 5-এর step-transient: নতুন object প্রথম scan-এ cone-এ ঢুকলে e শূন্য থেকে লাফিয়ে ওঠে, derivative-এর ধাক্কায় প্রথম z হঠাৎ বড় হয় — chassis এক ঝাঁকুনি খায়; পরের scan-গুলোতে e শান্ত হয়ে Kp-view ফিরে আসলেও প্রথম সেই ধাক্কাটি এড়ানো যায় না।",
+      "constructor-এর argument-ক্রম সম্পর্কে ধারণাটাই যদি ভুল হয় — vendor যদি আসলে (Kp, Kd, Ki) নেয় — তাহলে বাস্তবে Kd = 0 আর Ki = 5: deadzone, ceiling, transient সব downstream সংখ্যা এক লাথিতে বদলে যেত। module এই folder-এ নেই বলে ক্রমটি inferred — এই label-টাই সাবধানতার জায়গা।"
+    ]
+  },
+  "robot": {
+    "correct": "constructor-এর এই শেষ block-টি চালানোর পর node-টি সম্পূর্ণ armed: Joy_active = False থাকায় প্রথম <code>/scan</code> message থেকেই AI-এর steering চালু — joystick থেকে /JoyState True না আসা পর্যন্ত L81-এর gate-এ ঢোকার প্রশ্নই ওঠে না। ang_pid-টি gain (3.0, 0.0, 5.0) নিয়ে জন্মায় আর প্রতিটি scan-এ L103-এ ডাকা হয়: illustrative Wave A-তে (0.90 m @ +14 ডিগ্রি) এটি u = 0.583 বের করে, ×0.5 damping-এর পর +0.292 rad/s — দুই চাকা বিপরীত গতিতে ঘুরে robot স্থির জায়গায় বাঁদিকে মোড়ে, সামনে যায় না (linear PID নেই, linear.x কখনো সেট হয় না)। নিজে এই Part-টি কোনো চাকা নাড়ায় না, console-এও কিছু ছাপে না — এটি শুধু state flag আর controller তৈরি করে রাখে; পরের Part-গুলোর callback সেগুলো খরচ করে।",
+    "incorrect": "Joy_active-এর default True হলে robot জন্মের মুহূর্ত থেকে প্রতিটি scan-এ zero Twist খেত — চাকা সদা-brake, obstacle যত কাছেই আসুক মোড় নেই, buzzer-ও শব্দ করে না। tracker-এর নরম gain (2.0, 0.0, 2.0) রাখলে 14 ডিগ্রি পাশের obstacle-ই deadzone-এ বাদ পড়ে (u = 0.389, 0.5-এর নিচে) — guard হিসেবে নিরীহ হয়ে বসে থাকে। আর বড় Kd = 5-এর দরুন নতুন object প্রথম দেখা দেওয়া scan-টিতে derivative-এর ধাক্কা z-কে হঠাৎ ফুলিয়ে দেয় — chassis এক ঝাঁকুনি খায়, পরের scan-গুলোতে ঘোরা আবার স্থির হয়।"
+  },
+  "animType": null
+}

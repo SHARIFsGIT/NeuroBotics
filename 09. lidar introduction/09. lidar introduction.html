@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>09. lidar introduction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ DESIGN TOKENS ============ */
+:root{
+  --bg:#0a0a0a; --bg2:#111111;
+  --card:#151515; --card2:#181818; --card3:#1d1d1d;
+  --border:#262626; --border2:#303030; --border3:#3a3a3a;
+  --text:#e8e8e8; --muted:#a0a0a0; --faint:#6e6e6e;
+  --ex:#4fc3f7; --ex-dim:rgba(79,195,247,.09);
+  --math:#7ee787; --math-dim:rgba(126,231,135,.08);
+  --rb:#ffb454; --rb-dim:rgba(255,180,84,.08);
+  --anim:#d2a8ff; --anim-dim:rgba(210,168,255,.08);
+  --code-bg:#0d1117; --code-head:#161b22;
+  --gutter-txt:#3d4f63; --gutter-line:#1c2530;
+  --ok:#3fb950; --bad:#f85149;
+  --ff-title:'Space Grotesk','Inter','Hind Siliguri',sans-serif;
+  --ff-ui:'Inter','Hind Siliguri',system-ui,-apple-system,sans-serif;
+  --ff-bn:'Hind Siliguri','Inter',sans-serif;
+  --ff-mono:'JetBrains Mono','Fira Code',Consolas,'Courier New',monospace;
+  --sb-w:292px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--ff-ui); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(79,195,247,.28)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:6px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#3a3a3a}
+a{color:var(--ex);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--ex);outline-offset:2px;border-radius:4px}
+button{font-family:var(--ff-ui)}
+
+/* ============ APP LAYOUT ============ */
+#app{display:flex;min-height:100vh}
+#main{
+  margin-left:var(--sb-w);
+  flex:1;
+  min-width:0;
+  padding:52px 56px 80px;
+  max-width:1180px;
+}
+.intro-banner{
+  margin-bottom:48px;padding:30px 34px;
+  background:linear-gradient(145deg,#141414,#101010);
+  border:1px solid var(--border);border-radius:16px;
+  position:relative;overflow:hidden;
+}
+.intro-banner::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(600px 180px at 12% 0%,rgba(79,195,247,.07),transparent 60%),
+    radial-gradient(500px 160px at 88% 100%,rgba(210,168,255,.05),transparent 60%);
+  pointer-events:none;
+}
+.intro-eyebrow{
+  font-family:var(--ff-mono);font-size:11.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ex);margin-bottom:10px;
+}
+.intro-banner h1{
+  font-family:var(--ff-title);font-size:clamp(26px,3.4vw,38px);
+  font-weight:700;letter-spacing:-.01em;line-height:1.15;
+}
+.intro-banner h1 .path{color:var(--faint);font-weight:500}
+.intro-desc{margin-top:12px;color:var(--muted);max-width:70ch;font-size:15px}
+.intro-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.stat-chip{
+  font-family:var(--ff-mono);font-size:12px;color:#c9d1d9;
+  background:#0d1117;border:1px solid var(--border2);
+  padding:6px 12px;border-radius:999px;
+}
+.stat-chip b{color:var(--ex);font-weight:600}
+
+/* ============ SIDEBAR ============ */
+#sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sb-w);
+  background:var(--bg2);border-right:1px solid var(--border);
+  overflow-y:auto;z-index:60;
+  display:flex;flex-direction:column;
+}
+.sb-head{
+  padding:26px 22px 18px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg2);z-index:2;
+}
+.sb-folder{
+  font-family:var(--ff-title);font-size:16.5px;font-weight:600;
+  color:var(--text);letter-spacing:-.01em;line-height:1.3;
+}
+.sb-meta{
+  margin-top:6px;font-family:var(--ff-mono);font-size:11.5px;
+  color:var(--faint);letter-spacing:.08em;
+}
+#sb-nav{padding:14px 12px 30px;flex:1}
+.sb-item{
+  display:flex;align-items:baseline;gap:11px;
+  padding:8px 12px;margin:1px 0;border-radius:8px;
+  color:#9a9a9a;border-left:2px solid transparent;
+  transition:background .18s,color .18s;
+}
+.sb-item .sb-num{
+  font-family:var(--ff-mono);font-size:11px;color:var(--faint);
+  min-width:20px;font-weight:500;
+}
+.sb-item .sb-name{
+  font-size:13.2px;font-weight:500;line-height:1.35;
+  font-family:var(--ff-ui);
+}
+.sb-item:hover{background:#181818;color:#d6d6d6;text-decoration:none}
+.sb-item.active{
+  background:linear-gradient(90deg,rgba(79,195,247,.10),rgba(79,195,247,.02));
+  color:#eaf6fe;border-left:2px solid var(--ex);
+}
+.sb-item.active .sb-num{color:var(--ex)}
+.sb-filesep{
+  font-family:var(--ff-mono);font-size:10px;letter-spacing:.16em;
+  color:#525252;text-transform:uppercase;
+  padding:14px 12px 6px;margin-top:4px;
+}
+#menu-btn{
+  display:none;position:fixed;top:14px;left:14px;z-index:80;
+  width:42px;height:42px;border-radius:10px;
+  background:#181818;border:1px solid var(--border2);color:var(--text);
+  font-size:15px;cursor:pointer;line-height:1;
+  align-items:center;justify-content:center;padding:0;
+}
+#sb-overlay{display:none}
+
+/* ============ PART SECTION ============ */
+.part{margin-bottom:88px;scroll-margin-top:24px}
+.part-head{margin-bottom:22px}
+.eyebrow{
+  font-family:var(--ff-mono);font-size:11.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ex);margin-bottom:8px;
+}
+.part-title{
+  font-family:var(--ff-title);font-size:clamp(23px,2.6vw,31px);
+  font-weight:700;letter-spacing:-.015em;line-height:1.18;
+  margin-bottom:12px;
+}
+.part-meta{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  font-family:var(--ff-mono);font-size:12px;color:var(--muted);
+}
+.meta-chip{
+  background:#101418;border:1px solid var(--border2);
+  padding:3px 10px;border-radius:999px;white-space:nowrap;
+}
+.meta-chip.flag{color:#d8c97a;border-color:#3a3524;background:#17150d}
+.meta-chip.lang{color:#8ab4f8}
+
+/* ============ CODE CARD ============ */
+.code-card{
+  background:var(--code-bg);border:1px solid var(--border2);
+  border-radius:13px;overflow:hidden;margin-bottom:30px;
+  box-shadow:0 14px 40px rgba(0,0,0,.42);
+}
+.code-card-head{
+  display:flex;align-items:center;gap:14px;
+  background:var(--code-head);border-bottom:1px solid #20262e;
+  padding:10px 16px;
+}
+.dots{display:flex;gap:7px;align-items:center}
+.dots i{
+  width:11px;height:11px;border-radius:50%;display:block;
+}
+.dots i:nth-child(1){background:#ff5f57}
+.dots i:nth-child(2){background:#febc2e}
+.dots i:nth-child(3){background:#28c840}
+.code-fname{
+  font-family:var(--ff-mono);font-size:12.5px;color:#9aa7b4;
+  letter-spacing:.02em;
+}
+.code-lines-chip{
+  font-family:var(--ff-mono);font-size:11px;color:#5b6875;
+  margin-left:auto;white-space:nowrap;
+}
+.copy-btn{
+  font-family:var(--ff-mono);font-size:11px;letter-spacing:.06em;
+  color:#9aa7b4;background:#1c2128;border:1px solid #2d333b;
+  border-radius:6px;padding:4px 11px;cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.copy-btn:hover{color:#e6edf3;border-color:#444c56}
+.copy-btn.done{color:var(--ok);border-color:rgba(63,185,80,.4)}
+.code-scroll{overflow-x:auto;max-height:640px;overflow-y:auto}
+pre.code{display:inline-block;min-width:100%;padding:14px 0;font-family:var(--ff-mono)}
+.cl{display:flex;white-space:pre;font-size:13.2px;line-height:1.62}
+.cln{
+  position:sticky;left:0;flex:0 0 auto;z-index:2;
+  min-width:52px;text-align:right;padding-right:16px;
+  color:var(--gutter-txt);background:var(--code-bg);
+  border-right:1px solid var(--gutter-line);
+  user-select:none;-webkit-user-select:none;font-size:11.5px;
+  line-height:1.85;letter-spacing:.02em;
+}
+.cl.target .cln{
+  background:#101722;color:#7ba3c9;border-right-color:#234;
+}
+.clc{flex:0 0 auto;padding-right:24px;tab-size:8;color:#e6edf3}
+.tok-kw{color:#ff7b72}
+.tok-str{color:#a5d6ff}
+.tok-com{color:#8b949e;font-style:italic}
+.tok-num{color:#79c0ff}
+.tok-fn{color:#d2a8ff}
+.tok-blt{color:#ffa657}
+
+/* ============ SECTIONS ============ */
+.sec{
+  border:1px solid var(--border);border-radius:13px;
+  background:var(--card);margin-bottom:26px;overflow:hidden;
+}
+.sec-head{
+  display:flex;align-items:center;gap:12px;
+  padding:15px 22px;border-bottom:1px solid var(--border);
+  background:var(--card2);
+}
+.badge{
+  font-family:var(--ff-mono);font-weight:700;font-size:12px;
+  min-width:34px;height:26px;border-radius:7px;
+  display:inline-flex;align-items:center;justify-content:center;
+  letter-spacing:.03em;flex:0 0 auto;
+}
+.badge-ex{background:var(--ex-dim);color:var(--ex);border:1px solid rgba(79,195,247,.35)}
+.badge-math{background:var(--math-dim);color:var(--math);border:1px solid rgba(126,231,135,.35)}
+.badge-rb{background:var(--rb-dim);color:var(--rb);border:1px solid rgba(255,180,84,.35)}
+.badge-anim{background:var(--anim-dim);color:var(--anim);border:1px solid rgba(210,168,255,.35)}
+.sec-head h3{
+  font-family:var(--ff-title);font-size:16.5px;font-weight:600;letter-spacing:-.01em;
+}
+.sec-head h3 .bn-inline{font-family:var(--ff-bn)}
+.sec-body{padding:20px 22px 24px}
+
+/* ============ EXPLAIN ENTRIES ============ */
+.ex-entry{margin-bottom:26px}
+.ex-entry:last-child{margin-bottom:6px}
+.ex-snippet{
+  background:#0d1117;border:1px solid var(--border2);border-left:3px solid var(--ex);
+  border-radius:9px;overflow:hidden;
+}
+.ex-snippet pre{
+  padding:10px 16px;font-family:var(--ff-mono);font-size:12.8px;
+  line-height:1.62;color:#dbe4ee;overflow-x:auto;white-space:pre;
+}
+.ex-lines{
+  display:inline-block;font-family:var(--ff-mono);font-size:10.5px;
+  color:var(--ex);background:var(--ex-dim);border:1px solid rgba(79,195,247,.3);
+  border-radius:5px;padding:1px 8px;margin-bottom:7px;letter-spacing:.06em;
+}
+.ex-arrow{
+  color:#3a471f;font-family:var(--ff-mono);font-size:15px;color:var(--faint);
+  padding:3px 2px 3px 12px;
+}
+.ex-text{
+  font-family:var(--ff-bn);font-size:16px;line-height:1.95;color:#d5d5d5;
+  padding:2px 4px 0 14px;border-left:2px solid #232d36;
+}
+.ex-text code, .bn code, .ml-text code, .map-text code, .rb-card code, .anim-caption code{
+  font-family:var(--ff-mono);font-size:.86em;color:#9ecbff;
+  background:rgba(110,168,254,.10);border:1px solid rgba(110,168,254,.16);
+  border-radius:5px;padding:1px 6px;white-space:nowrap;
+}
+.ex-text ul, .ml-text ul, .rb-card ul, .anim-caption ul{
+  margin:8px 0 4px 4px;padding-left:22px;
+}
+.ex-text li, .ml-text li, .rb-card li{margin:5px 0}
+
+/* ============ MATH SECTION ============ */
+.math-intro{
+  font-family:var(--ff-bn);font-size:15.5px;line-height:1.9;color:#c9c9c9;
+  padding-bottom:16px;border-bottom:1px dashed var(--border2);margin-bottom:20px;
+}
+.math-level{
+  background:var(--card2);border:1px solid var(--border2);border-radius:11px;
+  padding:16px 20px;margin-bottom:14px;
+}
+.ml-label{
+  font-family:var(--ff-mono);font-size:11.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--math);margin-bottom:10px;
+}
+.mathy{
+  font-size:17px;color:#e3ffe6;margin:8px 0 12px;
+  padding:12px 16px;background:rgba(126,231,135,.05);
+  border:1px solid rgba(126,231,135,.16);border-radius:9px;
+  overflow-x:auto;min-height:24px;
+}
+.ml-text{
+  font-family:var(--ff-bn);font-size:15.5px;line-height:1.9;color:#c9c9c9;
+}
+.math-subhead{
+  font-family:var(--ff-title);font-size:14.5px;font-weight:600;color:#bfe8c4;
+  margin:26px 0 12px;letter-spacing:.01em;
+}
+.map-row{
+  display:grid;grid-template-columns:minmax(200px,1.1fr) minmax(180px,1fr) minmax(220px,1.4fr);
+  gap:12px;align-items:start;
+  background:var(--card2);border:1px solid var(--border2);border-radius:10px;
+  padding:12px 16px;margin-bottom:10px;
+}
+.map-code code{
+  font-family:var(--ff-mono);font-size:12.5px;color:#9ecbff;background:#0d1117;
+  border:1px solid var(--border2);border-radius:6px;padding:3px 8px;display:inline-block;
+}
+.map-math{color:#c9f7cf;font-family:var(--ff-mono);font-size:13.5px;padding-top:2px}
+.map-text{font-family:var(--ff-bn);font-size:14.5px;line-height:1.8;color:#bcbcbc}
+.failure-list li{
+  font-family:var(--ff-bn);font-size:15px;line-height:1.85;color:#d9c9c9;
+  margin:8px 0;padding-left:6px;list-style:none;position:relative;padding-left:22px;
+}
+.failure-list li::before{
+  content:"";position:absolute;left:2px;top:11px;width:8px;height:8px;
+  border-radius:2px;background:rgba(248,81,73,.5);border:1px solid rgba(248,81,73,.65);
+}
+.failure-list{padding:0}
+
+/* ============ ROBOT SECTION ============ */
+.rb-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rb-card{
+  border-radius:11px;padding:16px 18px;border:1px solid var(--border2);
+  font-family:var(--ff-bn);font-size:15.3px;line-height:1.9;
+}
+.rb-card h4{
+  font-family:var(--ff-mono);font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:10px;font-weight:600;
+}
+.rb-ok{background:rgba(63,185,80,.05);border-color:rgba(63,185,80,.28)}
+.rb-ok h4{color:var(--ok)}
+.rb-bad{background:rgba(248,81,73,.05);border-color:rgba(248,81,73,.28)}
+.rb-bad h4{color:var(--bad)}
+
+/* ============ ANIMATION SECTION ============ */
+.anim-stage{
+  background:
+    radial-gradient(500px 200px at 50% 0%,rgba(210,168,255,.05),transparent 70%),
+    #0b0e13;
+  border-bottom:1px solid var(--border2);
+  padding:10px;position:relative;
+}
+.anim-stage svg{width:100%;height:auto;display:block}
+.anim-controls{
+  display:flex;flex-wrap:wrap;gap:9px;align-items:center;
+  padding:13px 20px;border-bottom:1px solid var(--border);background:var(--card2);
+}
+.ac-btn{
+  font-family:var(--ff-mono);font-size:12px;letter-spacing:.08em;
+  color:#c9c9c9;background:#202020;border:1px solid var(--border3);
+  border-radius:8px;padding:7px 18px;cursor:pointer;transition:all .15s;
+}
+.ac-btn:hover{background:#2a2a2a;color:#fff;border-color:#4a4a4a}
+.ac-btn.active{background:rgba(210,168,255,.14);color:var(--anim);border-color:rgba(210,168,255,.45)}
+.anim-caption{
+  font-family:var(--ff-bn);font-size:15px;line-height:1.8;color:#d0c4dd;
+  padding:13px 22px;border-bottom:1px solid var(--border);min-height:52px;
+  background:rgba(210,168,255,.03);
+}
+.anim-formula{
+  font-family:var(--ff-mono);font-size:14px;color:#e6d9f5;
+  padding:12px 22px;background:#0d1117;min-height:46px;
+  overflow-x:auto;white-space:nowrap;letter-spacing:.01em;
+}
+.anim-formula .fx-hl{color:var(--anim)}
+.anim-formula .fx-ok{color:var(--math)}
+.anim-formula .fx-warn{color:var(--rb)}
+.anim-state{
+  margin-left:auto;font-family:var(--ff-mono);font-size:11px;color:var(--faint);
+  letter-spacing:.1em;
+}
+
+/* ============ PART NAV ============ */
+.part-nav{display:flex;justify-content:space-between;gap:14px;margin-top:34px}
+.pn-btn{
+  flex:1;max-width:340px;display:block;
+  border:1px solid var(--border2);border-radius:11px;
+  padding:13px 18px;color:#c9c9c9;transition:all .16s;
+  background:var(--card);
+}
+.pn-btn:hover{border-color:rgba(79,195,247,.4);color:#fff;text-decoration:none;background:#181818}
+.pn-btn .pn-dir{
+  font-family:var(--ff-mono);font-size:11px;color:var(--faint);
+  letter-spacing:.14em;display:block;margin-bottom:3px;
+}
+.pn-btn .pn-title{font-size:13.5px;font-weight:600}
+.pn-btn.next{text-align:right}
+.pn-btn.disabled{opacity:.28;pointer-events:none}
+
+/* ============ FOOTER ============ */
+.site-footer{
+  margin-left:var(--sb-w);border-top:1px solid var(--border);
+  padding:26px 56px;color:var(--faint);font-size:13px;
+  font-family:var(--ff-mono);letter-spacing:.02em;
+}
+
+/* ============ MATHJAX FALLBACK ============ */
+body.no-mathjax .mathy{
+  font-family:var(--ff-mono);font-size:13.5px;color:#c9f0cd;white-space:pre;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:1240px){
+  #main{padding:44px 34px 70px}
+  .site-footer{padding:24px 34px}
+}
+@media (max-width:960px){
+  #menu-btn{display:block}
+  #sidebar{
+    transform:translateX(-100%);transition:transform .26s ease;
+    box-shadow:24px 0 60px rgba(0,0,0,.5);
+  }
+  body.sb-open #sidebar{transform:translateX(0)}
+  body.sb-open #sb-overlay{
+    display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;
+  }
+  #main{margin-left:0;padding:74px 20px 60px}
+  .site-footer{margin-left:0;padding:22px 20px}
+  .rb-grid{grid-template-columns:1fr}
+  .map-row{grid-template-columns:1fr;gap:6px}
+  .intro-banner{padding:22px 20px}
+}
+@media (max-width:560px){
+  body{font-size:15px}
+  .ex-text{font-size:15.3px}
+  .cl{font-size:12.3px}
+  .anim-formula{font-size:12.5px}
+  .code-lines-chip{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
+</style>
+
+
+<style id="refine-style">
+/* ==================================================================
+   SURGICAL REFINEMENT LAYER v2 — appended (UI-UX & animation refinement)
+   Does not override any existing rule except where explicitly noted;
+   all original bytes above this block are untouched.
+
+   INTENTIONAL LAYER ARCHITECTURE (documented z-index scale)
+   ---------------------------------------------------------
+     --z-ground  0   page ground, card backgrounds
+     --z-scene  10   base SVG scene inside .anim-stage / .exec-robot
+     --z-objects 20  moving SVG marks (updated in place by the engine)
+     --z-labels 30   SVG text labels — halo-stroked so they can never
+                     become unreadable under moving objects
+     --z-panel  40   overlay panels (formula bar, debug chips)
+     --z-head   50   section headers, captions
+     --z-debug  60   live debug readouts
+     --z-ctrl   70   control bars (always clickable, never covered)
+     --z-nav    80   sidebar / menu
+     --z-focus  90   focus outlines (never overlapped)
+   HTML layers take these values; inside a single <svg> stacking is by
+   paint order, and readability of labels is guaranteed by the
+   paint-order halo rule below rather than by z-index.
+   ================================================================== */
+:root{
+  --z-ground:0; --z-scene:10; --z-objects:20; --z-labels:30;
+  --z-panel:40; --z-head:50; --z-debug:60; --z-ctrl:70; --z-nav:80; --z-focus:90;
+}
+
+/* ---- Fix: full-width application shell (#56-57).
+        #main keeps its sidebar margin but drops the narrow max-width;
+        prose blocks below keep a readable measure so lines never run
+        wall-to-wall — only layout containers use the full width. ---- */
+#main{max-width:none}
+.intro-desc{max-width:none}          /* hero paragraph: full hero width */
+.ex-text, .ml-text, .math-intro, .map-text, .rb-card, .exec-note,
+.anim-caption{
+  max-width:105ch;
+}
+@media (min-width:1800px){
+  #main{padding-left:88px; padding-right:88px}
+}
+
+/* ---- Fix: SVG text labels stay readable over moving objects.
+        Halo = stage-ground-coloured stroke painted UNDER the fill. ---- */
+.anim-stage svg text,
+.exec-robot svg text{
+  paint-order:stroke; stroke:#0b0e13; stroke-width:3px;
+  stroke-linejoin:round; stroke-linecap:round;
+  pointer-events:none; user-select:none;
+}
+.anim-stage, .exec-robot{position:relative; z-index:var(--z-scene)}
+.anim-controls{position:relative; z-index:var(--z-ctrl)}
+.anim-caption{position:relative; z-index:var(--z-head)}
+.anim-formula{position:relative; z-index:var(--z-panel)}
+.anim-state{z-index:var(--z-debug)}
+
+/* ---- Fix: icon control buttons (professional inline SVG, no text) ---- */
+.anim-controls{gap:8px}
+.ac-btn.ic{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:38px; height:32px; padding:0; border-radius:8px;
+}
+.ac-btn.ic svg{width:16px; height:16px; display:block; fill:currentColor}
+.ac-btn.ic svg *{vector-effect:non-scaling-stroke}
+.ac-btn:focus-visible{
+  outline:2px solid var(--anim); outline-offset:2px; z-index:var(--z-focus);
+}
+.ac-btn.ic[disabled]{opacity:.35; cursor:not-allowed}
+.anim-controls .ac-sep{
+  width:1px; height:20px; background:var(--border3); margin:0 3px; flex:0 0 auto;
+}
+.anim-controls .ac-step{
+  font-family:var(--ff-mono); font-size:11px; color:var(--anim);
+  letter-spacing:.08em; padding:6px 10px; border:1px solid rgba(210,168,255,.28);
+  border-radius:7px; background:var(--anim-dim); white-space:nowrap;
+}
+
+/* ---- Complete Execution — Code → Debug → Robot (v2 row layout) ----
+   Row 1: COMPLETE SOURCE CODE | LIVE DEBUG   (the two walk together)
+   Row 2: ROBOT / SYSTEM STATE (full width)
+   Then:  complete banner → formula → explanation → controls      */
+.exec-sec{margin-top:56px}
+.exec-sec .sec-head .exec-sub{
+  font-family:var(--ff-mono); font-size:11px; color:var(--faint);
+  letter-spacing:.06em; margin-left:auto; padding-right:18px; white-space:nowrap;
+}
+.exec-note{
+  font-family:var(--ff-bn); font-size:14.5px; line-height:1.8; color:var(--muted);
+  padding:14px 22px; border-bottom:1px solid var(--border); background:var(--card);
+}
+.exec-note code{
+  font-family:var(--ff-mono); font-size:.86em; color:#9ecbff;
+  background:rgba(110,168,254,.10); border:1px solid rgba(110,168,254,.16);
+  border-radius:5px; padding:1px 6px;
+}
+.exec-frame{
+  display:grid; gap:14px; padding:16px 18px;
+  grid-template-columns:minmax(0,1.42fr) minmax(330px,.72fr);
+}
+.exec-col{min-width:0; display:flex; flex-direction:column; gap:14px}
+.exec-col>.exec-panel{flex:1}
+/* robot/system row spans the full frame width, below code+debug */
+.exec-col.rob-col{grid-column:1 / -1}
+.exec-panel{
+  background:var(--code-bg); border:1px solid var(--border2); border-radius:12px;
+  overflow:hidden; display:flex; flex-direction:column; min-height:0;
+  box-shadow:0 10px 28px rgba(0,0,0,.35);
+}
+/* scroll affordance: right-edge fade says "more code this way" without
+   covering anything interactive (head stays above it via z-index) */
+.exec-col.code-col .exec-panel{position:relative}
+.exec-col.code-col .exec-panel::after{
+  content:""; position:absolute; top:0; right:0; bottom:0; width:26px;
+  z-index:1; pointer-events:none;
+  background:linear-gradient(90deg, rgba(13,17,23,0), #0d1117 92%);
+}
+.exec-panel-head{
+  position:relative; z-index:2;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--code-head); border-bottom:1px solid #20262e; padding:9px 14px;
+}
+.exec-panel-head .ep-title{
+  font-family:var(--ff-title); font-size:13px; font-weight:600; color:#c9d1d9;
+  letter-spacing:.01em;
+}
+.exec-panel-head .ep-chip{
+  font-family:var(--ff-mono); font-size:10px; letter-spacing:.05em;
+  border-radius:999px; padding:2.5px 9px; white-space:nowrap;
+}
+.ep-chip.live{color:var(--anim); background:var(--anim-dim); border:1px solid rgba(210,168,255,.3)}
+.ep-chip.concept{color:var(--rb); background:var(--rb-dim); border:1px solid rgba(255,180,84,.3)}
+.ep-chip.src{color:var(--ex); background:var(--ex-dim); border:1px solid rgba(79,195,247,.3)}
+/* kind legend in the code panel head: exec / structural / event */
+.exec-legend{
+  margin-left:auto; display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--ff-mono); font-size:9.5px; color:var(--faint); white-space:nowrap;
+}
+.exec-legend .lg{
+  width:9px; height:9px; border-radius:3px; display:inline-block;
+  margin-left:6px;
+}
+.exec-legend .lg-exec{background:#d2a8ff}
+.exec-legend .lg-struct{background:#ffb454}
+.exec-legend .lg-event{background:#4fc3f7}
+.exec-code{
+  position:relative; overflow:auto; flex:1; min-height:0;
+  max-height:620px; margin:0; padding:10px 0 28px;
+  font-family:var(--ff-mono); font-size:12.3px; line-height:1.6; color:#dbe4ee;
+  background:var(--code-bg); tab-size:4;
+  scrollbar-width:thin; scrollbar-color:#30363d #0d1117;
+}
+.exec-code .exl{
+  display:block; white-space:pre; min-height:1.6em;
+  padding:0 12px 0 0; border-left:3px solid transparent;
+  transition:background .2s, border-color .2s;
+}
+/* line-number gutter stays pinned when long lines scroll horizontally */
+.exec-code .eln{
+  position:sticky; left:0;
+  display:inline-block; width:3.6em; padding-right:10px;
+  text-align:right; color:#3d4f63; user-select:none;
+  background:var(--code-bg);
+}
+/* current line, by kind: exec = purple (default), structural = amber,
+   event = cyan; grouped companion lines get the tint without the edge */
+.exec-code .exl.cur{
+  background:rgba(210,168,255,.14); border-left-color:var(--anim);
+}
+.exec-code .exl.cur .eln{color:var(--anim); background:#241d38}
+.exec-code .exl.cur-struct{
+  background:rgba(255,180,84,.13); border-left-color:var(--rb);
+}
+.exec-code .exl.cur-struct .eln{color:var(--rb); background:#2e2416}
+.exec-code .exl.cur-event{
+  background:rgba(79,195,247,.14); border-left-color:var(--ex);
+}
+.exec-code .exl.cur-event .eln{color:var(--ex); background:#12283a}
+.exec-code .exl.cur-g{background:rgba(210,168,255,.06)}
+.exec-code .exl.cur-g.cur-struct{background:rgba(255,180,84,.07)}
+.exec-code .exl.cur-g.cur-event{background:rgba(79,195,247,.07)}
+/* ---- BEFORE → OPERATION → AFTER debug (#52) ---- */
+.exec-op{
+  margin:10px 12px 0; padding:8px 12px; border-radius:9px;
+  border:1px solid rgba(126,231,135,.32); background:rgba(126,231,135,.07);
+  font-family:var(--ff-mono); font-size:11.8px; line-height:1.65; color:#7ee787;
+  overflow-wrap:anywhere;
+}
+.exec-op::before{
+  content:"OPERATION";
+  display:block; font-size:9px; letter-spacing:.14em; color:#58a65f;
+  margin-bottom:3px;
+}
+.exec-dbg-body{
+  padding:10px 14px 14px; overflow:auto; max-height:620px; flex:1; min-height:0;
+  font-family:var(--ff-mono); font-size:12px;
+  scrollbar-width:thin; scrollbar-color:#30363d #0d1117;
+}
+.dbg-row{
+  display:flex; align-items:baseline; gap:10px; padding:5.5px 8px;
+  border-bottom:1px dashed #1c2530; animation:dbgIn .3s ease;
+}
+.dbg-row:last-child{border-bottom:none}
+.dbg-k{color:var(--muted); white-space:nowrap; flex:0 0 auto}
+.dbg-v{color:#9ecbff; text-align:right; flex:1; overflow-wrap:anywhere;
+  padding-right:2px}
+.dbg-v.n{color:#7ee787}
+.dbg-v.err{color:var(--bad)}
+/* value changed by this line: old (dim) → new (green) */
+.dbg-row.chg .dbg-v{color:#7ee787}
+.dbg-old{color:#6e7681; text-decoration:line-through;
+  text-decoration-color:rgba(110,118,129,.6)}
+.dbg-arrow{color:#7ee787; font-weight:600}
+.dbg-ill{
+  flex:0 0 auto; font-size:9.5px; letter-spacing:.05em; color:var(--rb);
+  border:1px solid rgba(255,180,84,.35); border-radius:5px; padding:1px 5px;
+}
+.dbg-empty{color:var(--faint); font-family:var(--ff-bn); font-size:13px; padding:12px 8px}
+@keyframes dbgIn{from{opacity:0; transform:translateX(-4px)}to{opacity:1}}
+/* robot row: centered scene, taller than the old side column */
+.exec-robot{
+  background:
+    radial-gradient(500px 220px at 50% 0%,rgba(210,168,255,.05),transparent 70%),
+    #0b0e13;
+  padding:14px; overflow:auto;
+  display:flex; justify-content:center;
+}
+.exec-robot svg{width:100%; max-width:720px; height:auto; max-height:560px;
+  display:block; margin:0 auto}
+.exec-rob-fade{animation:robFade .4s ease}
+@keyframes robFade{from{opacity:0; transform:translateY(4px)}to{opacity:1}}
+/* result zone: complete banner → formula row → explanation → controls */
+.exec-complete{
+  display:none; margin:0 18px 14px; padding:13px 18px; border-radius:11px;
+  border:1px solid rgba(63,185,80,.4); background:rgba(63,185,80,.08);
+  font-family:var(--ff-mono); font-size:12.5px; letter-spacing:.04em; color:#7ee787;
+}
+.exec-complete.show{display:block; animation:robFade .4s ease}
+.exec-complete .bn{font-family:var(--ff-bn); font-size:14px; color:#c9d1d9;
+  letter-spacing:0; margin-top:5px; line-height:1.75}
+.exec-fx-row{margin:0 18px 14px; max-width:none}
+.exec-sec .anim-caption{margin:0 18px 4px}
+.exec-sec .anim-controls{margin:0 18px 18px}
+.exec-progress{
+  height:3px; margin:0 18px 22px; border-radius:2px; overflow:hidden;
+  background:rgba(255,255,255,.06);
+}
+.exec-progress i{
+  display:block; height:100%; width:0;
+  background:linear-gradient(90deg,var(--anim),#7ee787);
+  transition:width .3s ease;
+}
+
+/* responsive: code+debug share row 1 until 960px, robot row always full
+   width; below 960px everything stacks vertically (#59 mobile order) */
+@media (max-width:1240px){
+  .exec-frame{grid-template-columns:minmax(0,1.35fr) minmax(280px,.75fr)}
+  .exec-code{max-height:540px}
+  .exec-dbg-body{max-height:540px}
+}
+@media (max-width:960px){
+  .exec-frame{grid-template-columns:minmax(0,1fr); padding:12px}
+  .exec-code{max-height:430px}
+  .exec-dbg-body{max-height:300px}
+  .exec-robot svg{max-height:440px}
+  .exec-legend{display:none}
+}
+@media (max-width:560px){
+  .exec-sec .sec-head .exec-sub{display:none}
+  .exec-frame{padding:10px}
+  .anim-controls{padding:11px 14px}
+}
+@media (prefers-reduced-motion:reduce){
+  .exec-rob-fade, .dbg-row{animation:none}
+  .exec-code .exl{transition:none}
+  .exec-progress i{transition:none}
+}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <defs>
+    <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8f98a3"/><stop offset=".45" stop-color="#575f6b"/>
+      <stop offset=".55" stop-color="#3f4650"/><stop offset="1" stop-color="#22272e"/>
+    </linearGradient>
+    <linearGradient id="gMetalH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4a525c"/><stop offset=".5" stop-color="#7d8692"/>
+      <stop offset="1" stop-color="#3a4048"/>
+    </linearGradient>
+    <linearGradient id="gJoint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd9a0"/><stop offset="1" stop-color="#b97a2e"/>
+    </linearGradient>
+    <radialGradient id="gLens" cx=".38" cy=".35" r=".85">
+      <stop offset="0" stop-color="#9fd8ff"/><stop offset=".35" stop-color="#2f7bc4"/>
+      <stop offset=".8" stop-color="#123a5e"/><stop offset="1" stop-color="#0a2138"/>
+    </radialGradient>
+    <radialGradient id="gGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#4fc3f7" stop-opacity=".9"/>
+      <stop offset=".5" stop-color="#4fc3f7" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#4fc3f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gGlowG" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#7ee787" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#7ee787" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gGlowO" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffb454" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#ffb454" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gGlowP" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#d2a8ff" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#d2a8ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gWire" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2c8644"/><stop offset="1" stop-color="#7ee787"/>
+    </linearGradient>
+    <linearGradient id="gPacket" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ffd166"/>
+    </linearGradient>
+    <linearGradient id="gFrame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a2230"/><stop offset="1" stop-color="#111722"/>
+    </linearGradient>
+    <linearGradient id="gCone" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4fc3f7" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#4fc3f7" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="fShadow" x="-30%" y="-30%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+    <filter id="fBlur2" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+    <filter id="fBlur5" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <marker id="mArr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#8f98a3"/>
+    </marker>
+    <marker id="mArrB" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#4fc3f7"/>
+    </marker>
+    <marker id="mArrG" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#7ee787"/>
+    </marker>
+    <marker id="mArrO" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#ffb454"/>
+    </marker>
+    <marker id="mArrP" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#d2a8ff"/>
+    </marker>
+    <marker id="mArrR" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#f85149"/>
+    </marker>
+    <pattern id="pGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36,0 L0,0 0,36" fill="none" stroke="#1c2330" stroke-width="1"/>
+    </pattern>
+    <pattern id="pGridFine" width="18" height="18" patternUnits="userSpaceOnUse">
+      <path d="M18,0 L0,0 0,18" fill="none" stroke="#161c27" stroke-width="1"/>
+    </pattern>
+  </defs>
+</svg>
+<button id="menu-btn" aria-label="Toggle navigation"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 5 h18 M3 12 h18 M3 19 h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
+<div id="sb-overlay"></div>
+<div id="app">
+  <aside id="sidebar" aria-label="Part navigation">
+    <div class="sb-head">
+      <div class="sb-folder">09. lidar introduction</div>
+      <div class="sb-meta" id="sb-meta">…</div>
+    </div>
+    <nav id="sb-nav"></nav>
+  </aside>
+  <main id="main"></main>
+</div>
+<footer class="site-footer" id="site-footer"></footer>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code','option'] },
+  chtml: { scale: 0.96 }
+};
+</script>
+<script id="Mathjax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+<script>
+'use strict';
+/* ================================================================
+   01. arm calibration — Line-by-Line Code Analysis
+   Single source of truth: FILEDATA (exact source lines from disk)
+   + PARTS (authored analysis content). All rendering is generated.
+   ================================================================ */
+
+const FILEDATA = {"README.md":["ros2 topic echo /scan0","","rviz2"]};
+const PARTS = [{"n":1,"id":"part-01","fname":"README.md","enTitle":"The Two-Command First Look","lang":"bash","start":1,"end":3,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":null},{"n":2,"id":"part-02","fname":"README.md","enTitle":"Command Anatomy — ros2 topic echo","lang":"bash","start":1,"end":1,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"cliAnatomy"},{"n":3,"id":"part-03","fname":"README.md","enTitle":"The /scan0 Topic — Hardware vs Simulation","lang":"bash","start":1,"end":1,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"ddsGraph"},{"n":4,"id":"part-04","fname":"README.md","enTitle":"LaserScan — The Message echo Prints","lang":"bash","start":1,"end":1,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"scanMessage"},{"n":5,"id":"part-05","fname":"README.md","enTitle":"From Ranges to Points — The Polar Math","lang":"bash","start":1,"end":1,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"polarToCart"},{"n":6,"id":"part-06","fname":"README.md","enTitle":"rviz2 — The Visual Counterpart","lang":"bash","start":3,"end":3,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"rvizDisplays"},{"n":7,"id":"part-07","fname":"README.md","enTitle":"Reading the Ring — Gaps, Noise, Shadows","lang":"bash","start":3,"end":3,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":"worldView"},{"n":8,"id":"part-08","fname":"README.md","enTitle":"Workflow Order — echo Before rviz2","lang":"bash","start":1,"end":3,"flags":[],"explain":[],"math":null,"robot":{"correct":"","incorrect":""},"animType":null}];
+
+
+
+/* ---------------- utilities ---------------- */
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+const pad2 = n => String(n).padStart(2, '0');
+
+/* ---------------- syntax highlighting (presentation-only) --------
+   A single-pass scanner over the RAW line that groups characters into
+   tokens and only afterwards escapes them. The underlying text is
+   never altered — spans are purely cosmetic.                        */
+const PY_KW = new Set(['False','None','True','and','as','assert','async','await','break','class','continue','def','del','elif','else','except','finally','for','from','global','if','import','in','is','lambda','nonlocal','not','or','pass','raise','return','try','while','with','yield']);
+const PY_BLT = new Set(['print','input','range','float','int','str','len','open','sorted','super','set','list','dict','type','abs','min','max','round','enumerate','isinstance','self']);
+const SH_KW = new Set(['if','then','else','elif','fi','for','while','do','done','case','esac','function','export','return','in','local']);
+const SH_CMD = new Set(['docker','ros2','gnome-terminal','bash','sh','python3','sleep','source','export','echo','cat','run','launch','pub','topic','start','stop','exec']);
+function tokXml(line) {
+  const toks = []; const push = (t, c) => { if (t) toks.push({ t: t, c: c }); };
+  let i = 0; const n = line.length;
+  while (i < n) {
+    const c = line[i];
+    if (c === '<') {
+      let j = i + 1; if (line[j] === '/') j++;
+      let k = j; while (k < n && /[A-Za-z0-9_.-]/.test(line[k])) k++;
+      if (k > j) { push(line.slice(i, j), ''); push(line.slice(j, k), 'kw'); i = k; continue; }
+      push('<', ''); i++; continue;
+    }
+    if (c === '"' || c === "'") {
+      let j = i + 1; while (j < n && line[j] !== c) j++;
+      const end = Math.min(j + 1, n); push(line.slice(i, end), 'str'); i = end; continue;
+    }
+    if (/[0-9]/.test(c) && !(i > 0 && /[A-Za-z0-9_]/.test(line[i - 1]))) {
+      let j = i; while (j < n && /[0-9eE+.-]/.test(line[j])) j++;
+      push(line.slice(i, j), 'num'); i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i; while (j < n && /[A-Za-z0-9_.-]/.test(line[j])) j++;
+      let k = j; while (k < n && line[k] === ' ') k++;
+      push(line.slice(i, j), line[k] === '=' ? 'blt' : ''); i = j; continue;
+    }
+    let j = i; while (j < n && !/[<"'.0-9A-Za-z_-]/.test(line[j])) j++;
+    if (j === i) j = i + 1;
+    push(line.slice(i, j), ''); i = j;
+  }
+  return toks;
+}
+function tokYaml(line) {
+  const toks = []; const push = (t, c) => { if (t) toks.push({ t: t, c: c }); };
+  const hash = line.indexOf('#');
+  const head = hash >= 0 ? line.slice(0, hash) : line;
+  const m = head.match(/^(\s*(?:-\s+)?)([A-Za-z_][\w.]*)(\s*:\s*)([\s\S]*)$/);
+  if (m) {
+    push(m[1], ''); push(m[2], 'kw'); push(m[3], '');
+    const v = m[4];
+    let i = 0; const n = v.length;
+    while (i < n) {
+      const c = v[i];
+      if (c === '"' || c === "'") {
+        let j = i + 1; while (j < n && v[j] !== c) j++;
+        const end = Math.min(j + 1, n); push(v.slice(i, end), 'str'); i = end; continue;
+      }
+      if (/[0-9]/.test(c) && !(i > 0 && /[A-Za-z0-9_]/.test(v[i - 1]))) {
+        let j = i; while (j < n && /[0-9eE+.-]/.test(v[j])) j++;
+        push(v.slice(i, j), 'num'); i = j; continue;
+      }
+      if (/[A-Za-z_]/.test(c)) {
+        let j = i; while (j < n && /[A-Za-z0-9_/.-]/.test(v[j])) j++;
+        const w = v.slice(i, j);
+        push(w, (w === 'true' || w === 'false') ? 'kw' : ''); i = j; continue;
+      }
+      let j = i; while (j < n && !/[["'.0-9A-Za-z_-]/.test(v[j])) j++;
+      if (j === i) j = i + 1;
+      push(v.slice(i, j), ''); i = j;
+    }
+  } else {
+    push(head, '');
+  }
+  if (hash >= 0) push(line.slice(hash), 'com');
+  return toks;
+}
+
+function tokenizeLine(line, lang) {
+  if (lang === 'text') return line === '' ? [] : [{ t: line, c: '' }];
+  if (lang === 'xml') return tokXml(line);
+  if (lang === 'yaml') return tokYaml(line);
+  const toks = [];
+  const push = (t, c) => { if (t) toks.push({ t: t, c: c }); };
+  let i = 0;
+  const n = line.length;
+  while (i < n) {
+    const c = line[i];
+    if (c === '#') { push(line.slice(i), 'com'); break; }
+    if (c === '\'' || c === '"') {
+      let j = i + 1;
+      while (j < n && line[j] !== c) j++;
+      const end = Math.min(j + 1, n);
+      push(line.slice(i, end), 'str');
+      i = end; continue;
+    }
+    if (/[0-9]/.test(c) && !(i > 0 && /[A-Za-z0-9_]/.test(line[i - 1]))) {
+      let j = i;
+      while (j < n && /[0-9a-fA-FxXoObB._]/.test(line[j])) j++;
+      push(line.slice(i, j), 'num');
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < n && /[A-Za-z0-9_]/.test(line[j])) j++;
+      const word = line.slice(i, j);
+      if (/^[fFrRbBuU]{1,2}$/.test(word) && j < n && (line[j] === '\'' || line[j] === '"')) {
+        const q = line[j];
+        let k = j + 1;
+        while (k < n && line[k] !== q) k++;
+        const end = Math.min(k + 1, n);
+        push(line.slice(i, end), 'str');
+        i = end; continue;
+      }
+      let cls = '';
+      const KW = lang === 'python' ? PY_KW : SH_KW;
+      const BLT = lang === 'python' ? PY_BLT : SH_CMD;
+      if (KW.has(word)) cls = 'kw';
+      else if (BLT.has(word)) cls = 'blt';
+      else if (lang === 'python' && j < n && line[j] === '(') cls = 'fn';
+      push(word, cls);
+      i = j; continue;
+    }
+    let j = i;
+    while (j < n && !/[#'"0-9A-Za-z_]/.test(line[j])) j++;
+    if (j === i) j = i + 1;
+    push(line.slice(i, j), '');
+    i = j;
+  }
+  return toks;
+}
+function hl(line, lang, com) {
+  if (line === '') return '';
+  if (com) return '<span class="tok-com">' + escHtml(line) + '</span>';
+  return tokenizeLine(line, lang).map(t =>
+    t.c ? '<span class="tok-' + t.c + '">' + escHtml(t.t) + '</span>' : escHtml(t.t)
+  ).join('');
+}
+function rawLines(fname, a, b) {
+  return FILEDATA[fname].slice(a - 1, b);
+}
+
+/* ---------------- sidebar ---------------- */
+function renderSidebar() {
+  const total = PARTS.length;
+  const files = Object.keys(FILEDATA).length;
+  document.getElementById('sb-meta').textContent = files + ' files · ' + total + ' Parts';
+  const nav = document.getElementById('sb-nav');
+  nav.innerHTML = PARTS.map(p =>
+    '<a class="sb-item" href="#' + p.id + '" data-target="' + p.id + '">' +
+      '<span class="sb-num">' + pad2(p.n) + '</span>' +
+      '<span class="sb-name">' + escHtml(p.enTitle) + '</span>' +
+    '</a>'
+  ).join('');
+}
+
+/* ---------------- part sections ---------------- */
+function codeCard(p) {
+  const lines = rawLines(p.fname, p.start, p.end);
+  const comSet = (p.lang === 'xml' && XML_COM[p.fname]) || null;
+  const rows = lines.map((ln, i) => {
+    const no = p.start + i;
+    return '<div class="cl"><span class="cln">' + no + '</span><span class="clc">' + hl(ln, p.lang, comSet && comSet.has(no)) + '</span></div>';
+  }).join('');
+  const raw = lines.join('\n');
+  return '' +
+  '<div class="code-card" data-copy-src="' + p.id + '">' +
+    '<div class="code-card-head">' +
+      '<span class="dots"><i></i><i></i><i></i></span>' +
+      '<span class="code-fname">' + escHtml(p.fname) + '</span>' +
+      '<button class="copy-btn" data-copy="' + p.id + '">Copy</button>' +
+      '<span class="code-lines-chip">L' + p.start + (p.end > p.start ? '–' + p.end : '') + '</span>' +
+    '</div>' +
+    '<div class="code-scroll"><pre class="code"><code>' + rows + '</code></pre></div>' +
+  '</div>';
+}
+
+function explainBlock(p) {
+  if (!p.explain || !p.explain.length) return '';
+  const entries = p.explain.map(e => {
+    const snippetLines = rawLines(p.fname, e.a, e.b);
+    const rendered = snippetLines.map(ln => hl(ln, p.lang)).join('\n');
+    const label = e.a === e.b ? ('L ' + e.a) : ('L ' + e.a + '–' + e.b);
+    return '' +
+    '<div class="ex-entry">' +
+      '<div class="ex-snippet"><span class="ex-lines">' + label + '</span>' +
+        '<pre>' + rendered + '</pre></div>' +
+      '<div class="ex-arrow">↓</div>' +
+      '<div class="ex-text bn">' + e.text + '</div>' +
+    '</div>';
+  }).join('');
+  return '' +
+  '<div class="sec sec-ex">' +
+    '<div class="sec-head"><span class="badge badge-ex">EX</span><h3>Line-by-Line Explanation</h3></div>' +
+    '<div class="sec-body">' + entries + '</div>' +
+  '</div>';
+}
+
+function mathBlock(p) {
+  const m = p.math;
+  if (!m) return '';
+  const levels = (m.levels || []).map(v =>
+    '<div class="math-level">' +
+      '<div class="ml-label">' + v.label + '</div>' +
+      '<div class="mathy">' + v.latex + '</div>' +
+      '<div class="ml-text bn">' + v.text + '</div>' +
+    '</div>'
+  ).join('');
+  const numeric = (m.numeric || []).map(v =>
+    '<div class="math-level">' +
+      '<div class="mathy">' + v.latex + '</div>' +
+      '<div class="ml-text bn">' + v.text + '</div>' +
+    '</div>'
+  ).join('');
+  const mapping = (m.mapping || []).map(v =>
+    '<div class="map-row">' +
+      '<div class="map-code"><code>' + escHtml(v.code) + '</code></div>' +
+      '<div class="map-math mathy">' + v.math + '</div>' +
+      '<div class="map-text bn">' + v.text + '</div>' +
+    '</div>'
+  ).join('');
+  const failure = (m.failure || []).map(v => '<li>' + v + '</li>').join('');
+  let html = '<div class="sec sec-math">' +
+    '<div class="sec-head"><span class="badge badge-math">Σ</span><h3>Math Behind This Code</h3></div>' +
+    '<div class="sec-body">';
+  if (m.intro) html += '<div class="math-intro bn">' + m.intro + '</div>';
+  if (levels) html += levels;
+  if (numeric) html += '<div class="math-subhead">Numerical Example — ধাপে ধাপে হিসাব</div>' + numeric;
+  if (mapping) html += '<div class="math-subhead">Code → Math Mapping</div>' + mapping;
+  if (failure) html += '<div class="math-subhead">Failure Intuition — ভুল হলে কী হবে</div><ul class="failure-list">' + failure + '</ul>';
+  html += '</div></div>';
+  return html;
+}
+
+function robotBlock(p) {
+  if (!p.robot) return '';
+  return '' +
+  '<div class="sec sec-rb">' +
+    '<div class="sec-head"><span class="badge badge-rb">RB</span><h3><span class="bn-inline">Real Robot/System এই code অনুযায়ী কী করবে</span></h3></div>' +
+    '<div class="sec-body"><div class="rb-grid">' +
+      '<div class="rb-card rb-ok"><h4>Correct behavior</h4><div class="bn">' + p.robot.correct + '</div></div>' +
+      '<div class="rb-card rb-bad"><h4>Incorrect behavior</h4><div class="bn">' + p.robot.incorrect + '</div></div>' +
+    '</div></div>' +
+  '</div>';
+}
+
+function animBlock(p) {
+  if (!p.animType) return '';
+  return '' +
+  '<div class="sec sec-anim" id="anim-' + p.id + '">' +
+    '<div class="sec-head"><span class="badge badge-anim">AN</span><h3>Interactive Animation</h3></div>' +
+    '<div class="anim-stage" id="stage-' + p.id + '"></div>' +
+    '<div class="anim-controls">' +
+      '<button class="ac-btn" data-ac="play">Play</button>' +
+      '<button class="ac-btn" data-ac="slow">Slow</button>' +
+      '<button class="ac-btn" data-ac="fast">Fast</button>' +
+      '<button class="ac-btn" data-ac="pause">Pause</button>' +
+      '<button class="ac-btn" data-ac="stop">Stop</button>' +
+      '<span class="anim-state" id="state-' + p.id + '">IDLE</span>' +
+    '</div>' +
+    '<div class="anim-caption bn" id="cap-' + p.id + '">Play চাপলে animation শুরু হবে।</div>' +
+    '<div class="anim-formula" id="fx-' + p.id + '"></div>' +
+  '</div>';
+}
+
+function partNav(p) {
+  const prev = p.n > 1 ? PARTS[p.n - 2] : null;
+  const next = p.n < PARTS.length ? PARTS[p.n] : null;
+  const btn = (t, cls) => !t
+    ? '<span class="pn-btn disabled"><span class="pn-dir">' + cls + '</span><span class="pn-title">—</span></span>'
+    : '<a class="pn-btn ' + cls + '" href="#' + t.id + '"><span class="pn-dir">' +
+      (cls === 'next' ? 'Next →' : '← Previous') + '</span><span class="pn-title">' +
+      pad2(t.n) + ' · ' + escHtml(t.enTitle) + '</span></a>';
+  return '<div class="part-nav">' + btn(prev, 'prev') + btn(next, 'next') + '</div>';
+}
+
+function partSection(p) {
+  const flags = (p.flags || []).map(f => '<span class="meta-chip flag">' + escHtml(f) + '</span>').join('');
+  return '' +
+  '<section class="part" id="' + p.id + '">' +
+    '<header class="part-head">' +
+      '<div class="eyebrow">PART ' + pad2(p.n) + ' / ' + pad2(PARTS.length) + ' · ' + escHtml(p.fname) + '</div>' +
+      '<h2 class="part-title">' + escHtml(p.enTitle) + '</h2>' +
+      '<div class="part-meta">' +
+        '<span class="meta-chip">L' + p.start + (p.end > p.start ? '–' + p.end : '') + '</span>' +
+        '<span class="meta-chip lang">' + p.lang + '</span>' + flags +
+      '</div>' +
+    '</header>' +
+    codeCard(p) +
+    explainBlock(p) +
+    mathBlock(p) +
+    robotBlock(p) +
+    animBlock(p) +
+    partNav(p) +
+  '</section>';
+}
+
+function introBanner() {
+  return '' +
+  '<div class="intro-banner">' +
+    '<div class="intro-eyebrow">NeuroBotics · Interactive Code Analysis</div>' +
+    '<h1>09. lidar introduction <span class="path">— lidar data-র প্রথম দর্শন: echo-র সংখ্যা থেকে rviz2-এর চোখ</span></h1>' +
+    '<div class="intro-desc bn">এই application-টি <code>09. lidar introduction</code> folder-এর একমাত্র source file — তিন line-এর <code>README.md</code> (<code>ros2 topic echo /scan0</code>, একটি blank line, <code>rviz2</code>) — কে কেন্দ্র করে তৈরি। মাত্র দুটি command, কিন্তু তাদের ভেতরে আছে ros2 CLI-র গঠন, DDS graph, <code>sensor_msgs/LaserScan</code> message-এর প্রতিটি field, polar থেকে cartesian point হওয়ার math, আর rviz2-এর display-engine। প্রতিটি Part-এ আছে original code card, line-by-line Bangla explanation, Math derivation, Real Robot behavior এবং interactive animation।</div>' +
+    '<div class="intro-stats">' +
+      '<span class="stat-chip"><b>' + Object.keys(FILEDATA).length + '</b> files</span>' +
+      '<span class="stat-chip"><b>' + PARTS.length + '</b> Parts</span>' +
+      '<span class="stat-chip"><b>' + PARTS.reduce((s, p) => s + (p.explain ? p.explain.length : 0), 0) + '</b> explained blocks</span>' +
+      '<span class="stat-chip"><b>' + PARTS.filter(p => p.animType).length + '</b> animations</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderParts() {
+  document.getElementById('main').innerHTML = introBanner() + PARTS.map(partSection).join('');
+  document.getElementById('site-footer').textContent =
+    '09. lidar introduction · line-by-line analysis · source preserved verbatim from /home/shariful/NeuroBotics/09. lidar introduction';
+}
+
+/* ---------------- copy buttons (code without line numbers) -------- */
+const RAW_CODE = {};
+function setupCopy() {
+  PARTS.forEach(p => { RAW_CODE[p.id] = rawLines(p.fname, p.start, p.end).join('\n'); });
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.copy-btn');
+    if (!b) return;
+    const txt = RAW_CODE[b.dataset.copy];
+    const done = () => {
+      b.textContent = 'Copied';
+      b.classList.add('done');
+      setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('done'); }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+    } else fallbackCopy(txt, done);
+  });
+}
+function fallbackCopy(txt, done) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { /* noop */ }
+  document.body.removeChild(ta);
+}
+
+/* ---------------- navigation & active state ---------------- */
+function setupNavigation() {
+  const items = Array.from(document.querySelectorAll('.sb-item'));
+  const setActive = id => {
+    items.forEach(it => it.classList.toggle('active', it.dataset.target === id));
+  };
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) setActive(en.target.id);
+    });
+  }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+  PARTS.forEach(p => {
+    const el = document.getElementById(p.id);
+    if (el) io.observe(el);
+  });
+  document.querySelectorAll('.sb-item').forEach(it => {
+    it.addEventListener('click', () => document.body.classList.remove('sb-open'));
+  });
+  document.getElementById('menu-btn').addEventListener('click', () =>
+    document.body.classList.toggle('sb-open'));
+  document.getElementById('sb-overlay').addEventListener('click', () =>
+    document.body.classList.remove('sb-open'));
+}
+
+/* ---------------- MathJax: typeset + graceful fallback ----------- */
+function mathFallback() {
+  if (window.MathJax && window.MathJax.startup && window.MathJax.startup.document) return;
+  document.body.classList.add('no-mathjax');
+  document.querySelectorAll('.mathy').forEach(el => {
+    let t = el.textContent;
+    t = t.replace(/\\\[/g, '').replace(/\\\]/g, '').replace(/\\\(/g, '').replace(/\\\)/g, '');
+    el.textContent = t;
+  });
+}
+function setupMathJaxWatchdog() {
+  window.__mathFailed = false;
+  const s = document.getElementById('Mathjax-script');
+  if (s) s.addEventListener('error', () => { window.__mathFailed = true; });
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries++;
+    if (window.MathJax && window.MathJax.startup && window.MathJax.startup.document) {
+      clearInterval(timer);
+    } else if (window.__mathFailed || tries > 40) {
+      clearInterval(timer);
+      mathFallback();
+    }
+  }, 150);
+}
+
+/* ================================================================
+   ANIMATION SYSTEM
+   Engine: cancellable, speed-scaled, pause-aware rAF scheduler.
+   Every animation renders inline SVG, updates a live Bangla caption
+   and a live formula bar. No animation libraries are used.
+   ================================================================ */
+
+const easeInOutCubic = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const easeOutBounce = t => {
+  const n1 = 7.5625, d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + .75;
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + .9375;
+  return n1 * (t -= 2.625 / d1) * t + .984375;
+};
+const fmt = (v, d) => Number(v).toFixed(d === undefined ? 3 : d);
+
+/* ---------------- small SVG string helpers ---------------- */
+function rrect(x, y, w, h, rx, fill, stroke, extra) {
+  return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+    '" rx="' + (rx === undefined ? 8 : rx) + '" fill="' + fill + '"' +
+    (stroke ? ' stroke="' + stroke + '" stroke-width="1"' : '') +
+    (extra || '') + '/>';
+}
+function txt(x, y, s, o) {
+  o = o || {};
+  return '<text' + (o.id ? ' id="' + o.id + '"' : '') + ' x="' + x + '" y="' + y + '" fill="' + (o.fill || '#c9d1d9') +
+    '" font-size="' + (o.size || 13) + '"' +
+    ' font-family="' + (o.mono ? "'JetBrains Mono',monospace" : "'Hind Siliguri','Inter',sans-serif") + '"' +
+    (o.anchor ? ' text-anchor="' + o.anchor + '"' : '') +
+    (o.weight ? ' font-weight="' + o.weight + '"' : '') +
+    (o.op !== undefined ? ' opacity="' + o.op + '"' : '') + '>' + s + '</text>';
+}
+function line(x1, y1, x2, y2, stroke, w, extra) {
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + stroke + '" stroke-width="' + (w || 1.5) + '"' +
+    (extra || '') + '/>';
+}
+function circ(x, y, r, fill, extra) {
+  return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + fill + '"' + (extra || '') + '/>';
+}
+function arrow(x1, y1, x2, y2, color, marker, w) {
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + color + '" stroke-width="' + (w || 2) +
+    '" marker-end="url(#' + marker + ')"' + '/>';
+}
+function path(d, stroke, w, extra) {
+  return '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + (w || 2) + '" stroke-linecap="round" stroke-linejoin="round"' + (extra || '') + '/>';
+}
+
+/* ---------------- host ---------------- */
+function createAnimHost(part) {
+  const id = part.id;
+  const host = {
+    part: part,
+    stageEl: document.getElementById('stage-' + id),
+    capEl: document.getElementById('cap-' + id),
+    fxEl: document.getElementById('fx-' + id),
+    stateEl: document.getElementById('state-' + id),
+    secEl: document.getElementById('anim-' + id),
+    speed: 1, running: false, stopFlag: false, started: false,
+    staticOnly: false, inView: false, autoPaused: false, userPaused: false,
+    _raf: null
+  };
+  host.setStage = function (inner, w, h) {
+    host.stageEl.innerHTML = '<svg viewBox="0 0 ' + (w || 900) + ' ' + (h || 460) +
+      '" preserveAspectRatio="xMidYMid meet" role="img">' + inner + '</svg>';
+    return host.stageEl.querySelector('svg');
+  };
+  host.caption = t => { host.capEl.innerHTML = t; };
+  host.formula = t => { host.fxEl.innerHTML = t; };
+  host.setState = t => { host.stateEl.textContent = t; };
+  host._sched = function (dur, onFrame) {
+    return new Promise((res, rej) => {
+      let elapsed = 0, last = null;
+      const step = t => {
+        if (host.stopFlag) { rej(new Error('anim-stopped')); return; }
+        if (!host.running) { last = null; host._raf = requestAnimationFrame(step); return; }
+        if (last === null) last = t;
+        elapsed += t - last; last = t;
+        const k = Math.min(1, elapsed / (dur / host.speed));
+        try { onFrame(k, elapsed); } catch (e) { rej(e); return; }
+        if (k >= 1) { res(); return; }
+        host._raf = requestAnimationFrame(step);
+      };
+      host._raf = requestAnimationFrame(step);
+    });
+  };
+  host.sleep = ms => host._sched(ms, () => {});
+  host.tween = (dur, fn) => host._sched(dur, k => fn(k));
+  host.start = function (speed) {
+    if (speed) host.speed = speed;
+    if (host.started) { host.stopFlag = true; }
+    host.started = true; host.stopFlag = false; host.running = true; host.userPaused = false;
+    host.setState('RUN ' + host.speed + 'x');
+    setTimeout(() => {
+      ANIMS[part.animType](host).catch(e => {
+        if (e && e.message === 'anim-stopped') host.setState('STOPPED');
+        else console.error('anim error', part.id, e);
+      });
+    }, 30);
+  };
+  host.pause = function () {
+    if (!host.started) return;
+    host.running = false; host.userPaused = true;
+    host.setState('PAUSED');
+  };
+  host.resume = function () {
+    if (!host.started || !host.userPaused) return;
+    host.running = true; host.userPaused = false;
+    host.setState('RUN ' + host.speed + 'x');
+  };
+  host.stop = function () {
+    host.stopFlag = true; host.running = false; host.started = false; host.userPaused = false;
+    if (host._raf) cancelAnimationFrame(host._raf);
+    host.setState('IDLE');
+    host.renderStatic();
+  };
+  host.renderStatic = function () {
+    host.staticOnly = true;
+    try { ANIMS[part.animType](host); } catch (e) { /* static render is best-effort */ }
+    host.staticOnly = false;
+  };
+  host.setSpeed = function (s) {
+    host.speed = s;
+    if (!host.started) { host.start(s); return; }
+    if (host.userPaused) { host.running = true; host.userPaused = false; }
+    host.setState('RUN ' + s + 'x');
+  };
+  /* controls */
+  host.secEl.querySelectorAll('.ac-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const a = b.dataset.ac;
+      host.secEl.querySelectorAll('.ac-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      if (a === 'play') host.userPaused ? host.resume() : host.start(1);
+      else if (a === 'slow') host.setSpeed(0.5);
+      else if (a === 'fast') host.setSpeed(1.5);
+      else if (a === 'pause') host.pause();
+      else if (a === 'stop') { host.stop(); b.classList.remove('active'); }
+    });
+  });
+  /* auto start / auto pause with visibility */
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      host.inView = en.isIntersecting;
+      if (en.isIntersecting) {
+        if (host.autoPaused && host.started) {
+          host.running = true; host.autoPaused = false; host.setState('RUN ' + host.speed + 'x');
+        } else if (!host.started && !host.autoStarted && !window.__prefersReducedMotion) {
+          host.autoStarted = true; host.start(1);
+        }
+      } else if (host.started && host.running) {
+        host.running = false; host.autoPaused = true; host.setState('HOLD');
+      }
+    });
+  }, { threshold: 0.25 });
+  io.observe(host.secEl);
+  return host;
+}
+
+const ANIMS = {};
+const HOSTS = {};
+
+function setupAnimations() {
+  window.__prefersReducedMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  PARTS.forEach(p => {
+    if (p.animType && ANIMS[p.animType]) {
+      HOSTS[p.id] = createAnimHost(p);
+      HOSTS[p.id].renderStatic();
+    }
+  });
+}
+
+/* ================= folder-09 anims (v1 layer, 6 total) =================
+   cliAnatomy (part 2) · ddsGraph (part 3) · scanMessage (part 4)
+   polarToCart (part 5) · rvizDisplays (part 6) · worldView (part 7)
+   Facts from README.md (3 ln, sha a374256c295c) + FACTS-09: /scan0 =
+   hardware Yahboom driver topic (yahboom_M3Pro_laser, folders 11-13);
+   folder-08 Gazebo sim publishes /scan (remap ~/out:=/scan). Sim lidar
+   values from folder-08 URDF: 10 Hz, 360 samples, -3.14159..3.14159,
+   increment 0.0174533 (1 deg), range 0.2..8.0 m, noise stddev 0.01,
+   frame laser1_frame; i=0 rear, i=180 front, i=270 left; rear/left
+   beams clip chassis. Stage = setStage default viewBox 900x460
+   (anims07/08 grammar). No emoji; arrow chars only in caption/formula
+   strips, never in stage <text>. Unique id prefix per anim: ca- dg-
+   sm- pc- rd- wv-. Static path: backbone visible at setStage, first
+   caption + formula set before the first await. */
+
+/* ---------- shared deterministic world (mirrors v2 rob scenes) ------- */
+function nbBeam(deg) {
+  const a = (deg + 180) % 360 - 180;          /* wrap to -180..180 */
+  const r = a * Math.PI / 180;
+  if (Math.abs(a) > 168) return 0.26;          /* rear: own chassis */
+  if (a > 40 && a < 72) return null;           /* open door: no return */
+  if (a > -44 && a < -24) return 1.1;          /* obstacle cluster */
+  return 2.8 + 0.06 * Math.sin(7 * r) + 0.02 * Math.sin(13 * r); /* wall */
+}
+/* screen map: deg 0 (front) = up; +90 (left of robot) = screen left */
+function nbXY(cx, cy, pxm, deg, r) {
+  const th = deg * Math.PI / 180;
+  return [cx - r * pxm * Math.sin(th), cy - r * pxm * Math.cos(th)];
+}
+function nbDots(cx, cy, pxm, step, jitter, idp) {
+  /* one square dot per `step` beams; jitter in m for the noise ghost */
+  let s = '';
+  const cols = { wall: '#7ee787', obst: '#f85149', rear: '#6e7681' };
+  const bags = { wall: '', obst: '', rear: '' };
+  for (let i = 0; i < 360; i += step) {
+    const d = i - 180;                          /* beam i: deg = -180 + i */
+    let r = nbBeam(d);
+    if (r === null) continue;
+    if (jitter) r = r + jitter * Math.sin(i * 2.7);
+    const p = nbXY(cx, cy, pxm, d, r);
+    const k = Math.abs((d + 540) % 360 - 180) > 168 ? 'rear'
+      : (d > -44 && d < -24 ? 'obst' : 'wall');
+    bags[k] += 'M' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + 'h2.4v2.4h-2.4z';
+  }
+  for (const k in bags) if (bags[k]) s += '<path id="' + idp + '-' + k +
+    '" d="' + bags[k] + '" fill="' + cols[k] + '" opacity="0"/>';
+  return s;
+}
+
+/* ================= part 2 — cliAnatomy ================= */
+ANIMS.cliAnatomy = async function (host) {
+  const svg = host.setStage(
+    txt(450, 28, 'একটাই line, চারটা token — প্রত্যেকটার আলাদা চাকরি (L1)', { anchor: 'middle', size: 14.5, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 46, 560, 44, 8, '#0d1117', '#2a3442') +
+    txt(56, 74, 'ros2', { id: 'ca-t1', size: 20, mono: true, weight: 700, fill: '#4fc3f7' }) +
+    txt(118, 74, 'topic', { id: 'ca-t2', size: 20, mono: true, weight: 700, fill: '#7ee787' }) +
+    txt(212, 74, 'echo', { id: 'ca-t3', size: 20, mono: true, weight: 700, fill: '#ffb454' }) +
+    txt(296, 74, '/scan0', { id: 'ca-t4', size: 20, mono: true, weight: 700, fill: '#ff7b72' }) +
+    txt(586, 68, 'L1 of README.md', { anchor: 'end', size: 8.5, fill: '#8b949e' }) +
+    rrect(40, 108, 130, 118, 8, '#111', '#30363d', ' id="ca-b1"') +
+    txt(105, 128, 'ros2', { anchor: 'middle', size: 13, mono: true, weight: 700, fill: '#4fc3f7' }) +
+    txt(105, 146, 'CLI-র দরজা — সব', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b1t', op: 0 }) +
+    txt(105, 158, 'ROS 2 tool-এর একই প্রবেশ', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b1t2', op: 0 }) +
+    txt(105, 174, 'topic, node, launch,', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'ca-b1t3', op: 0 }) +
+    txt(105, 186, 'run, interface ...', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'ca-b1t4', op: 0 }) +
+    rrect(186, 108, 130, 118, 8, '#111', '#30363d', ' id="ca-b2"') +
+    txt(251, 128, 'topic', { anchor: 'middle', size: 13, mono: true, weight: 700, fill: '#7ee787' }) +
+    txt(251, 146, 'verb — topic জগতে', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b2t', op: 0 }) +
+    txt(251, 158, 'ঢুকলে সন্তান-verb:', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b2t2', op: 0 }) +
+    txt(251, 174, 'list, info, echo,', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'ca-b2t3', op: 0 }) +
+    txt(251, 186, 'pub, hz, bw ...', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'ca-b2t4', op: 0 }) +
+    rrect(332, 108, 130, 118, 8, '#111', '#30363d', ' id="ca-b3"') +
+    txt(397, 128, 'echo', { anchor: 'middle', size: 13, mono: true, weight: 700, fill: '#ffb454' }) +
+    txt(397, 146, 'subcommand — passive', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b3t', op: 0 }) +
+    txt(397, 158, 'subscription খোলে,', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b3t2', op: 0 }) +
+    txt(397, 174, 'প্রতিটা message YAML', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-b3t3', op: 0 }) +
+    txt(397, 186, 'ছাপে, Ctrl-C পর্যন্ত', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-b3t4', op: 0 }) +
+    rrect(478, 108, 122, 118, 8, '#111', '#30363d', ' id="ca-b4"') +
+    txt(539, 128, '/scan0', { anchor: 'middle', size: 13, mono: true, weight: 700, fill: '#ff7b72' }) +
+    txt(539, 146, 'target — এই নামের', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b4t', op: 0 }) +
+    txt(539, 158, 'publisher DDS graph-এ', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-b4t2', op: 0 }) +
+    txt(539, 174, 'hardware lidar driver-এর', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-b4t3', op: 0 }) +
+    txt(539, 186, 'topic (folder 11-13)', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'ca-b4t4', op: 0 }) +
+    rrect(40, 244, 560, 96, 8, '#0a0d12', '#30363d', ' id="ca-typo"') +
+    txt(56, 262, 'দুই রকম ভুল, দুই রকম ফল:', { size: 9.5, weight: 700, fill: '#e6edf3' }) +
+    rrect(56, 270, 250, 20, 4, '#161b22', '#30363d') +
+    txt(64, 284, 'ros2 topic ech /scan0', { size: 9.5, mono: true, fill: '#ff7b72' }) +
+    txt(320, 282, 'verb-এ ভুল: command চলেই না,', { size: 8, fill: '#c9d1d9', id: 'ca-ty1', op: 0 }) +
+    txt(320, 295, 'সঙ্গে সঙ্গে error — নিরাপদ ব্যর্থতা', { size: 8, fill: '#8b949e', id: 'ca-ty1b', op: 0 }) +
+    rrect(56, 302, 250, 20, 4, '#161b22', '#30363d') +
+    txt(64, 316, 'ros2 topic echo /scan', { size: 9.5, mono: true, fill: '#ffb454' }) +
+    txt(320, 314, 'নামে ভুল: command চলে, কিন্তু (hardware-এ)', { size: 8, fill: '#c9d1d9', id: 'ca-ty2', op: 0 }) +
+    txt(320, 327, 'ভুল stream পড়ে ফেলে — নীরব বিপদ, দেরিতে ধরা পড়ে', { size: 8, fill: '#ff7b72', id: 'ca-ty2b', op: 0 }) +
+    rrect(620, 46, 240, 130, 8, '#0d1117', '#2a3442', ' id="ca-life"') +
+    txt(740, 66, 'echo-র জীবন', { anchor: 'middle', size: 10.5, weight: 700, fill: '#4fc3f7' }) +
+    txt(740, 86, 'type resolve (graph থেকে)', { anchor: 'middle', size: 8, mono: true, fill: '#c9d1d9', id: 'ca-l1', op: 0 }) +
+    txt(740, 102, 'passive subscription', { anchor: 'middle', size: 8, mono: true, fill: '#c9d1d9', id: 'ca-l2', op: 0 }) +
+    txt(740, 118, 'YAML print, sensor rate-এ', { anchor: 'middle', size: 8, mono: true, fill: '#c9d1d9', id: 'ca-l3', op: 0 }) +
+    txt(740, 134, 'Ctrl-C = বন্ধ', { anchor: 'middle', size: 8, mono: true, fill: '#c9d1d9', id: 'ca-l4', op: 0 }) +
+    txt(740, 158, 'কখনো publish করে না —', { anchor: 'middle', size: 8, fill: '#7ee787', id: 'ca-l5', op: 0 }) +
+    txt(740, 170, 'read-only tool, robot স্থির', { anchor: 'middle', size: 8, fill: '#7ee787', id: 'ca-l6', op: 0 }) +
+    rrect(620, 188, 240, 148, 8, '#111', '#30363d', ' id="ca-sum"') +
+    txt(740, 208, 'মনে রাখার এক লাইন', { anchor: 'middle', size: 10, weight: 700, fill: '#ffb454' }) +
+    txt(740, 228, 'graph-এ publisher বেঁচে থাকলে', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-s1', op: 0 }) +
+    txt(740, 242, 'এবং নাম হুবহু মিললে', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-s2', op: 0 }) +
+    txt(740, 256, 'এবং type হলো LaserScan', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-s3', op: 0 }) +
+    txt(740, 270, 'তবেই stream শুরু —', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'ca-s4', op: 0 }) +
+    txt(740, 292, 'নয়তো echo চুপচাপ বসে থাকে,', { anchor: 'middle', size: 8, fill: '#ff7b72', id: 'ca-s5', op: 0 }) +
+    txt(740, 306, 'বা type নির্ধারণ করতে না পেরে', { anchor: 'middle', size: 8, fill: '#ff7b72', id: 'ca-s6', op: 0 }) +
+    txt(740, 320, 'error ছাপে — পরের অ্যানিমেশনে', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'ca-s7', op: 0 }) +
+    txt(450, 358, 'sim-এ echo /scan0 করলে publisher পাওয়া যায় না (folder 08 ছাপে /scan) — Part 3-এ সেই গল্প', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: README.md L1 — ros2 topic echo /scan0', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  const hl = (id, c) => q(id).setAttribute('fill', c);
+  host.caption('L1-এর command-টা চার টুকরোয় ভাঙি — প্রত্যেক token আলাদা স্তরের সিদ্ধান্ত নেয়।');
+  host.formula('ros2 topic echo /scan0 = CLI entry + verb + subcommand + target topic');
+  await host.sleep(1200);
+  hl('ca-t1', '#e6edf3'); q('ca-b1').setAttribute('stroke', '#4fc3f7');
+  show('ca-b1t'); show('ca-b1t2'); show('ca-b1t3'); show('ca-b1t4');
+  host.caption('<b>ros2</b> — সব ROS 2 tool-এর একই দরজা। এর পরের শব্দই বলে দেয় কোন জগতে ঢুকছি: <code>topic</code>, <code>node</code>, <code>launch</code>, <code>run</code>...');
+  await host.sleep(1500);
+  hl('ca-t2', '#e6edf3'); q('ca-b2').setAttribute('stroke', '#7ee787');
+  show('ca-b2t'); show('ca-b2t2'); show('ca-b2t3'); show('ca-b2t4');
+  host.caption('<b>topic</b> — verb। topic-জগতের নিজস্ব সন্তান-verb আছে: <code>list</code>, <code>info</code>, <code>echo</code>, <code>pub</code>, <code>hz</code>।');
+  await host.sleep(1500);
+  hl('ca-t3', '#e6edf3'); q('ca-b3').setAttribute('stroke', '#ffb454');
+  show('ca-b3t'); show('ca-b3t2'); show('ca-b3t3'); show('ca-b3t4');
+  host.caption('<b>echo</b> — subcommand: একটা <b>passive subscription</b> খোলে, প্রতিটা incoming message YAML আকারে ছাপে, <code>Ctrl-C</code> পর্যন্ত। কখনো publish করে না।');
+  host.formula('echo = read-only subscription; publish নেই, robot-এর state অপরিবর্তিত');
+  await host.sleep(1600);
+  hl('ca-t4', '#e6edf3'); q('ca-b4').setAttribute('stroke', '#ff7b72');
+  show('ca-b4t'); show('ca-b4t2'); show('ca-b4t3'); show('ca-b4t4');
+  host.caption('<b>/scan0</b> — লক্ষ্য। DDS graph-এ ঠিক এই নামের publisher খোঁজা হয়। এই নামটা এসেছে <b>hardware</b> lidar driver থেকে (Yahboom stack, folder 11-13 এ ব্যবহৃত)।');
+  await host.sleep(1600);
+  q('ca-typo').setAttribute('stroke', '#ffb454');
+  show('ca-ty1'); show('ca-ty1b');
+  host.caption('ভুলের দুই মুখ: <code>ech</code>-এর মতো <b>verb-ভুল</b> হলে command চলেই না — সঙ্গে সঙ্গে error, নিরাপদ।');
+  await host.sleep(1500);
+  show('ca-ty2'); show('ca-ty2b');
+  host.caption('কিন্তু <b>নাম-ভুল</b> (hardware-এ <code>/scan</code> লিখলে) হলে command চলে — আর নীরবে ভুল stream পড়ে ফেলে। বিপদটা দেরিতে ধরা পড়ে।');
+  host.formula('verb-ভুল = সঙ্গে সঙ্গে error · নাম-ভুল = silent wrong stream');
+  await host.sleep(1600);
+  q('ca-life').setAttribute('stroke', '#4fc3f7');
+  show('ca-l1'); show('ca-l2'); show('ca-l3'); show('ca-l4');
+  host.caption('জীবনচক্র: <b>type resolve</b> (graph থেকে <code>sensor_msgs/msg/LaserScan</code>) → <b>subscription</b> → <b>YAML print</b> sensor-এর rate-এ → <b>Ctrl-C</b>।');
+  await host.sleep(1500);
+  show('ca-l5'); show('ca-l6');
+  show('ca-s1'); show('ca-s2'); show('ca-s3'); show('ca-s4'); show('ca-s5'); show('ca-s6'); show('ca-s7');
+  host.caption('সারমর্ম: নাম হুবহু মিলবে, publisher বেঁচে থাকবে, type ঠিক থাকবে — তবেই stream। আর sim-এ <code>/scan0</code> নামে কেউ নেই — সেটা পরের Part-এ।');
+};
+
+/* ================= part 3 — ddsGraph ================= */
+ANIMS.ddsGraph = async function (host) {
+  const svg = host.setStage(
+    txt(450, 28, 'DDS graph-এ /scan0 কে publish করে? hardware আর sim-এ দুই উত্তর', { anchor: 'middle', size: 13.5, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 52, 250, 120, 8, '#0d1117', '#2a3442', ' id="dg-hw"') +
+    txt(165, 72, 'HARDWARE', { anchor: 'middle', size: 10, weight: 700, fill: '#7ee787' }) +
+    txt(165, 90, 'Yahboom lidar driver চালু', { anchor: 'middle', size: 8.5, fill: '#c9d1d9', id: 'dg-h1', op: 0 }) +
+    txt(165, 104, 'M3Pro laser stack', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'dg-h2', op: 0 }) +
+    rrect(70, 112, 190, 20, 4, '#161b22', '#7ee787', ' id="dg-hp" opacity="0"') +
+    txt(165, 126, 'publisher: /scan0', { anchor: 'middle', size: 9, mono: true, weight: 700, fill: '#7ee787', id: 'dg-hp2', op: 0 }) +
+    txt(165, 148, 'LaserScan, ~10 Hz', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'dg-h3', op: 0 }) +
+    rrect(40, 188, 250, 116, 8, '#0d1117', '#2a3442', ' id="dg-sim"') +
+    txt(165, 208, 'SIMULATION (folder 08)', { anchor: 'middle', size: 10, weight: 700, fill: '#4fc3f7' }) +
+    txt(165, 226, 'Gazebo Classic + URDF', { anchor: 'middle', size: 8.5, fill: '#c9d1d9', id: 'dg-s1', op: 0 }) +
+    rrect(70, 236, 190, 20, 4, '#161b22', '#4fc3f7', ' id="dg-sp" opacity="0"') +
+    txt(165, 250, 'publisher: /scan', { anchor: 'middle', size: 9, mono: true, weight: 700, fill: '#4fc3f7', id: 'dg-sp2', op: 0 }) +
+    txt(165, 272, 'remap ~/out:=/scan', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'dg-s2', op: 0 }) +
+    txt(165, 288, 'frame laser1_frame', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'dg-s3', op: 0 }) +
+    rrect(330, 130, 220, 96, 8, '#111', '#30363d', ' id="dg-dds"') +
+    txt(440, 152, 'DDS GRAPH (discovery)', { anchor: 'middle', size: 9.5, weight: 700, fill: '#e6edf3' }) +
+    txt(440, 172, 'কে কোন topic-এ কথা বলছে —', { anchor: 'middle', size: 8, fill: '#8b949e' }) +
+    txt(440, 186, 'সব participant-এর কাছে স্বজ্ঞাত', { anchor: 'middle', size: 8, fill: '#8b949e' }) +
+    txt(440, 210, 'query: publisher(/scan0) ?', { anchor: 'middle', size: 8.5, mono: true, fill: '#ffb454', id: 'dg-q', op: 0 }) +
+    rrect(600, 130, 260, 96, 8, '#0a0d12', '#30363d', ' id="dg-echo"') +
+    txt(730, 152, 'ros2 topic echo /scan0', { anchor: 'middle', size: 10, mono: true, weight: 700, fill: '#ffb454' }) +
+    txt(730, 172, 'echo-র প্রথম কাজ: graph জিজ্ঞেস', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'dg-e1', op: 0 }) +
+    txt(730, 188, 'publisher পেলে type resolve + subscribe', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'dg-e2', op: 0 }) +
+    txt(730, 210, 'না পেলে error — একটাও scan নয়', { anchor: 'middle', size: 8, fill: '#ff7b72', id: 'dg-e3', op: 0 }) +
+    line(290, 90, 410, 160, '#7ee787', 2, ' stroke-dasharray="5 4" id="dg-lh" opacity="0"') +
+    line(290, 240, 410, 190, '#4fc3f7', 2, ' stroke-dasharray="5 4" id="dg-ls" opacity="0"') +
+    line(550, 178, 600, 178, '#ffb454', 2.5, ' marker-end="url(#mArrO)" id="dg-lq" opacity="0"') +
+    line(440, 226, 440, 262, '#7ee787', 2, ' stroke-dasharray="4 3" id="dg-ok" opacity="0"') +
+    rrect(300, 268, 300, 20, 4, '#161b22', '#30363d') +
+    txt(308, 282, '$ ros2 topic echo /scan0', { size: 9.5, mono: true, fill: '#c9d1d9' }) +
+    txt(300, 302, 'hardware: stream শুরু — প্রতি scan এক YAML block', { size: 8.5, fill: '#7ee787', id: 'dg-r1', op: 0 }) +
+    txt(300, 318, 'sim: type নির্ধারণ করা গেল না — publisher নেই', { size: 8.5, fill: '#ff7b72', id: 'dg-r2', op: 0 }) +
+    rrect(600, 240, 260, 96, 8, '#111', '#30363d', ' id="dg-ws"') +
+    txt(730, 260, 'কোন পরিবেশে কী', { anchor: 'middle', size: 10, weight: 700, fill: '#4fc3f7' }) +
+    txt(730, 280, 'hardware robot + driver', { anchor: 'middle', size: 8.5, fill: '#c9d1d9', id: 'dg-w1', op: 0 }) +
+    txt(730, 294, 'echo /scan0', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'dg-w2', op: 0 }) +
+    txt(730, 314, 'folder-08 Gazebo sim', { anchor: 'middle', size: 8.5, fill: '#c9d1d9', id: 'dg-w3', op: 0 }) +
+    txt(730, 328, 'echo /scan (নাম বদলাতে হবে)', { anchor: 'middle', size: 8.5, mono: true, fill: '#4fc3f7', id: 'dg-w4', op: 0 }) +
+    txt(450, 358, 'এই README পড়ছে hardware-কে ধরে নিয়ে — কিন্তু sim-এ পরীক্ষা করতে গেলে নাম বদলাতে হবে', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: README.md L1 + FACTS-09 (repo-wide grep: /scan0 শুধু এই README-তে)', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  host.caption('echo চালু হওয়ার আগেই একটা প্রশ্ন করে: <b>DDS graph</b>-এ <code>/scan0</code> নামে কেউ publish করে কি না — উত্তরটা পরিবেশভেদে বদলায়।');
+  host.formula('echo-র প্রথম প্রশ্ন = graph query: publisher(topic = /scan0) exists?');
+  await host.sleep(1300);
+  show('dg-e1'); show('dg-e2'); show('dg-e3'); show('dg-q'); show('dg-lq');
+  host.caption('echo-র প্রথম ধাপ graph query। Publisher পেলে type (<code>sensor_msgs/msg/LaserScan</code>) resolve করে subscription খোলে; না পেলে error।');
+  await host.sleep(1500);
+  q('dg-hw').setAttribute('stroke', '#7ee787');
+  show('dg-h1'); show('dg-h2'); show('dg-hp'); show('dg-hp2'); show('dg-h3');
+  host.caption('<b>hardware</b>-এ Yahboom lidar driver (M3Pro laser stack) চালু থাকলে graph-এ <code>/scan0</code>-এর publisher থাকে — LaserScan, প্রায় 10 Hz।');
+  await host.sleep(1500);
+  show('dg-lh');
+  host.formula('hardware: publisher(/scan0) + subscription(/scan0) → match → YAML stream');
+  await host.sleep(1200);
+  show('dg-r1');
+  host.caption('মিল হলে stream: প্রতি scan cycle-এ terminal-এ একটা সম্পূর্ণ YAML block — Part 4-এ ওটা ফিল্ড ধরে ধরে পড়ব।');
+  await host.sleep(1500);
+  q('dg-sim').setAttribute('stroke', '#4fc3f7');
+  show('dg-s1'); show('dg-sp'); show('dg-sp2'); show('dg-s2'); show('dg-s3'); show('dg-ls');
+  host.caption('<b>folder-08 Gazebo sim</b>-এ আলাদা গল্প: URDF-র remap <code>~/out:=/scan</code> থাকায় publisher-এর নাম <code>/scan</code> — <code>/scan0</code> নামে <b>কেউ নেই</b>।');
+  await host.sleep(1600);
+  show('dg-r2');
+  host.caption('তাই sim-এ <code>echo /scan0</code> করলে publisher-ই পাওয়া যায় না — type নির্ধারণ করতে ব্যর্থ, একটাও scan আসে না। এটা bug নয়, নামের চুক্তি।');
+  host.formula('sim: publisher(/scan) != query(/scan0) → no match → no data');
+  await host.sleep(1600);
+  q('dg-ws').setAttribute('stroke', '#4fc3f7');
+  show('dg-w1'); show('dg-w2'); show('dg-w3'); show('dg-w4');
+  host.caption('কাজের নিয়ম: hardware-এ <code>/scan0</code>, folder-08 sim-এ <code>/scan</code>। নাম বদলালেই একই tool, একই message type — দুই পরিবেশেই echo কাজ করে।');
+  await host.sleep(1500);
+  host.caption('সারমর্ম: DDS graph-ই সত্যের স্তর — README-র L1 লেখা আছে বলে stream আসে না, graph-এ publisher বেঁচে থাকলেই আসে। এরপরের সব (folder 10 fusion, folder 11 avoidance) এই একই চুক্তায় চলে।');
+};
+
+/* ================= part 4 — scanMessage ================= */
+ANIMS.scanMessage = async function (host) {
+  const svg = host.setStage(
+    txt(450, 28, 'echo-র YAML — sensor_msgs/msg/LaserScan field by field (sim মান)', { anchor: 'middle', size: 13.5, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 46, 380, 306, 8, '#0d1117', '#2a3442') +
+    txt(56, 66, 'TERMINAL — একটি scan (illustrative)', { size: 8, weight: 700, fill: '#8b949e' }) +
+    txt(64, 84, 'header:', { size: 9.5, mono: true, fill: '#e6edf3', weight: 700 }) +
+    txt(84, 98, 'stamp: 1256.814000000', { id: 'sm-f1', size: 9, mono: true, fill: '#c9d1d9', op: 0 }) +
+    txt(84, 112, 'frame_id: laser1_frame', { id: 'sm-f2', size: 9, mono: true, fill: '#7ee787', op: 0 }) +
+    txt(64, 130, 'angle_min: -3.14159', { id: 'sm-f3', size: 9.5, mono: true, fill: '#ffb454', op: 0 }) +
+    txt(64, 144, 'angle_max: 3.14159', { id: 'sm-f4', size: 9.5, mono: true, fill: '#ffb454', op: 0 }) +
+    txt(64, 158, 'angle_increment: 0.0174533', { id: 'sm-f5', size: 9.5, mono: true, fill: '#ffb454', op: 0 }) +
+    txt(64, 172, 'time_increment: 0.00027778', { id: 'sm-f6', size: 9.5, mono: true, fill: '#c9d1d9', op: 0 }) +
+    txt(64, 186, 'scan_time: 0.1', { id: 'sm-f7', size: 9.5, mono: true, fill: '#c9d1d9', op: 0 }) +
+    txt(64, 200, 'range_min: 0.2', { id: 'sm-f8', size: 9.5, mono: true, fill: '#4fc3f7', op: 0 }) +
+    txt(64, 214, 'range_max: 8.0', { id: 'sm-f9', size: 9.5, mono: true, fill: '#4fc3f7', op: 0 }) +
+    txt(64, 232, 'ranges: 3.004 3.011 3.007 inf 2.902', { id: 'sm-f10', size: 9, mono: true, fill: '#7ee787', op: 0 }) +
+    txt(84, 246, '(মোট 360 entry)', { id: 'sm-f11', size: 8.5, mono: true, fill: '#8b949e', op: 0 }) +
+    txt(64, 264, 'intensities: 14.2 13.8 14.0', { id: 'sm-f12', size: 9, mono: true, fill: '#6e7681', op: 0 }) +
+    txt(64, 288, '---', { size: 9, mono: true, fill: '#6e7681', id: 'sm-sep', op: 0 }) +
+    txt(64, 302, 'header.stamp illustrative;', { size: 7.5, fill: '#8b949e', id: 'sm-note', op: 0 }) +
+    txt(64, 314, 'বাকি মান folder-08 URDF থেকে', { size: 7.5, fill: '#8b949e', id: 'sm-note2', op: 0 }) +
+    txt(64, 336, 'প্রতি 0.1 s-এ আরেকটি এরকম block', { size: 7.5, fill: '#6e7681', id: 'sm-note3', op: 0 }) +
+    rrect(440, 46, 420, 92, 8, '#111', '#30363d', ' id="sm-nbox"') +
+    txt(650, 66, 'কয়টা beam?', { anchor: 'middle', size: 10, weight: 700, fill: '#ffb454' }) +
+    txt(650, 84, 'N = (max - min) / increment + 1', { anchor: 'middle', size: 9, mono: true, fill: '#c9d1d9', id: 'sm-nf', op: 0 }) +
+    txt(650, 100, '(6.28318 / 0.0174533) + 1 = 360', { anchor: 'middle', size: 9.5, mono: true, weight: 700, fill: '#7ee787', id: 'sm-nf2', op: 0 }) +
+    txt(650, 122, 'ranges-এ 360টি entry — মিলে যায়', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'sm-nf3', op: 0 }) +
+    rrect(440, 150, 420, 118, 8, '#111', '#30363d', ' id="sm-ibox"') +
+    txt(650, 170, 'index থেকে দিক', { anchor: 'middle', size: 10, weight: 700, fill: '#ffb454' }) +
+    txt(650, 188, 'theta_i = angle_min + i * increment', { anchor: 'middle', size: 9, mono: true, fill: '#c9d1d9', id: 'sm-if', op: 0 }) +
+    txt(650, 206, 'i=0: -180 deg (পেছন) · i=180: 0 deg (সামনে)', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'sm-if2', op: 0 }) +
+    txt(650, 222, 'i=270: +90 deg (বাঁ দিক)', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'sm-if3', op: 0 }) +
+    txt(650, 244, 'array-র শুরু পেছনে — ring পড়ার চাবি', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'sm-if4', op: 0 }) +
+    rrect(440, 280, 420, 72, 8, '#111', '#30363d', ' id="sm-gbox"') +
+    txt(650, 300, 'বিশেষ মান', { anchor: 'middle', size: 10, weight: 700, fill: '#4fc3f7' }) +
+    txt(650, 318, 'inf = no return (খোলা দিক) · NaN = invalid', { anchor: 'middle', size: 8.5, mono: true, fill: '#c9d1d9', id: 'sm-gf', op: 0 }) +
+    txt(650, 338, 'valid gate: 0.2 m &lt;= r &lt;= 8.0 m', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'sm-gf2', op: 0 }) +
+    txt(450, 374, 'echo পুরো array একসাথে ছাপে — beam-গুলো একে একে ঘোরলেও পড়া হয় একবারে', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: sensor_msgs/msg/LaserScan + folder-08 URDF (10 Hz · 360 · 0.2..8.0 m · noise 0.01)', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  host.caption('L1 চালু হলে যা দেখবেন: প্রতি scan cycle-এ এমন একটা YAML block। একে একে field ধরে ধরে পড়ি।');
+  host.formula('LaserScan = header + 4 angle field + 2 time field + 2 range gate + ranges + intensities');
+  await host.sleep(1300);
+  show('sm-f1'); show('sm-f2');
+  host.caption('<b>header</b>: <code>stamp</code> কখন মাপা হলো (মানটি এখানে illustrative), <code>frame_id: laser1_frame</code> বলে মাপ কোন frame-এ হয়েছে — পরে rviz2-তে এই নামটাই মেলাতে হবে।');
+  await host.sleep(1600);
+  show('sm-f3'); show('sm-f4'); show('sm-f5');
+  host.caption('<b>angle block</b>: প্রথম beam <code>-3.14159 rad</code> (-180°), শেষ beam <code>+3.14159</code>, ধাপ <code>0.0174533 rad</code> = ঠিক <b>1°</b> — পুরো বৃত্ত জুড়ে সমান ফাঁক।');
+  host.formula('angle_increment = 2*pi/360 = 0.0174533 rad = 1 deg');
+  await host.sleep(1600);
+  q('sm-nbox').setAttribute('stroke', '#ffb454');
+  show('sm-nf'); show('sm-nf2'); show('sm-nf3');
+  host.caption('এখন থেকেই beam-সংখ্যা বেরোয়: <b>N = (max − min)/increment + 1 = 360</b>। echo-র <code>ranges</code>-এও ঠিক 360টি entry — field-গুলো নিজেই নিজেদের মিলিয়ে দেয়।');
+  await host.sleep(1600);
+  show('sm-f6'); show('sm-f7');
+  host.caption('<b>সময়ের field</b>: <code>scan_time 0.1</code> s মানে 10 Hz; <code>time_increment</code> = 0.1/360 মানে প্রতি beam-এ কয়েকশো মাইক্রোসেকেন্ড — beam ঘোরে একে একে, কিন্তু পড়া হয় পুরোটা একসাথে।');
+  await host.sleep(1600);
+  show('sm-f8'); show('sm-f9');
+  q('sm-gbox').setAttribute('stroke', '#4fc3f7');
+  show('sm-gf'); show('sm-gf2');
+  host.caption('<b>range gate</b>: 0.2 m-এর নিচে খুব কাছের (sensor-এর অন্ধ বিন্দু), 8.0 m-এর উপরে বেশি দূরের মান <b>valid নয়</b>।');
+  await host.sleep(1500);
+  show('sm-f10'); show('sm-f11');
+  host.caption('মূল ডেটা <b>ranges</b>: প্রতিটি entry সেই beam-এর দূরত্ব মিটারে। <code>inf</code> = beam কিছুই খুঁজে পায়নি — খোলা দিক, এটাই পরে ring-এর ফাঁক হয়ে দেখা যাবে।');
+  host.formula('ranges[i] = দূরত্ব (m) · inf = no return · NaN = invalid');
+  await host.sleep(1600);
+  show('sm-f12'); show('sm-sep'); show('sm-note'); show('sm-note2'); show('sm-note3');
+  host.caption('শেষে <b>intensities</b> (reflectivity), তারপর পরের block — 10 Hz মানে সেকেন্ডে ১০ বার এই পুরো ছবি। <code>ranges</code> ভরা <code>inf</code> দেখলে ঘাবড়াবেন না — সুস্থ sensor-এরই স্বভাব।');
+  await host.sleep(1600);
+  q('sm-ibox').setAttribute('stroke', '#ffb454');
+  show('sm-if'); show('sm-if2'); show('sm-if3'); show('sm-if4');
+  host.caption('আর দিক? সেটা index থেকে: <b>θ = angle_min + i·increment</b>। i=0 <b>পেছনে</b>, i=180 সামনে, i=270 বাঁ দিক — এই উল্টো শুরুটাই Part 5-র হিসাবের বীজ।');
+};
+
+/* ================= part 5 — polarToCart ================= */
+ANIMS.polarToCart = async function (host) {
+  const cx = 250, cy = 236, pxm = 62;
+  const P = (deg, r) => nbXY(cx, cy, pxm, deg, r);
+  const fx = P(0, 2.35), lf = P(90, 2.35), rt = P(-90, 2.8), bk = P(180, 0.26);
+  const svg = host.setStage(
+    txt(450, 28, 'প্রতিটা ranges entry = (কোণ, দূরত্ব) — সেখান থেকেই বিন্দু', { anchor: 'middle', size: 14, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 52, 420, 300, 8, '#0d1117', '#2a3442', ' id="pc-plane"') +
+    line(70, 236, 430, 236, '#30363d', 1) +
+    line(250, 70, 250, 336, '#30363d', 1) +
+    txt(424, 250, '+x (সামনে)', { anchor: 'end', size: 7.5, mono: true, fill: '#6e7681' }) +
+    txt(258, 78, 'left (+y)', { size: 7.5, mono: true, fill: '#6e7681' }) +
+    circ(cx, cy, 5, '#e6edf3') +
+    rrect(cx - 13, cy - 13, 26, 26, 3, 'none', '#f0f6fc', ' opacity="0.35"') +
+    txt(250, 262, 'robot (origin)', { anchor: 'middle', size: 7.5, fill: '#8b949e' }) +
+    line(cx, cy, fx[0], fx[1], '#7ee787', 2, ' id="pc-b180" opacity="0"') +
+    circ(fx[0], fx[1], 4, '#7ee787', ' id="pc-p180" opacity="0"') +
+    txt(fx[0] + 8, fx[1] - 8, 'i=180 · 2.35 m', { size: 8, mono: true, fill: '#7ee787', id: 'pc-t180', op: 0 }) +
+    line(cx, cy, lf[0], lf[1], '#4fc3f7', 2, ' id="pc-b270" opacity="0"') +
+    circ(lf[0], lf[1], 4, '#4fc3f7', ' id="pc-p270" opacity="0"') +
+    txt(lf[0] - 6, lf[1] - 10, 'i=270 · 2.35 m', { anchor: 'end', size: 8, mono: true, fill: '#4fc3f7', id: 'pc-t270', op: 0 }) +
+    line(cx, cy, bk[0], bk[1], '#6e7681', 2, ' id="pc-b0" opacity="0"') +
+    circ(bk[0], bk[1], 4, '#6e7681', ' id="pc-p0" opacity="0"') +
+    txt(bk[0] + 10, bk[1] + 14, 'i=0 · 0.26 m (chassis)', { size: 8, mono: true, fill: '#6e7681', id: 'pc-t0', op: 0 }) +
+    line(cx, cy, rt[0], rt[1], '#30363d', 1.4, ' stroke-dasharray="3 3" id="pc-b90" opacity="0"') +
+    txt(rt[0] - 6, rt[1] + 12, 'i=90 (ডান)', { anchor: 'end', size: 7.5, mono: true, fill: '#6e7681', id: 'pc-t90', op: 0 }) +
+    txt(250, 344, 'দিক-চুক্তি: সামনে = +x, বাঁ = +y (REP-103); পর্দায় সামনে উপরে', { anchor: 'middle', size: 7.5, fill: '#8b949e' }) +
+    rrect(480, 52, 380, 116, 8, '#111', '#30363d', ' id="pc-ftheta"') +
+    txt(670, 72, 'ধাপ ১ — index থেকে কোণ', { anchor: 'middle', size: 10, weight: 700, fill: '#ffb454' }) +
+    txt(670, 92, 'theta_i = angle_min + i * angle_increment', { anchor: 'middle', size: 9, mono: true, fill: '#c9d1d9' }) +
+    txt(670, 112, 'i=180: -3.14159 + 180*0.0174533 = 0 rad', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'pc-th180', op: 0 }) +
+    txt(670, 130, 'i=270: +1.5708 rad = +90 deg · i=0: -pi rad', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'pc-th270', op: 0 }) +
+    txt(670, 152, 'সবসময় angle_min থেকে যাত্রা — এটাই সূত্রের মান', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'pc-thn', op: 0 }) +
+    rrect(480, 180, 380, 116, 8, '#111', '#30363d', ' id="pc-fxy"') +
+    txt(670, 200, 'ধাপ ২ — কোণ+দূরত্ব থেকে বিন্দু', { anchor: 'middle', size: 10, weight: 700, fill: '#4fc3f7' }) +
+    txt(670, 220, 'x = r * cos(theta) · y = r * sin(theta)', { anchor: 'middle', size: 9, mono: true, fill: '#c9d1d9' }) +
+    txt(670, 240, 'i=180: (2.35, 0) — সোজা সামনে', { anchor: 'middle', size: 8.5, mono: true, fill: '#7ee787', id: 'pc-xy180', op: 0 }) +
+    txt(670, 258, 'i=270: (0, 2.35) — বাঁয়ে 2.35 m', { anchor: 'middle', size: 8.5, mono: true, fill: '#4fc3f7', id: 'pc-xy270', op: 0 }) +
+    txt(670, 276, 'i=0: (-0.26, 0) — পেছনে, নিজের শরীর', { anchor: 'middle', size: 8.5, mono: true, fill: '#6e7681', id: 'pc-xy0', op: 0 }) +
+    txt(670, 290, 'একক মিটার — ranges-এ যা আছে তা-ই', { anchor: 'middle', size: 8, fill: '#8b949e', id: 'pc-xyn', op: 0 }) +
+    rrect(480, 308, 380, 44, 8, '#0a0d12', '#30363d', ' id="pc-ring"') +
+    txt(670, 326, '360টা beam একসাথে = ring', { anchor: 'middle', size: 9.5, weight: 700, fill: '#7ee787' }) +
+    txt(670, 342, 'inf/NaN-এর কোণে কিছু আঁকা হয় না — সেখানেই ফাঁক', { anchor: 'middle', size: 8, fill: '#c9d1d9', id: 'pc-ringn', op: 0 }) +
+    txt(450, 380, 'এই রূপান্তর rviz2-র LaserScan display প্রতি frame করে — আমরা হাতে করলাম তিনটা beam-এ', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: folder-08 URDF (angle_min -pi · increment 1 deg · range 0.2..8.0 m)', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  host.caption('ranges-এর প্রতিটা entry আসলে <b>polar</b> সংখ্যা: একটা কোণ, একটা দূরত্ব। rviz2-র ছবি বানাতে হয় তাকে <b>cartesian</b> বিন্দুতে ভাঙা — দুই ধাপের হিসাব।');
+  host.formula('ranges[i] মানে (theta_i, r_i) — polar থেকে cartesian: (x, y)');
+  await host.sleep(1400);
+  q('pc-ftheta').setAttribute('stroke', '#ffb454');
+  show('pc-th180'); show('pc-thn');
+  host.caption('ধাপ ১ — <b>কোণ</b>: <code>θ_i = angle_min + i·increment</code>। i=180 বসালে: <code>-π + 180×0.0174533 = 0 rad</code> — মানে সোজা সামনে।');
+  await host.sleep(1600);
+  show('pc-th270');
+  show('pc-b180'); show('pc-p180'); show('pc-t180');
+  host.caption('i=180-এর দূরত্ব 2.35 m হলে beam-টা সামনের দিকে 2.35 m গিয়ে দেয়ালে পড়ে — বিন্দুটা এখানে।');
+  host.formula('i=180: theta = 0 · r = 2.35 → সোজা সামনের বিন্দু');
+  await host.sleep(1600);
+  q('pc-fxy').setAttribute('stroke', '#4fc3f7');
+  show('pc-xy180');
+  host.caption('ধাপ ২ — <b>বিন্দু</b>: <code>x = r·cos θ, y = r·sin θ</code>। i=180: θ=0 তাই <code>(2.35, 0)</code> — x-অক্ষে সোজা সামনে, কোনো রহস্য নেই।');
+  await host.sleep(1600);
+  show('pc-xy270');
+  show('pc-b270'); show('pc-p270'); show('pc-t270');
+  host.caption('i=270: <code>θ = +90°</code> — বাঁ দিক। <code>cos 90° = 0</code>, তাই বিন্দু <code>(0, 2.35)</code>: বাঁয়ে 2.35 মিটার, x-এ শূন্য।');
+  await host.sleep(1600);
+  show('pc-b0'); show('pc-p0'); show('pc-t0'); show('pc-xy0');
+  host.caption('i=0: <code>θ = −π</code> — <b>পেছনে</b>! দূরত্ব মাত্র 0.26 m, কারণ sim-এ পেছনের beam <b>নিজের chassis</b>-এ লাগে। Array-র শুরুটাই পেছন — এই জায়গায় সবচেয়ে বেশি ভুল হয়।');
+  host.formula('i=0: theta = -pi · r = 0.26 (self-hit) — array-র দুই ধার জুড়ে পেছন');
+  await host.sleep(1700);
+  show('pc-b90'); show('pc-t90');
+  host.caption('উল্টো দিকে i=90 = <b>ডান</b>। বাঁ-ডান মুখস্থ করার দরকার নেই — সূত্রটাই বলে দেয়: কোণ বাড়ে বাঁ দিকে (counter-clockwise)।');
+  await host.sleep(1600);
+  q('pc-ring').setAttribute('stroke', '#7ee787');
+  show('pc-ringn');
+  host.caption('একই হিসাব 360 বার চালালেই পুরো ring। আর <code>inf</code> বা NaN-এর কোণে বিন্দু হয় না — সেই শূন্যস্থানগুলোই Part 7-এর ফাঁক। Part 6-এ দেখব এই বিন্দুগুলো rviz2 কীভাবে আঁকে।');
+};
+
+/* ================= part 6 — rvizDisplays ================= */
+ANIMS.rvizDisplays = async function (host) {
+  const cx = 560, cy = 196, pxm = 52;
+  const svg = host.setStage(
+    txt(450, 28, 'rviz2 (L3): Displays panel-এ চারটা সিদ্ধান্ত — তারপর viewport-এ ring', { anchor: 'middle', size: 13, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 46, 320, 306, 8, '#0d1117', '#2a3442', ' id="rd-disp"') +
+    txt(56, 66, 'Displays', { size: 10, weight: 700, fill: '#e6edf3' }) +
+    rrect(52, 76, 296, 18, 3, '#161b22', '#30363d') +
+    txt(60, 89, 'Global Options', { size: 8.5, mono: true, fill: '#c9d1d9' }) +
+    rrect(64, 98, 284, 16, 3, '#161b22', '#30363d') +
+    txt(72, 110, 'Fixed Frame: map', { id: 'rd-ff', size: 8.5, mono: true, fill: '#ffb454' }) +
+    rrect(52, 122, 296, 18, 3, '#161b22', '#30363d') +
+    txt(60, 135, 'Grid', { size: 8.5, mono: true, fill: '#c9d1d9' }) +
+    txt(60, 156, '(default config: Grid + Fixed Frame map)', { size: 7.5, fill: '#6e7681' }) +
+    rrect(52, 166, 296, 76, 3, '#161b22', '#30363d', ' id="rd-lsb" opacity="0"') +
+    txt(60, 180, 'LaserScan', { id: 'rd-lst', size: 8.5, mono: true, weight: 700, fill: '#7ee787' }) +
+    txt(68, 196, 'Topic: /scan0', { id: 'rd-top', size: 8, mono: true, fill: '#ff7b72' }) +
+    txt(68, 212, 'Reliability: Best Effort', { id: 'rd-qos', size: 8, mono: true, fill: '#4fc3f7' }) +
+    txt(68, 228, 'Style: Points · Size: 0.05', { id: 'rd-sty', size: 8, mono: true, fill: '#c9d1d9' }) +
+    txt(60, 258, 'Add + Display Type: LaserScan', { id: 'rd-add', size: 8, fill: '#8b949e', op: 0 }) +
+    txt(60, 274, 'Topic dropdown: /scan0 (hardware) · /scan (folder-08 sim)', { id: 'rd-add2', size: 8, fill: '#8b949e', op: 0 }) +
+    txt(60, 290, 'Fixed Frame: map থেকে laser1_frame (header.frame_id)', { id: 'rd-add3', size: 8, fill: '#8b949e', op: 0 }) +
+    txt(60, 306, 'QoS: sensor Best Effort — display-ও তাই হবে', { id: 'rd-add4', size: 8, fill: '#8b949e', op: 0 }) +
+    txt(60, 330, 'status: OK · 10.0 Hz · LaserScan', { id: 'rd-stat', size: 8, mono: true, fill: '#7ee787', op: 0 }) +
+    rrect(380, 46, 480, 306, 8, '#0d1117', '#2a3442', ' id="rd-vp"') +
+    txt(620, 66, 'viewport (top view)', { anchor: 'middle', size: 9, weight: 700, fill: '#8b949e' }) +
+    txt(560, 200, 'grid visible, data নেই', { anchor: 'middle', size: 9, fill: '#6e7681', id: 'rd-empty' }) +
+    txt(396, 300, 'status: error — transform', { size: 8, mono: true, fill: '#ff7b72', id: 'rd-verr', op: 0 }) +
+    txt(396, 316, 'Fixed Frame: map', { size: 8.5, mono: true, fill: '#ffb454', id: 'rd-vff', op: 0 }) +
+    txt(396, 332, 'Fixed Frame: laser1_frame', { size: 8.5, mono: true, fill: '#7ee787', id: 'rd-vff2', op: 0 }) +
+    txt(396, 348, 'status: OK — data flows', { size: 8, mono: true, fill: '#7ee787', id: 'rd-vok', op: 0 }) +
+    nbDots(cx, cy, pxm, 5, 0, 'rd') +
+    circ(cx, cy, 4.5, '#e6edf3', ' id="rd-rob" opacity="0"') +
+    txt(450, 376, 'rviz2-ও passive: display শুধু পড়ে — robot-এ কিছু publish হয় না, চলার command নেই', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: README.md L3 — rviz2 (bare invocation, default config)', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  const hide = id => q(id).setAttribute('opacity', 0);
+  host.caption('L3-এর <code>rviz2</code> লেখা মাত্র default config-এ চালু হয়: একটা <b>Grid</b>, <b>Fixed Frame map</b>। তারপর চারটা সিদ্ধান্ত নিতে হয় — একে একে।');
+  host.formula('rviz2 bare = Grid + Fixed Frame: map + কোনো data display নেই');
+  await host.sleep(1400);
+  show('rd-add');
+  q('rd-lsb').setAttribute('opacity', 1); show('rd-lst');
+  host.caption('সিদ্ধান্ত ১ — <b>LaserScan display add</b> করুন। display ছাড়া topic-এ data আসুক না, viewport কিছু জানে না: rviz2 নিজে থেকে কোনো topic খোঁজে না।');
+  await host.sleep(1600);
+  show('rd-top'); show('rd-add2');
+  host.caption('সিদ্ধান্ত ২ — <b>Topic</b>: hardware-এ <code>/scan0</code>, folder-08 sim-এ <code>/scan</code>। Part 3-এর নামের চুক্তাই এখানেও খাটে।');
+  await host.sleep(1500);
+  show('rd-verr'); show('rd-vff'); show('rd-add3');
+  host.caption('সিদ্ধান্ত ৩ — <b>Fixed Frame</b>। message আসছে <code>laser1_frame</code> থেকে, viewport বসে আছে <code>map</code>-এ — দুই নামে সেতু নেই, তাই status-এ transform error, ছবি ফাঁকা।');
+  host.formula('Fixed Frame (map) != header.frame_id (laser1_frame) → no transform → empty viewport');
+  await host.sleep(1700);
+  q('rd-ff').setAttribute('fill', '#7ee787');
+  q('rd-ff').textContent = 'Fixed Frame: laser1_frame';
+  hide('rd-vff'); show('rd-vff2');
+  host.caption('সমাধান: Fixed Frame-কে <b>ঠিক <code>header.frame_id</code>-এর সমান</b> করুন — <code>laser1_frame</code>। এবার frame মিলল, transform-এর দরকারই নেই।');
+  await host.sleep(1600);
+  show('rd-qos'); show('rd-add4');
+  host.caption('সিদ্ধান্ত ৪ — <b>QoS</b>: lidar stream সাধারণত <code>Best Effort</code> পাঠায়, display-এর default অনেক সময় <code>Reliable</code> — না মিললে <b>একটাও point আসবে না</b>, নীরবে।');
+  await host.sleep(1600);
+  show('rd-sty'); show('rd-vok'); show('rd-rob');
+  hide('rd-empty');
+  show('rd-wall'); show('rd-obst'); show('rd-rear');
+  host.caption('সব মিললে viewport-এ <b>ring</b> — Style <code>Points</code>-এ প্রতিটা beam একটা বিন্দু (সবুজ দেয়াল, লাল obstacle, ধূসর পেছনের chassis-hit)। Part 5-এর হিসাবই এখানে রং হয়ে ফুটেছে।');
+  host.formula('Topic match + Fixed Frame match + QoS match → 360 points at 10 Hz');
+  await host.sleep(1700);
+  show('rd-stat');
+  host.caption('Display-এর status line নিজেই ডাক্তার: <code>OK · 10 Hz</code> দেখালে চেইন অক্ষত। ফাঁকা viewport পেলে উল্টো পথে যান — echo-তে ফিরে data আছে কি না আগে দেখুন (Part 8-এর ক্রম)।');
+  await host.sleep(1600);
+  host.caption('মনে রাখুন: rviz2 সম্পূর্ণ <b>passive</b> — robot নড়ে না, কোনো command publish হয় না। folder 10-14 (fusion, avoidance, tracking, guard, SLAM) সব এই একই viewport-এ দেখা যায়।');
+};
+
+/* ================= part 7 — worldView ================= */
+ANIMS.worldView = async function (host) {
+  const cx = 300, cy = 194, pxm = 52;
+  const P = (deg, r) => nbXY(cx, cy, pxm, deg, r);
+  const g1 = P(40, 2.8), g2 = P(72, 2.8), gt = P(56, 3.05);
+  const o1 = P(-44, 1.1), o2 = P(-24, 1.1), om = P(-34, 1.1), ot = P(-34, 0.68), sh = P(-34, 2.2);
+  const rt = P(180, 0.62), wt = P(90, 1.7);
+  const svg = host.setStage(
+    txt(450, 28, 'ring পড়া: cluster, ফাঁক, ধার, কাঁপুনি, shadow — পাঁচটা নিয়ম', { anchor: 'middle', size: 14, weight: 600, fill: '#ffb454' }) +
+    rrect(40, 46, 520, 306, 8, '#0d1117', '#2a3442', ' id="wv-vp"') +
+    txt(300, 66, 'viewport — স্থির ring (জ্যামিতি illustrative)', { anchor: 'middle', size: 9, weight: 700, fill: '#8b949e' }) +
+    nbDots(cx, cy, pxm, 4, 0, 'wv') +
+    nbDots(cx, cy, pxm, 4, 0.03, 'wvz') +
+    circ(cx, cy, 4.5, '#e6edf3', ' id="wv-rob" opacity="0"') +
+    line(g1[0], g1[1], g2[0], g2[1], '#ffb454', 2, ' stroke-dasharray="5 4" id="wv-gap" opacity="0"') +
+    txt(gt[0], gt[1], 'gap: inf (খোলা দরজা)', { anchor: 'middle', size: 8, mono: true, fill: '#ffb454', id: 'wv-gapt', op: 0 }) +
+    rrect(Math.min(o1[0], o2[0]) - 4, Math.min(o1[1], o2[1]) - 4,
+      Math.abs(o2[0] - o1[0]) + 8, Math.abs(o2[1] - o1[1]) + 8, 3, 'none', '#f85149',
+      ' opacity="0" id="wv-obx"') +
+    txt(ot[0], ot[1], 'obstacle 1.1 m', { anchor: 'middle', size: 8, mono: true, fill: '#f85149', id: 'wv-obt', op: 0 }) +
+    line(cx, cy, o1[0], o1[1], '#f85149', 1.2, ' stroke-dasharray="2 3" id="wv-sh1" opacity="0"') +
+    line(cx, cy, o2[0], o2[1], '#f85149', 1.2, ' stroke-dasharray="2 3" id="wv-sh2" opacity="0"') +
+    txt(sh[0], sh[1], 'shadow: অন্ধ অঞ্চল', { anchor: 'middle', size: 8, fill: '#f85149', id: 'wv-sht', op: 0 }) +
+    txt(rt[0], rt[1], 'rear: i=0 / i=359', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681', id: 'wv-reart', op: 0 }) +
+    txt(wt[0] - 10, wt[1], 'wall: ঘন সারি', { anchor: 'end', size: 8, mono: true, fill: '#7ee787', id: 'wv-wallt', op: 0 }) +
+    txt(300, 347, 'সবুজ = wall return · লাল = obstacle cluster · ধূসর = নিজের chassis (0.26 m)', { anchor: 'middle', size: 8, fill: '#8b949e' }) +
+    rrect(580, 46, 280, 56, 8, '#111', '#30363d', ' id="wv-b1"') +
+    txt(720, 66, 'নিয়ম ১ — ঘন সারি = পৃষ্ঠ', { anchor: 'middle', size: 9, weight: 700, fill: '#7ee787' }) +
+    txt(720, 84, 'দেয়াল একাধিক beam ফেরত দেয় — সোজা সারি', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b1t', op: 0 }) +
+    txt(720, 94, 'r = 2.8 m + wobble', { anchor: 'middle', size: 7.5, mono: true, fill: '#6e7681', id: 'wv-b1t2', op: 0 }) +
+    rrect(580, 112, 280, 56, 8, '#111', '#30363d', ' id="wv-b2"') +
+    txt(720, 132, 'নিয়ম ২ — ফাঁক = inf', { anchor: 'middle', size: 9, weight: 700, fill: '#ffb454' }) +
+    txt(720, 150, 'range_max (8.0 m)-এর ভিতরে কিছু নেই', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b2t', op: 0 }) +
+    txt(720, 160, 'ranges[i] = inf — খোলা দিক', { anchor: 'middle', size: 7.5, mono: true, fill: '#6e7681', id: 'wv-b2t2', op: 0 }) +
+    rrect(580, 178, 280, 56, 8, '#111', '#30363d', ' id="wv-b3"') +
+    txt(720, 198, 'নিয়ম ৩ — ধার = পেছন', { anchor: 'middle', size: 9, weight: 700, fill: '#6e7681' }) +
+    txt(720, 216, 'i=0 ও i=359 জুড়ে দিলে পিছন দিক', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b3t', op: 0 }) +
+    txt(720, 226, 'কিছু beam নিজের chassis-এ (0.26 m)', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b3t2', op: 0 }) +
+    rrect(580, 244, 280, 56, 8, '#111', '#30363d', ' id="wv-b4"') +
+    txt(720, 264, 'নিয়ম ৪ — কাঁপুনি = noise', { anchor: 'middle', size: 9, weight: 700, fill: '#4fc3f7' }) +
+    txt(720, 282, 'gaussian sigma = 0.01 m = 1 cm', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b4t', op: 0 }) +
+    txt(720, 292, 'স্থির দেয়ালও scan-to-scan মিলিমিটার কাঁপে', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b4t2', op: 0 }) +
+    rrect(580, 310, 280, 42, 8, '#111', '#30363d', ' id="wv-b5"') +
+    txt(720, 328, 'নিয়ম ৫ — shadow', { anchor: 'middle', size: 9, weight: 700, fill: '#f85149' }) +
+    txt(720, 344, 'ফাঁক মানেই পথ নয়: ধারের cluster দেখুন', { anchor: 'middle', size: 7.5, fill: '#c9d1d9', id: 'wv-b5t', op: 0 }) +
+    txt(450, 376, 'এই পাঁচ নিয়মেই পরে obstacle avoidance (folder 11) সিদ্ধান্ত নেয় — free direction = প্রশস্ত non-shadow ফাঁক', { anchor: 'middle', size: 8.5, fill: '#8b949e' }) +
+    txt(450, 440, 'source: folder-08 URDF sim values (360 beam · 0.2..8.0 m · noise 0.01 m) — জ্যামিতি illustrative', { anchor: 'middle', size: 8, mono: true, fill: '#6e7681' })
+  );
+  const q = id => svg.querySelector('#' + id);
+  const show = id => q(id).setAttribute('opacity', 1);
+  host.caption('Ring একবার স্থির হলে viewport-টাই একটা <b>ফলাফল</b> — পাঁচটা নিয়মে পড়া যায়। একে একে খুলি।');
+  host.formula('ring = পরিবেশের ছায়া: প্রতিটা বিন্দু একটা beam-এর ফেরত আসা');
+  await host.sleep(1300);
+  show('wv-wall'); show('wv-rob');
+  q('wv-b1').setAttribute('stroke', '#7ee787');
+  show('wv-b1t'); show('wv-b1t2'); show('wv-wallt');
+  host.caption('নিয়ম ১ — <b>ঘন সারি = পৃষ্ঠ</b>: সোজা দেয়াল প্রতি কোণে একটা করে beam ফেরত দেয়, তাই বিন্দুগুলো সোজা সারিতে সাজে। এখানে ~2.8 m-এ ঘিরে রেখেছে।');
+  await host.sleep(1600);
+  show('wv-gap'); show('wv-gapt');
+  q('wv-b2').setAttribute('stroke', '#ffb454');
+  show('wv-b2t'); show('wv-b2t2');
+  host.caption('নিয়ম ২ — <b>ফাঁক</b>: 40°-72° কোণে কোনো বিন্দু নেই, কারণ <code>ranges[i] = inf</code> — beam 8.0 m-এর ভিতরে কিছুই খুঁজে পায়নি। খোলা দরজা এমনই দেখায়।');
+  host.formula('ring-এ ফাঁক মানেই ranges[i] = inf (no return) — sensor বন্ধ নয়');
+  await host.sleep(1700);
+  show('wv-reart');
+  q('wv-b3').setAttribute('stroke', '#6e7681');
+  show('wv-b3t'); show('wv-b3t2'); show('wv-rear');
+  host.caption('নিয়ম ৩ — <b>ধারের index পেছনে</b>: i=0 (−180°) আর i=359 (+179°) জুড়ে দিলেই পিছন দিক। সেখানকার 0.26 m-এর ধূসর বিন্দুগুলো <b>নিজের chassis</b> — পরিবেশ নয়।');
+  await host.sleep(1700);
+  q('wv-b4').setAttribute('stroke', '#4fc3f7');
+  show('wv-b4t'); show('wv-b4t2'); show('wvz-wall');
+  host.caption('নিয়ম ৪ — <b>কাঁপুনি</b>: সরু দ্বিতীয় ring-টা আগের scan — মাঝে মাঝে সরে গেছে। sim gaussian noise <code>σ = 0.01 m</code> যোগ করে; ছবিতে চোখে পড়তে সরণটা বাড়িয়ে এঁকেছি, mm-স্তরের ওঠানামা সংকেত নয়।');
+  await host.sleep(1700);
+  show('wv-obst'); show('wv-obx'); show('wv-obt');
+  q('wv-b5').setAttribute('stroke', '#f85149');
+  show('wv-sh1'); show('wv-sh2'); show('wv-sht'); show('wv-b5t');
+  host.caption('নিয়ম ৫ — <b>shadow</b>: ডানে-সামনে 1.1 m-এ লাল cluster (obstacle), আর তার <b>পেছনের কোণটুকুতে</b> beam ঢোকেই না — সেই ফাঁক খোলা পথ নয়। ফাঁকের ধারে cluster আছে কি না, আগে সেটা দেখুন।');
+  host.formula('shadow half-angle ~ arctan((w/2)/d) — ফাঁকের পেছনে কী, ধার থেকে অনুমান');
+  await host.sleep(1800);
+  host.caption('সারমর্ম: cluster = বাধা, প্রশস্ত inf-ফাঁক = সম্ভাব্য পথ (shadow বাদ দিয়ে), ধার = পেছন, mm-কাঁপুনি = noise।');
+  await host.sleep(1500);
+  host.caption('folder 11-এর obstacle avoidance ঠিক এই পাঠেই চলে — এই folder-এর echo + rviz2 পরের সব কাজের ভিত্তি।');
+};
+
+/* ================================================================ */
+const XML_COM = {};
+function buildCommentLines() {
+  Object.keys(FILEDATA).forEach(fn => {
+    const set = new Set(); let inC = false;
+    FILEDATA[fn].forEach((ln, i) => {
+      const hasOpen = ln.indexOf('<!--') >= 0;
+      const hasClose = ln.indexOf('-->') >= 0;
+      if (inC || hasOpen) set.add(i + 1);
+      if (hasOpen && !hasClose) inC = true;
+      else if (hasClose) inC = false;
+    });
+    XML_COM[fn] = set;
+  });
+}
+function init() {
+  buildCommentLines();
+  renderSidebar();
+  renderParts();
+  setupCopy();
+  setupNavigation();
+  setupAnimations();
+  setupMathJaxWatchdog();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+</script>
+<script id="refine-script">
+/* ==================================================================
+   SURGICAL REFINEMENT LAYER — engine v2 (line-by-line edition)
+   Appended; the original application script above is untouched.
+   Drives the SAME per-animation state machine created by the original
+   harness (HOSTS[...]) — no second loop, no duplicates. Adds:
+     1. Icon control bars (inline SVG, aria-labelled, focusable)
+     2. Hero title cleanup (English primary title only)
+     3. "Complete Execution — Code → Debug → Robot" final section,
+        v2: TRUE line-by-line stepping (11 multi-phase steps over the
+        real 3-line source), Code+Debug as the first row and the
+        robot/system row below it, BEFORE→OPERATION→AFTER debug diff,
+        structural/exec/event line kinds, LINE n / 3 indicator.
+   ================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- shared inline SVG icons (self-contained, no text) ---- */
+  var IC = {
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.5 4.8v14.4L20 12z"/></svg>',
+    /* speed family: all triangles point forward; SIZE/COUNT encodes magnitude
+       (1 large = 1x, 1 small = 0.5x, 2 medium = 1.5x) so the glyphs stay
+       distinguishable at 15px where mirrored needles were not */
+    slow: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.7 8.6v6.8l5.6-3.4z"/></svg>',
+    fast: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.9 7.4v9.2L11.4 12zM12.6 7.4v9.2L19.1 12z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 4.8h4.1v14.4H6.6zM13.3 4.8h4.1v14.4h-4.1z"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5.6" y="5.6" width="12.8" height="12.8" rx="2.2"/></svg>'
+  };
+  var AC_TIP = {
+    play: 'Play (1× speed)', slow: 'Slow (0.5× speed)',
+    fast: 'Fast (1.5× speed)', pause: 'Pause', stop: 'Stop'
+  };
+  function iconBtn(ac) {
+    return '<button type="button" class="ac-btn ic" data-ac="' + ac + '" ' +
+      'title="' + AC_TIP[ac] + '" aria-label="' + AC_TIP[ac] + '" aria-pressed="false">' +
+      IC[ac] + '</button>';
+  }
+  function iconRow() {
+    return iconBtn('play') + iconBtn('slow') + iconBtn('fast') +
+      '<span class="ac-sep" aria-hidden="true"></span>' +
+      iconBtn('pause') + iconBtn('stop');
+  }
+  function setActive(bar, btn) {
+    bar.querySelectorAll('.ac-btn').forEach(function (x) {
+      x.classList.remove('active');
+      x.setAttribute('aria-pressed', 'false');
+    });
+    if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ---------- 1. retrofit existing animation control bars ---------- */
+  function retrofitControls() {
+    if (typeof HOSTS === 'undefined') return;
+    document.querySelectorAll('.anim-controls').forEach(function (bar) {
+      try {
+        var sec = bar.closest('.sec-anim');
+        if (!sec || !sec.id) return;
+        var pid = sec.id.replace(/^anim-/, '');
+        var host = HOSTS[pid];
+        if (!host) return;
+        bar.querySelectorAll('.ac-btn').forEach(function (n) { n.remove(); });
+        bar.insertAdjacentHTML('afterbegin', iconRow());
+        bar.querySelectorAll('.ac-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var a = b.dataset.ac;
+            setActive(bar, a === 'stop' ? null : b);
+            if (a === 'play') { host.userPaused ? host.resume() : host.start(1); }
+            else if (a === 'slow') { host.setSpeed(0.5); }
+            else if (a === 'fast') { host.setSpeed(1.5); }
+            else if (a === 'pause') { host.pause(); }
+            else if (a === 'stop') { host.stop(); }
+          });
+        });
+      } catch (e) { console.error('control retrofit failed', e); }
+    });
+  }
+
+  /* ---------- 2. hero title: English primary only ------------------- */
+  function fixHero() {
+    try {
+      var sub = document.querySelector('.intro-banner h1 .path');
+      if (sub) sub.remove();
+    } catch (e) { /* cosmetic only */ }
+  }
+
+  /* ---------- 3. Complete Execution — Code → Debug → Robot --------- */
+  var EXEC_SPEC = {"app":"09. lidar introduction","file":"README.md","note":"নিচেরটি <b>step-by-step execution simulation</b> — <code>README.md</code>-এর তিনটি line ঠিক ১১টি step-এ ধরে চলে। প্রথমেই ব্যাপারটা পরিষ্কার: এই file-এ মাত্র দুটি command আছে, কিন্তু প্রতিটি command একেকটা চলমান process — তাই simulation-টি একটা <b>multi-phase debugger</b>-এর মতো কাজ করে: একই line-এর উপর breakpoint বারবার hit হয়, প্রতিবার execution-এর নতুন phase দেখায়। Line 1 (<code>ros2 topic echo /scan0</code>) পাঁচ phase-এ চলে — CLI parse, DDS graph discovery, subscription, প্রথম message-এর YAML print, তারপর চলমান print loop। Line 2 blank — দুই command-এর মাঝের pause। Line 3 (<code>rviz2</code>) আবার পাঁচ phase-এ — tool চালু, LaserScan display setup, প্রথম scan-এর point paint, ring স্থির হওয়া, final state। রঙ-নিয়ম: হলুদ = struct (blank line — কিছু execute হয় না, কিন্তু workflow-এর জায়গাটা বোঝায়), সবুজ = exec (command-এর একটা phase সচল হলো), নীল = event (graph-এ publisher পাওয়া, প্রথম message, প্রথম paint — বাইরে থেকে আসা ঘটনা)। প্রতিটি step-এ বাঁয়ে code card, ডানে operation আর তখনকার state। নিচের full-width row-তে বাঁয়ে TERMINAL panel (echo-র YAML stream, তারপর rviz2-এর শুরু) আর ডানে RVIZ panel (Grid থেকে শুরু করে প্রতি phase-এ point ring কীভাবে দাঁড়ায়)। সতর্কতা: terminal-এর মান ও hardware <code>/scan0</code>-এর parameter <b>illustrative</b> — simulation-এর সংখ্যাগুলো folder 08-এর URDF থেকে এসেছে (10 Hz, 360 sample, 0.2-8.0 m, frame <code>laser1_frame</code>), আর pure Gazebo simulation-এ topic-এর নাম <code>/scan</code> — <code>/scan0</code> hardware driver-এর। এটি runtime log নয়।","w":440,"h":330,"defaultDurs":{"struct":420,"exec":2100,"event":2100},"defs":"<defs><linearGradient id=\"egB\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1c222b\"/><stop offset=\"1\" stop-color=\"#12161d\"/></linearGradient><linearGradient id=\"egW\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"><stop offset=\"0\" stop-color=\"#4fc3f7\" stop-opacity=\".9\"/><stop offset=\"1\" stop-color=\"#4fc3f7\" stop-opacity=\".15\"/></linearGradient><marker id=\"ea\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto\"><path d=\"M0 0L10 5L0 10z\" fill=\"#8b949e\"/></marker></defs>","rob0":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">cli parse</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#d2a8ff\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#6e7681\">entry   verb   sub    arg</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">idle - কোনো command টাইপ হয়নি।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">README শুধু দুটি command দেখায়।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">robot/driver আগেই চালু ধরা (illustrative)।</text>","steps":[{"ln":1,"lns":[1],"kind":"exec","cap":"L1-এর execution শুরু: terminal-এ <code>ros2 topic echo /scan0</code> লেখা হলো। CLI parse-এর ধাপ: <code>ros2</code> হলো ros2cli-র entry point, <code>topic</code> হলো verb, <code>echo</code> হলো subcommand, আর <code>/scan0</code> হলো topic-name argument।","op":"parse CLI verbs","dbg":[["command","ros2 topic echo /scan0"],["cli","ros2 = ros2cli entry; topic = verb; echo = subcommand"],["argument","/scan0 (topic name)"]],"fx":"$ ros2 topic echo /scan0   · CLI parse (terminal, illustrative)","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">cli parse</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#d2a8ff\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#6e7681\">entry   verb   sub    arg</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">command টাইপ হলো: echo /scan0।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">CLI parse - চারটি token।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">robot/driver আগেই চালু ধরা।</text>"},{"ln":1,"lns":[1],"kind":"exec","cap":"echo এখন DDS graph-এ জিজ্ঞেস করে: <code>/scan0</code>-এ কে কে publisher? এই query-ই command-এর প্রথম আসল কাজ। দুটি ফলাফল সম্ভব: pure Gazebo simulation (folder 08) থাকলে graph-এ <code>/scan0</code> নেই — ওটা publish করে <code>/scan</code> — তাই Humble বলে type determine করতে পারছে না; আর hardware driver চালু থাকলে publisher পাওয়া যায়, যার থেকে message-এর type-ও জানা যায়।","op":"query DDS graph","dbg":[["graph query","publishers of /scan0"],["pure sim case","no publisher -> type cannot be determined (error)"],["sim topic","/scan (folder 08 URDF remap)"]],"rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">graph query</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#ff7b72\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#7ee787\">hardware: driver found</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">DDS graph-এ খোঁজ: publisher কে কে?</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">pure sim-এ /scan0 নেই - /scan আছে।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">type discovery এখানেই হয়।</text>"},{"ln":1,"lns":[1],"kind":"event","cap":"Event: publisher পাওয়া গেল, type resolve হলো <code>sensor_msgs/msg/LaserScan</code>। echo এবার নিজের subscription তৈরি করে — এটা সম্পূর্ণ passive listening: echo নিজে কিছু publish করে না, robot-এর কোনো state বদলায় না; শুধু প্রতিটি আসা message-এর জন্য অপেক্ষা করে।","op":"resolve type, subscribe","dbg":[["topic","/scan0"],["type","sensor_msgs/msg/LaserScan"],["subscription","created (passive listener)"]],"fx":"DISCOVERY COMPLETE · type: sensor_msgs/msg/LaserScan · subscription live","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">subscribed</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">type resolve: LaserScan।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">passive subscription তৈরি।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">echo নিজে কিছু publish করে না।</text>"},{"ln":1,"lns":[1],"kind":"exec","cap":"প্রথম LaserScan এসে পৌঁছাল (sim value: 10 Hz), আর echo সেটাকে YAML-এ serialize করে terminal-এ ছাপতে শুরু করল। Print-এর ক্রম message definition-এর ক্রমই: <code>header</code> (stamp + frame_id), <code>angle_min</code>...<code>range_max</code>, তারপর <code>ranges</code> array, শেষে <code>intensities</code>।","op":"print first scan as YAML","dbg":[["msg type","sensor_msgs/msg/LaserScan"],["rate","10 Hz (sim, folder 08 URDF)"],["frame_id","laser1_frame (sim)"],["ranges","float32 array, 360 entries (sim)"]],"fx":"FIRST SCAN · 10 Hz · frame laser1_frame · ranges[360] · YAML to stdout","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">printing yaml</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\">--- scan #1 (yaml) ---</text><text x=\"26\" y=\"129\" fill=\"#e6edf3\">header.frame_id: laser1_frame</text><text x=\"26\" y=\"137\" fill=\"#e6edf3\">angle_min: -3.14159  max: 3.14159</text><text x=\"26\" y=\"145\" fill=\"#e6edf3\">angle_increment: 0.0174533</text><text x=\"26\" y=\"153\" fill=\"#e6edf3\">range_min: 0.2  range_max: 8.0</text><text x=\"26\" y=\"161\" fill=\"#ffb454\">ranges[0..5]: 3.00 3.01 3.00 .inf 2.90</text><text x=\"26\" y=\"169\" fill=\"#6e7681\">(360 entries, sim)</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">প্রথম scan-এর YAML ছাপা শুরু।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">sim: 10 Hz, 360 beam, 0.2..8.0 m।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">terminal-এর মান illustrative।</text>"},{"ln":1,"lns":[1],"kind":"event","cap":"Event: print loop চলতে থাকল — sensor যত message দেয়, echo তত YAML block ছাপে। No-return beam-গুলো ছাপে <code>.inf</code> — এই দেয়ালভর্তি inf ভুল নয়, স্বাভাবিক: ওই beam-গুলোর range-max-এর ভেতরে কিছুই পড়েনি। Loop চলে ততক্ষণ, যতক্ষণ ব্যবহারকারী Ctrl-C চাপে।","op":"stream scans to stdout","dbg":[["mode","print loop at message rate"],["no-return beams","printed as .inf"],["stop","Ctrl-C"]],"fx":"PRINT LOOP · YAML stream · .inf = no return · Ctrl-C to stop","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">print loop</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\">--- scan #1 (yaml) ---</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">ranges[0..5]: 3.00 3.01 3.00 .inf 2.90</text><text x=\"26\" y=\"137\" fill=\"#ffb454\">--- scan #2 ranges[0..5]: 3.01 3.00</text><text x=\"26\" y=\"145\" fill=\"#ffb454\">    3.00 .inf 2.91</text><text x=\"26\" y=\"153\" fill=\"#ffb454\">--- scan #3 ranges[0..5]: 2.99 3.00</text><text x=\"26\" y=\"161\" fill=\"#ffb454\">    3.01 .inf 2.90</text><text x=\"26\" y=\"169\" fill=\"#4fc3f7\">streaming at 10 Hz (sim)</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">print loop - প্রতি scan এক block।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">.inf = no-return beam, স্বাভাবিক।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">noise-এ মান সামান্য কাঁপে।</text>"},{"ln":2,"lns":[2],"kind":"struct","cap":"দ্বিতীয় line-টি blank — কোনো command নেই, তাই execution state-এ কিছু বদলায় না। README-এর দৃষ্টিতে এটাই দুই command-এর মাঝের pause: echo বন্ধ করা হয়েছে, সংখ্যাগুলো যাচাই শেষ — range-এর মান, .inf গুলো, angle field-গুলো ঠিক আছে। এবার সেই যাচাই-করা data-কে চোখে দেখার পালা।","op":"workflow pause (blank line)","dbg":[["line 2","blank - no command"],["workflow","numbers verified; next: visualize"]],"rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">idle (ctrl-c)</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#ff7b72\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#e6edf3\">echo stopped - checked:</text><text x=\"26\" y=\"137\" fill=\"#7ee787\">type / rate 10 Hz / ranges</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">(rviz2 not started yet)</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#484f58\">L3 will launch it</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">Ctrl-C - echo শেষ, কিন্তু driver বেঁচে।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">type / rate / ranges যাচাই সম্পন্ন।</text>"},{"ln":3,"lns":[3],"kind":"exec","cap":"দ্বিতীয় command: terminal-এ <code>rviz2</code> লেখা হলো — argument-হীন, bare invocation। ROS 2-র visualization tool নিজের default config নিয়ে চালু হয়: Grid draw হয়, Fixed Frame থাকে <code>map</code>, আর এই মুহূর্তে কোনো topic-ই subscribe করা হয় না।","op":"start rviz2 (default config)","dbg":[["command","rviz2"],["config","default (empty) — Grid + Fixed Frame map"],["subscribed","nothing yet"]],"fx":"$ rviz2   · default config starts (terminal, illustrative)","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">rviz2 boot</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#e3b341\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#e6edf3\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#6e7681\">no topic subscribed yet</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">boot / map</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ff7b72\">Fixed Frame: map</text><text x=\"320\" y=\"150\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#6e7681\">Grid only - no data</text><text x=\"320\" y=\"163\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"7.0\" fill=\"#6e7681\">add a LaserScan display</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">rviz2 চালু - default config।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">Grid + Fixed Frame map, কোনো subscribe নেই।</text>"},{"ln":3,"lns":[3],"kind":"exec","cap":"rviz2-এর ভেতরে user LaserScan display add করে: Add থেকে LaserScan, Topic সেট <code>/scan0</code> (sim হলে <code>/scan</code>), Reliability মেলাতে হয় — lidar stream সাধারণত sensor-data profile, মানে Best Effort। আর Fixed Frame হতে হবে scan-এর <code>frame_id</code> (sim: laser1_frame) বা তার সাথে TF path-যুক্ত কোনো frame — না মিললে display-এ transform error, viewport ফাঁকা।","op":"add LaserScan display","dbg":[["display","LaserScan (added by user)"],["topic","/scan0 (sim: /scan)"],["reliability","Best Effort (sensor-data profile, typical)"],["fixed frame","scan frame_id or TF path (sim: laser1_frame)"]],"rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">display setup</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#8b949e\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#6e7681\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#6e7681\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#e3b341\">add display: LaserScan</text><text x=\"26\" y=\"169\" fill=\"#e6edf3\">topic: /scan0 (sim: /scan)</text><text x=\"26\" y=\"177\" fill=\"#d2a8ff\">reliability: Best Effort</text><text x=\"26\" y=\"185\" fill=\"#7ee787\">fixed frame: laser1_frame</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">laser display</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">Fixed Frame: laser1_frame</text><rect x=\"316.5\" y=\"148.5\" width=\"7\" height=\"7\" fill=\"#30363d\" fill-opacity=\".85\" stroke=\"#8b949e\" stroke-width=\"0.6\"/><text x=\"320\" y=\"176\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.6\" fill=\"#4fc3f7\">topic /scan0 - Best Effort</text><text x=\"320\" y=\"150\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.6\" fill=\"#4fc3f7\">subscribed - waiting first scan</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">LaserScan display যোগ ও setup।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">topic, QoS Best Effort, frame মেলানো।</text>"},{"ln":3,"lns":[3],"kind":"event","cap":"Event: display-এ প্রথম scan এলো, আর RViz ভেতরে ভেতরে math-টা করে ফেলল — প্রতিটি valid <code>ranges[i]</code>-এর জন্য কোণ <code>theta = angle_min + i*angle_increment</code>, তারপর point <code>(r cos theta, r sin theta, 0)</code> scan frame-এ বসানো। Sim মানে হিসে করলে increment = 2*pi/360 = 0.0174533 rad = 1 degree।","op":"project scan to points","dbg":[["theta_i","angle_min + i * 0.0174533 rad (sim)"],["point","(r cos theta, r sin theta, 0)"],["valid gate","0.2 <= r <= 8.0 m (sim)"]],"fx":"SCAN -> POINTS · theta = angle_min + i*angle_increment · x = r*cos(theta) · y = r*sin(theta)","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">first paint</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#8b949e\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#6e7681\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#6e7681\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#6e7681\">add display: LaserScan /scan0</text><text x=\"26\" y=\"169\" fill=\"#6e7681\">Best Effort / frame laser1_frame</text><text x=\"26\" y=\"177\" fill=\"#4fc3f7\">scan #1 received - painting</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">painting</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">Fixed Frame: laser1_frame</text><rect x=\"316.5\" y=\"148.5\" width=\"7\" height=\"7\" fill=\"#30363d\" fill-opacity=\".85\" stroke=\"#8b949e\" stroke-width=\"0.6\"/><path d=\"M286.2 178.0h2.6v2.6h-2.6zM311.5 191.8h2.6v2.6h-2.6zM340.0 187.5h2.6v2.6h-2.6zM357.1 164.7h2.6v2.6h-2.6zM359.2 136.0h2.6v2.6h-2.6zM311.4 109.0h2.6v2.6h-2.6zM286.8 124.0h2.6v2.6h-2.6z\" fill=\"#7ee787\"/><path d=\"M314.8 150.7h2.6v2.6h-2.6z\" fill=\"#8b949e\"/><circle cx=\"362.0\" cy=\"152.0\" r=\"3.4\" fill=\"none\" stroke=\"#e3b341\" stroke-width=\"1\"/><text x=\"246\" y=\"122\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">i=0 rear 0.26 m</text><circle cx=\"316.1\" cy=\"152.0\" r=\"3.4\" fill=\"none\" stroke=\"#e3b341\" stroke-width=\"1\"/><text x=\"352\" y=\"148\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">i=180 front 2.35 m</text><circle cx=\"320.0\" cy=\"192.8\" r=\"3.4\" fill=\"none\" stroke=\"#e3b341\" stroke-width=\"1\"/><text x=\"244\" y=\"60\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">i=270 left 2.35 m</text><text x=\"320\" y=\"232\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">theta = angle_min + i * incr</text><text x=\"320\" y=\"240\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">point = (r cos, r sin)</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">প্রথম scan থেকে point paint।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">theta_i থেকে (r cos, r sin)।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">i=0 rear, i=180 front, i=270 left।</text>"},{"ln":3,"lns":[3],"kind":"event","cap":"Event: ring প্রতি scan-এ refresh হয়ে স্থির হয়ে এলো। ফাঁকা জায়গাগুলো = <code>.inf</code> no-return beam। Sim-এ noise আছে (gaussian, stddev 0.01 m) তাই point-গুলো সামান্য কাঁপে। আর মনে রাখো: scan শুরু হয় -180 degree-তে, তাই array-র ধারের beam-গুলো পিছনে পড়ে — folder 08-এর fix-log item 3 এই গল্পটাই।","op":"ring stabilizes at sensor rate","dbg":[["points","360 per scan (sim)"],["gaps",".inf no-return beams"],["edge beams","i=0 / i=359 = rear (sim -pi..pi)"],["noise","gaussian, stddev 0.01 m (sim)"]],"fx":"RING LIVE · 360 points · gaps = .inf · array edges = rear beams","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">ring live</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#8b949e\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#6e7681\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#6e7681\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#6e7681\">add display: LaserScan /scan0</text><text x=\"26\" y=\"169\" fill=\"#6e7681\">Best Effort / frame laser1_frame</text><text x=\"26\" y=\"177\" fill=\"#6e7681\">scan #1 received - painting</text><text x=\"26\" y=\"185\" fill=\"#7ee787\">ring stable - 360 points (sim)</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">ring live</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">Fixed Frame: laser1_frame</text><rect x=\"316.5\" y=\"148.5\" width=\"7\" height=\"7\" fill=\"#30363d\" fill-opacity=\".85\" stroke=\"#8b949e\" stroke-width=\"0.6\"/><path d=\"M277.5 161.7h2.6v2.6h-2.6zM280.2 164.7h2.6v2.6h-2.6zM279.6 168.9h2.6v2.6h-2.6zM283.0 171.3h2.6v2.6h-2.6zM284.1 174.9h2.6v2.6h-2.6zM286.2 178.0h2.6v2.6h-2.6zM289.6 179.8h2.6v2.6h-2.6zM291.2 183.5h2.6v2.6h-2.6zM295.0 184.5h2.6v2.6h-2.6zM297.4 187.5h2.6v2.6h-2.6zM301.2 188.3h2.6v2.6h-2.6zM304.2 190.6h2.6v2.6h-2.6zM307.9 191.1h2.6v2.6h-2.6zM311.5 191.8h2.6v2.6h-2.6zM315.0 193.4h2.6v2.6h-2.6zM318.7 191.5h2.6v2.6h-2.6zM322.5 193.6h2.6v2.6h-2.6zM325.9 191.5h2.6v2.6h-2.6zM329.6 191.3h2.6v2.6h-2.6zM333.2 190.5h2.6v2.6h-2.6zM336.2 188.3h2.6v2.6h-2.6zM340.0 187.5h2.6v2.6h-2.6zM342.4 184.6h2.6v2.6h-2.6zM346.2 183.5h2.6v2.6h-2.6zM347.8 179.8h2.6v2.6h-2.6zM357.1 164.7h2.6v2.6h-2.6zM360.0 161.8h2.6v2.6h-2.6zM359.7 157.9h2.6v2.6h-2.6zM360.7 154.4h2.6v2.6h-2.6zM360.7 150.7h2.6v2.6h-2.6zM360.4 147.1h2.6v2.6h-2.6zM360.5 143.3h2.6v2.6h-2.6zM358.5 140.0h2.6v2.6h-2.6zM359.2 136.0h2.6v2.6h-2.6zM355.8 133.4h2.6v2.6h-2.6zM355.5 129.4h2.6v2.6h-2.6zM353.2 126.5h2.6v2.6h-2.6zM350.4 124.1h2.6v2.6h-2.6zM329.6 110.2h2.6v2.6h-2.6zM326.1 108.7h2.6v2.6h-2.6zM322.3 109.9h2.6v2.6h-2.6zM318.7 107.5h2.6v2.6h-2.6zM315.1 109.7h2.6v2.6h-2.6zM311.4 109.0h2.6v2.6h-2.6zM307.8 110.0h2.6v2.6h-2.6zM304.5 111.6h2.6v2.6h-2.6zM300.7 112.2h2.6v2.6h-2.6zM298.0 114.8h2.6v2.6h-2.6zM294.2 115.7h2.6v2.6h-2.6zM292.2 119.2h2.6v2.6h-2.6zM288.4 120.4h2.6v2.6h-2.6zM286.8 124.0h2.6v2.6h-2.6zM284.5 126.7h2.6v2.6h-2.6zM281.6 129.3h2.6v2.6h-2.6zM281.6 133.4h2.6v2.6h-2.6zM278.3 136.0h2.6v2.6h-2.6zM278.7 140.0h2.6v2.6h-2.6z\" fill=\"#7ee787\"/><path d=\"M331.0 161.0h2.6v2.6h-2.6zM331.9 160.0h2.6v2.6h-2.6zM333.1 159.0h2.6v2.6h-2.6zM334.0 157.9h2.6v2.6h-2.6z\" fill=\"#ff7b72\"/><path d=\"M314.8 150.7h2.6v2.6h-2.6zM314.8 151.0h2.6v2.6h-2.6zM314.9 151.4h2.6v2.6h-2.6zM314.9 150.0h2.6v2.6h-2.6zM314.8 150.4h2.6v2.6h-2.6z\" fill=\"#8b949e\"/><path d=\"M359.1 119.2A51.0 51.0 0 0 0 335.8 103.5\" stroke=\"#ffb454\" stroke-width=\"1.2\" stroke-dasharray=\"3 3\" fill=\"none\"/><text x=\"228\" y=\"240\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ffb454\">gaps = .inf (no return)</text><text x=\"414\" y=\"240\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">edges i=0/359 = rear</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">ring স্থির - 360 point (sim)।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">ফাঁক = .inf, ধারের index = rear beam।</text>"},{"ln":3,"lns":[3],"kind":"event","cap":"Workflow সম্পূর্ণ: L1-এর echo দিল সংখ্যার সত্য (type, rate, মান), L3-এর rviz2 দিলে জ্যামিতিক সত্য (point ring)। দুটো পাশাপাশি মিলিয়ে দেখে নিশ্চিত হওয়া যায় data ঠিক আছে। এরপরের ধাপ folder 10: একাধিক lidar-এর scan <code>ira_laser_tools</code> দিয়ে merge করে একটা পূর্ণ 360-degree view বানানো।","op":"workflow complete","dbg":[["echo","numeric truth (type, rate, values)"],["rviz2","spatial truth (point ring)"],["next","folder 10 - lidar fusion (ira_laser_tools)"]],"fx":"WORKFLOW COMPLETE · echo = numbers · rviz2 = geometry · next: fusion","rob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">verified</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#8b949e\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#6e7681\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#6e7681\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#6e7681\">add display: LaserScan /scan0</text><text x=\"26\" y=\"169\" fill=\"#6e7681\">Best Effort / frame laser1_frame</text><text x=\"26\" y=\"177\" fill=\"#6e7681\">ring stable - 360 points (sim)</text><text x=\"26\" y=\"185\" fill=\"#7ee787\">workflow verified: echo + rviz2</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">ring live</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">Fixed Frame: laser1_frame</text><rect x=\"316.5\" y=\"148.5\" width=\"7\" height=\"7\" fill=\"#30363d\" fill-opacity=\".85\" stroke=\"#8b949e\" stroke-width=\"0.6\"/><path d=\"M277.5 161.7h2.6v2.6h-2.6zM280.2 164.7h2.6v2.6h-2.6zM279.6 168.9h2.6v2.6h-2.6zM283.0 171.3h2.6v2.6h-2.6zM284.1 174.9h2.6v2.6h-2.6zM286.2 178.0h2.6v2.6h-2.6zM289.6 179.8h2.6v2.6h-2.6zM291.2 183.5h2.6v2.6h-2.6zM295.0 184.5h2.6v2.6h-2.6zM297.4 187.5h2.6v2.6h-2.6zM301.2 188.3h2.6v2.6h-2.6zM304.2 190.6h2.6v2.6h-2.6zM307.9 191.1h2.6v2.6h-2.6zM311.5 191.8h2.6v2.6h-2.6zM315.0 193.4h2.6v2.6h-2.6zM318.7 191.5h2.6v2.6h-2.6zM322.5 193.6h2.6v2.6h-2.6zM325.9 191.5h2.6v2.6h-2.6zM329.6 191.3h2.6v2.6h-2.6zM333.2 190.5h2.6v2.6h-2.6zM336.2 188.3h2.6v2.6h-2.6zM340.0 187.5h2.6v2.6h-2.6zM342.4 184.6h2.6v2.6h-2.6zM346.2 183.5h2.6v2.6h-2.6zM347.8 179.8h2.6v2.6h-2.6zM357.1 164.7h2.6v2.6h-2.6zM360.0 161.8h2.6v2.6h-2.6zM359.7 157.9h2.6v2.6h-2.6zM360.7 154.4h2.6v2.6h-2.6zM360.7 150.7h2.6v2.6h-2.6zM360.4 147.1h2.6v2.6h-2.6zM360.5 143.3h2.6v2.6h-2.6zM358.5 140.0h2.6v2.6h-2.6zM359.2 136.0h2.6v2.6h-2.6zM355.8 133.4h2.6v2.6h-2.6zM355.5 129.4h2.6v2.6h-2.6zM353.2 126.5h2.6v2.6h-2.6zM350.4 124.1h2.6v2.6h-2.6zM329.6 110.2h2.6v2.6h-2.6zM326.1 108.7h2.6v2.6h-2.6zM322.3 109.9h2.6v2.6h-2.6zM318.7 107.5h2.6v2.6h-2.6zM315.1 109.7h2.6v2.6h-2.6zM311.4 109.0h2.6v2.6h-2.6zM307.8 110.0h2.6v2.6h-2.6zM304.5 111.6h2.6v2.6h-2.6zM300.7 112.2h2.6v2.6h-2.6zM298.0 114.8h2.6v2.6h-2.6zM294.2 115.7h2.6v2.6h-2.6zM292.2 119.2h2.6v2.6h-2.6zM288.4 120.4h2.6v2.6h-2.6zM286.8 124.0h2.6v2.6h-2.6zM284.5 126.7h2.6v2.6h-2.6zM281.6 129.3h2.6v2.6h-2.6zM281.6 133.4h2.6v2.6h-2.6zM278.3 136.0h2.6v2.6h-2.6zM278.7 140.0h2.6v2.6h-2.6z\" fill=\"#7ee787\"/><path d=\"M331.0 161.0h2.6v2.6h-2.6zM331.9 160.0h2.6v2.6h-2.6zM333.1 159.0h2.6v2.6h-2.6zM334.0 157.9h2.6v2.6h-2.6z\" fill=\"#ff7b72\"/><path d=\"M314.8 150.7h2.6v2.6h-2.6zM314.8 151.0h2.6v2.6h-2.6zM314.9 151.4h2.6v2.6h-2.6zM314.9 150.0h2.6v2.6h-2.6zM314.8 150.4h2.6v2.6h-2.6z\" fill=\"#8b949e\"/><path d=\"M359.1 119.2A51.0 51.0 0 0 0 335.8 103.5\" stroke=\"#ffb454\" stroke-width=\"1.2\" stroke-dasharray=\"3 3\" fill=\"none\"/><text x=\"228\" y=\"240\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ffb454\">gaps = .inf (no return)</text><text x=\"414\" y=\"240\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">edges i=0/359 = rear</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">সম্পূর্ণ: দুই সত্য পাশাপাশি।</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">echo = সংখ্যা, rviz2 = জ্যামিতি।</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">পরের ধাপ: folder 10 fusion।</text>"}],"finalCap":"পুরো workflow-এর যাত্রা: L1 <code>ros2 topic echo /scan0</code> লেখা মাত্র CLI parse — ros2cli entry, <code>topic</code> verb, <code>echo</code> subcommand, argument <code>/scan0</code> → echo DDS graph-এ publisher খোঁজে; pure Gazebo simulation-এ পায় না (ওথায় topic <code>/scan</code>), hardware driver চালু থাকলে পায় এবং type resolve হয় <code>sensor_msgs/msg/LaserScan</code> → subscription তৈরি, প্রথম scan এসে YAML-এ ছাপা শুরু (header, angle_min..range_max, ranges, intensities) → print loop চলতে থাকে, no-return beam গুলো <code>.inf</code>, Ctrl-C পর্যন্ত → L2 blank line: সংখ্যার সত্য যাচাই শেষ → L3 <code>rviz2</code> চালু হয় default config নিয়ে (Grid, Fixed Frame map, কোনো subscription নেই) → user LaserScan display add করে, Topic <code>/scan0</code>, reliability Best Effort, Fixed Frame scan-এর <code>frame_id</code>-তে সেট → প্রথম scan এলেই math: <code>theta = angle_min + i*angle_increment</code> (sim: 2*pi/360 = 1 degree), point <code>(r cos theta, r sin theta, 0)</code> → 360 point-এর ring স্থির হয়, ফাঁকা মানে <code>.inf</code>, array-র ধার মানে পিছনের beam → ফলাফল: একই data-এর দুই সত্য পাশাপাশি — echo-র সংখ্যা আর rviz2-এর জ্যামিতি। এখান থেকেই পরের folder-গুলো এগোয়: 10 হবে একাধিক lidar merge, 11 হবে এই scan থেকে obstacle avoidance।","finalDbg":[["commands","ros2 topic echo /scan0 (L1) + rviz2 (L3) — 11 steps, 3 lines"],["topic type","sensor_msgs/msg/LaserScan (resolved from the graph)"],["sim topic","/scan on laser1_frame (folder 08 URDF); /scan0 = hardware driver"],["scan (sim)","10 Hz, 360 samples, -3.14159..3.14159 rad, 0.2..8.0 m"],["angle_increment","2*pi/360 = 0.0174533 rad = 1 deg (sim)"],["projection","x = r*cos(theta), y = r*sin(theta), theta = angle_min + i*increment"],["no-return beams","printed as .inf by echo, painted as gaps by rviz2"],["edge beams","i=0 / i=359 sit at rear (-pi..pi scan, folder 08 fix-log 3)"],["echo state","passive listener: prints YAML, publishes nothing"]],"finalFx":"WORKFLOW COMPLETE · 3 lines · 11 steps · echo: type + rate + values · rviz2: 360-point ring · /scan0 hardware vs /scan simulation · theta_i = angle_min + i*0.0174533 · (r cos, r sin)","finalOp":null,"finalRob":"<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"206\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">verified</text><text x=\"26\" y=\"45\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><g font-family=\"monospace\" font-size=\"6.2\"><text x=\"26\" y=\"57\" fill=\"#e6edf3\"><tspan fill=\"#7ee787\">$ </tspan>ros2 topic echo /scan0</text><text x=\"26\" y=\"65\" fill=\"#6e7681\">ros2 / topic / echo / /scan0</text><text x=\"26\" y=\"73\" fill=\"#484f58\">entry   verb   sub    arg</text><text x=\"26\" y=\"81\" fill=\"#4fc3f7\">graph: publishers of /scan0?</text><text x=\"26\" y=\"89\" fill=\"#6e7681\">sim: none (it has /scan)</text><text x=\"26\" y=\"97\" fill=\"#6e7681\">hardware: driver found</text><text x=\"26\" y=\"105\" fill=\"#7ee787\">type: sensor_msgs/msg/LaserScan</text><text x=\"26\" y=\"113\" fill=\"#e6edf3\">subscription created (passive)</text><text x=\"26\" y=\"121\" fill=\"#6e7681\"><tspan fill=\"#ff7b72\">^</tspan>C</text><text x=\"26\" y=\"129\" fill=\"#6e7681\">echo stopped - checked: type/rate/ranges</text><text x=\"26\" y=\"137\" fill=\"#8b949e\"><tspan fill=\"#7ee787\">$ </tspan>rviz2</text><text x=\"26\" y=\"145\" fill=\"#6e7681\">[INFO] default config loaded</text><text x=\"26\" y=\"153\" fill=\"#6e7681\">Grid + Fixed Frame: map</text><text x=\"26\" y=\"161\" fill=\"#6e7681\">add display: LaserScan /scan0</text><text x=\"26\" y=\"169\" fill=\"#6e7681\">Best Effort / frame laser1_frame</text><text x=\"26\" y=\"177\" fill=\"#6e7681\">ring stable - 360 points (sim)</text><text x=\"26\" y=\"185\" fill=\"#7ee787\">workflow verified: echo + rviz2</text></g><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"224\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RVIZ</text><text x=\"416\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">ring live</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><path d=\"M230.0 43V237M226 62.0H414M245.0 43V237M226 77.0H414M260.0 43V237M226 92.0H414M275.0 43V237M226 107.0H414M290.0 43V237M226 122.0H414M305.0 43V237M226 137.0H414M320.0 43V237M226 152.0H414M335.0 43V237M226 167.0H414M350.0 43V237M226 182.0H414M365.0 43V237M226 197.0H414M380.0 43V237M226 212.0H414M395.0 43V237M226 227.0H414M410.0 43V237\" stroke=\"#1c2430\" stroke-width=\"0.7\" fill=\"none\"/><text x=\"228\" y=\"52\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">Fixed Frame: laser1_frame</text><rect x=\"316.5\" y=\"148.5\" width=\"7\" height=\"7\" fill=\"#30363d\" fill-opacity=\".85\" stroke=\"#8b949e\" stroke-width=\"0.6\"/><path d=\"M277.5 161.7h2.6v2.6h-2.6zM280.2 164.7h2.6v2.6h-2.6zM279.6 168.9h2.6v2.6h-2.6zM283.0 171.3h2.6v2.6h-2.6zM284.1 174.9h2.6v2.6h-2.6zM286.2 178.0h2.6v2.6h-2.6zM289.6 179.8h2.6v2.6h-2.6zM291.2 183.5h2.6v2.6h-2.6zM295.0 184.5h2.6v2.6h-2.6zM297.4 187.5h2.6v2.6h-2.6zM301.2 188.3h2.6v2.6h-2.6zM304.2 190.6h2.6v2.6h-2.6zM307.9 191.1h2.6v2.6h-2.6zM311.5 191.8h2.6v2.6h-2.6zM315.0 193.4h2.6v2.6h-2.6zM318.7 191.5h2.6v2.6h-2.6zM322.5 193.6h2.6v2.6h-2.6zM325.9 191.5h2.6v2.6h-2.6zM329.6 191.3h2.6v2.6h-2.6zM333.2 190.5h2.6v2.6h-2.6zM336.2 188.3h2.6v2.6h-2.6zM340.0 187.5h2.6v2.6h-2.6zM342.4 184.6h2.6v2.6h-2.6zM346.2 183.5h2.6v2.6h-2.6zM347.8 179.8h2.6v2.6h-2.6zM357.1 164.7h2.6v2.6h-2.6zM360.0 161.8h2.6v2.6h-2.6zM359.7 157.9h2.6v2.6h-2.6zM360.7 154.4h2.6v2.6h-2.6zM360.7 150.7h2.6v2.6h-2.6zM360.4 147.1h2.6v2.6h-2.6zM360.5 143.3h2.6v2.6h-2.6zM358.5 140.0h2.6v2.6h-2.6zM359.2 136.0h2.6v2.6h-2.6zM355.8 133.4h2.6v2.6h-2.6zM355.5 129.4h2.6v2.6h-2.6zM353.2 126.5h2.6v2.6h-2.6zM350.4 124.1h2.6v2.6h-2.6zM329.6 110.2h2.6v2.6h-2.6zM326.1 108.7h2.6v2.6h-2.6zM322.3 109.9h2.6v2.6h-2.6zM318.7 107.5h2.6v2.6h-2.6zM315.1 109.7h2.6v2.6h-2.6zM311.4 109.0h2.6v2.6h-2.6zM307.8 110.0h2.6v2.6h-2.6zM304.5 111.6h2.6v2.6h-2.6zM300.7 112.2h2.6v2.6h-2.6zM298.0 114.8h2.6v2.6h-2.6zM294.2 115.7h2.6v2.6h-2.6zM292.2 119.2h2.6v2.6h-2.6zM288.4 120.4h2.6v2.6h-2.6zM286.8 124.0h2.6v2.6h-2.6zM284.5 126.7h2.6v2.6h-2.6zM281.6 129.3h2.6v2.6h-2.6zM281.6 133.4h2.6v2.6h-2.6zM278.3 136.0h2.6v2.6h-2.6zM278.7 140.0h2.6v2.6h-2.6z\" fill=\"#7ee787\"/><path d=\"M331.0 161.0h2.6v2.6h-2.6zM331.9 160.0h2.6v2.6h-2.6zM333.1 159.0h2.6v2.6h-2.6zM334.0 157.9h2.6v2.6h-2.6z\" fill=\"#ff7b72\"/><path d=\"M314.8 150.7h2.6v2.6h-2.6zM314.8 151.0h2.6v2.6h-2.6zM314.9 151.4h2.6v2.6h-2.6zM314.9 150.0h2.6v2.6h-2.6zM314.8 150.4h2.6v2.6h-2.6z\" fill=\"#8b949e\"/><path d=\"M359.1 119.2A51.0 51.0 0 0 0 335.8 103.5\" stroke=\"#ffb454\" stroke-width=\"1.2\" stroke-dasharray=\"3 3\" fill=\"none\"/><text x=\"228\" y=\"240\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ffb454\">gaps = .inf (no return)</text><text x=\"414\" y=\"240\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">edges i=0/359 = rear</text><text x=\"16\" y=\"262\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">echo: type + rate + values verified</text><text x=\"16\" y=\"273\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">rviz2: 360-point ring (sim values)</text><text x=\"16\" y=\"284\" text-anchor=\"start\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">next: folder 10 - lidar fusion</text>"};
+
+  function dbgRows(rows, shadow) {
+    /* BEFORE→AFTER: rows are the AFTER state of this line; when the shadow
+       state already holds a different value for a key, render
+       old → new so the state transition is visible (#52). */
+    if (!rows || !rows.length) return '<div class="dbg-empty">— এই line-এ নতুন debug value নেই —</div>';
+    return rows.map(function (r) {
+      var k = r[0], v = r[1];
+      var tag = r[2] === 'ill'
+        ? '<span class="dbg-ill" title="illustrative — actual runtime value">illustrative</span>'
+        : '';
+      var cls = r[2] === 'err' ? 'dbg-v err' : 'dbg-v';
+      var val;
+      var before = Object.prototype.hasOwnProperty.call(shadow, k) ? shadow[k] : undefined;
+      if (before !== undefined && before !== v) {
+        val = '<span class="dbg-old">' + before + '</span> <span class="dbg-arrow">→</span> ' + v;
+        cls += ' chg';
+      } else {
+        val = v;
+      }
+      shadow[k] = v;
+      return '<div class="dbg-row"><span class="dbg-k">' + k + '</span>' +
+        '<span class="' + cls + '">' + val + '</span>' + tag + '</div>';
+    }).join('');
+  }
+
+  function buildExec() {
+    if (!EXEC_SPEC) return;
+    var lines = (typeof FILEDATA !== 'undefined') ? FILEDATA[EXEC_SPEC.file] : null;
+    if (!lines) { console.error('exec spec: unknown file', EXEC_SPEC.file); return; }
+    var spec = EXEC_SPEC;
+    var W = spec.w || 440, H = spec.h || 320;
+    var N = spec.steps.length;
+    var NL = lines.length;              /* real total lines, e.g. 3 */
+    var DUR = spec.defaultDurs || { struct: 480, exec: 2200, event: 2200 };
+    var KIND_BN = { struct: 'structural', exec: 'exec', event: 'event' };
+    function dbgIdle() {
+      return (spec.dbg0 && spec.dbg0.length)
+        ? dbgRows(spec.dbg0.slice(), {})
+        : '<div class="dbg-empty">Play চাপলে প্রতিটি line-এর variable value এখানে দেখা যাবে — লাল চিহ্নিত <span class="dbg-old">পুরনো</span> → <span class="dbg-arrow">→</span> নতুন value আকারে।</div>';
+    }
+
+    var codeHtml = '';
+    for (var i = 1; i <= NL; i++) {
+      codeHtml += '<span class="exl" id="exl-' + i + '"><span class="eln">' + i +
+        '</span>' + esc(lines[i - 1]) + '</span>';
+    }
+
+    var sec = document.createElement('section');
+    sec.className = 'sec exec-sec';
+    sec.id = 'exec-final';
+    sec.innerHTML =
+      '<div class="sec-head">' +
+        '<span class="badge badge-anim">EXE</span>' +
+        '<h3>Complete Execution — Code → Debug → Robot</h3>' +
+        '<span class="exec-sub">' + esc(spec.file) + ' · ' + N + ' steps · ' + NL + ' lines · conceptual simulation</span>' +
+      '</div>' +
+      '<div class="exec-note bn">' + (spec.note || '') + '</div>' +
+      '<div class="exec-frame">' +
+        '<div class="exec-col code-col">' +
+          '<div class="exec-panel">' +
+            '<div class="exec-panel-head">' +
+              '<span class="ep-title">COMPLETE SOURCE CODE</span>' +
+              '<span class="ep-chip src">' + esc(spec.file) + '</span>' +
+              '<span class="ep-chip live" id="exec-live">LINE —</span>' +
+              '<span class="exec-legend" aria-hidden="true">' +
+                '<i class="lg lg-exec"></i>exec' +
+                '<i class="lg lg-struct"></i>structural' +
+                '<i class="lg lg-event"></i>event' +
+              '</span>' +
+            '</div>' +
+            '<pre class="exec-code" id="exec-code">' + codeHtml + '</pre>' +
+          '</div>' +
+        '</div>' +
+        '<div class="exec-col dbg-col">' +
+          '<div class="exec-panel">' +
+            '<div class="exec-panel-head">' +
+              '<span class="ep-title">LIVE DEBUG</span>' +
+              '<span class="ep-chip concept">conceptual values</span>' +
+            '</div>' +
+            '<div class="exec-op" id="exec-op" hidden></div>' +
+            '<div class="exec-dbg-body" id="exec-dbg">' + dbgIdle() + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="exec-col rob-col">' +
+          '<div class="exec-panel">' +
+            '<div class="exec-panel-head"><span class="ep-title">ROBOT / SYSTEM STATE</span>' +
+            '<span class="ep-chip live" id="exec-phase">IDLE</span></div>' +
+            '<div class="exec-robot" id="exec-rob"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="exec-complete" id="exec-done">EXECUTION COMPLETE' +
+        '<div class="bn" id="exec-done-bn"></div></div>' +
+      '<div class="exec-fx-row" id="exec-fx-row" hidden><div class="anim-formula" id="exec-fx"></div></div>' +
+      '<div class="anim-caption bn" id="exec-cap">Play চাপলে line-by-line execution শুরু হবে।</div>' +
+      '<div class="anim-controls" id="exec-controls">' + iconRow() +
+        '<span class="ac-sep" aria-hidden="true"></span>' +
+        '<span class="ac-step" id="exec-step">STEP 000 / ' + N + '</span>' +
+        '<span class="anim-state" id="exec-state">IDLE</span>' +
+      '</div>' +
+      '<div class="exec-progress" aria-hidden="true"><i id="exec-bar"></i></div>';
+
+    var main = document.getElementById('main');
+    if (!main) return;
+    main.appendChild(sec);
+
+    var el = {
+      code: sec.querySelector('#exec-code'),
+      dbg: sec.querySelector('#exec-dbg'),
+      op: sec.querySelector('#exec-op'),
+      rob: sec.querySelector('#exec-rob'),
+      cap: sec.querySelector('#exec-cap'),
+      fxRow: sec.querySelector('#exec-fx-row'),
+      fx: sec.querySelector('#exec-fx'),
+      state: sec.querySelector('#exec-state'),
+      phase: sec.querySelector('#exec-phase'),
+      step: sec.querySelector('#exec-step'),
+      live: sec.querySelector('#exec-live'),
+      done: sec.querySelector('#exec-done'),
+      doneBn: sec.querySelector('#exec-done-bn'),
+      bar: sec.querySelector('#exec-bar'),
+      controls: sec.querySelector('#exec-controls')
+    };
+
+    function robSvg(inner) {
+      return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img">' +
+        (spec.defs || '') + inner + '</svg>';
+    }
+    function setRob(inner) {
+      if (!inner) return;
+      el.rob.innerHTML = robSvg(inner);
+      el.rob.classList.remove('exec-rob-fade');
+      void el.rob.offsetWidth;
+      el.rob.classList.add('exec-rob-fade');
+    }
+    setRob(spec.rob0 || (spec.steps[0] && spec.steps[0].rob) || '');
+
+    /* ---- one coherent exec state machine ---- */
+    var X = {
+      started: false, running: false, paused: false, done: false,
+      stopFlag: false, speed: 1, _raf: null, gen: 0
+    };
+    var shadow = {};   /* accumulated variable state for BEFORE→AFTER   */
+    function setState(t) { el.state.textContent = t; }
+    function clearCur() {
+      el.code.querySelectorAll('.exl.cur,.exl.cur-g').forEach(function (n) {
+        n.classList.remove('cur', 'cur-g', 'cur-struct', 'cur-event');
+      });
+    }
+    function lineChip(st) {
+      var grp = st.lns && st.lns.length > 1;
+      return grp
+        ? 'LINES ' + st.lns[0] + '–' + st.lns[st.lns.length - 1] + ' / ' + NL
+        : 'LINE ' + st.ln + ' / ' + NL;
+    }
+    function applyStep(idx) {
+      var st = spec.steps[idx];
+      clearCur();
+      var primary = el.code.querySelector('#exl-' + st.ln);
+      var kcls = st.kind === 'struct' ? 'cur-struct' : (st.kind === 'event' ? 'cur-event' : '');
+      (st.lns || [st.ln]).forEach(function (n) {
+        var row = el.code.querySelector('#exl-' + n);
+        if (!row) return;
+        /* classList.add() THROWS on an empty token (exec steps have no
+           kind class) — pass it conditionally, never as '' */
+        var base = n === st.ln ? 'cur' : 'cur-g';
+        if (kcls) { row.classList.add(base, kcls); }
+        else { row.classList.add(base); }
+      });
+      if (primary) {
+        try {
+          el.code.scrollTop = primary.offsetTop - el.code.clientHeight / 2 + primary.offsetHeight / 2;
+        } catch (e) { /* keep going without scroll */ }
+      }
+      el.live.textContent = lineChip(st);
+      el.phase.textContent = KIND_BN[st.kind] || 'exec';
+      el.step.textContent = 'STEP ' + (idx + 1 < 10 ? '00' : idx + 1 < 100 ? '0' : '') + (idx + 1) +
+        ' / ' + N + ' · ' + lineChip(st);
+      el.bar.style.width = ((idx + 1) / N * 100).toFixed(2) + '%';
+      if (st.op) { el.op.hidden = false; el.op.textContent = st.op; }
+      else { el.op.hidden = true; }
+      el.dbg.innerHTML = dbgRows(st.dbg, shadow);
+      el.cap.innerHTML = st.cap || '';
+      if (st.fx) { el.fxRow.hidden = false; el.fx.innerHTML = st.fx; }
+      else { el.fxRow.hidden = true; }
+      if (st.rob) setRob(st.rob);
+    }
+    function complete() {
+      X.done = true; X.running = false; X.started = false;
+      clearCur();
+      setState('COMPLETE');
+      el.phase.textContent = 'DONE';
+      el.step.textContent = 'EXECUTION COMPLETE · ' + N + ' STEPS · ' + NL + ' LINES';
+      el.live.textContent = 'LINE —';
+      el.bar.style.width = '100%';
+      el.doneBn.innerHTML = spec.finalCap || '';
+      el.done.classList.add('show');
+      if (spec.finalOp) { el.op.hidden = false; el.op.textContent = spec.finalOp; }
+      if (spec.finalDbg) el.dbg.innerHTML = dbgRows(spec.finalDbg, shadow);
+      if (spec.finalRob) setRob(spec.finalRob);
+      if (spec.finalFx !== undefined && spec.finalFx !== null) {
+        el.fxRow.hidden = false; el.fx.innerHTML = spec.finalFx;
+      }
+      setActive(el.controls, null);
+    }
+    function sched(ms) {
+      return new Promise(function (resolve) {
+        var g = X.gen;
+        var total = ms / X.speed, elapsed = 0, last = null;
+        /* QA hook (#qa-vt): headless Chrome's virtual-time clock drives
+           timers but never issues BeginFrames, so requestAnimationFrame
+           stalls and automated runs freeze on step 1. Under the hash the
+           identical accumulator runs on a 40ms interval instead. Real
+           pages never carry the hash, so they always use rAF below. */
+        if (/qa-vt/.test(location.hash)) {
+          var iv = setInterval(function () {
+            if (X.stopFlag || X.gen !== g) { clearInterval(iv); resolve('stopped'); return; }
+            if (X.running) elapsed += 40;
+            if (elapsed >= total) { clearInterval(iv); resolve(); }
+          }, 40);
+          return;
+        }
+        function tick(t) {
+          if (X.stopFlag || X.gen !== g) { resolve('stopped'); return; }
+          if (!X.running) { last = null; X._raf = requestAnimationFrame(tick); return; }
+          if (last === null) last = t;
+          elapsed += t - last; last = t;
+          if (elapsed >= total) { resolve(); return; }
+          X._raf = requestAnimationFrame(tick);
+        }
+        X._raf = requestAnimationFrame(tick);
+      });
+    }
+    function resetIdle() {
+      X.started = false; X.running = false; X.paused = false;
+      X.stopFlag = false; X.done = false;
+      if (X._raf) cancelAnimationFrame(X._raf);
+      clearCur();
+      shadow = {};
+      setState('IDLE');
+      el.phase.textContent = 'IDLE';
+      el.step.textContent = 'STEP 000 / ' + N;
+      el.live.textContent = 'LINE —';
+      el.bar.style.width = '0%';
+      el.op.hidden = true;
+      el.done.classList.remove('show');
+      el.cap.innerHTML = 'Play চাপলে line-by-line execution শুরু হবে।';
+      el.fxRow.hidden = true; el.fx.innerHTML = '';
+      el.dbg.innerHTML = dbgIdle();
+      setRob(spec.rob0 || (spec.steps[0] && spec.steps[0].rob) || '');
+      setActive(el.controls, null);
+    }
+    async function run() {
+      var g = X.gen;
+      for (var idx = 0; idx < N; idx++) {
+        if (X.stopFlag || X.gen !== g) return;
+        try { applyStep(idx); } catch (e) { console.error('exec step failed', idx, e); }
+        var st = spec.steps[idx];
+        var base = st.dur != null ? st.dur : (DUR[st.kind] != null ? DUR[st.kind] : (spec.stepDur || 2200));
+        await sched(base);
+        if (X.stopFlag || X.gen !== g) return;
+      }
+      if (X.gen !== g) return;
+      complete();
+    }
+    function start(speed) {
+      X.gen++;
+      X.done = false;
+      if (speed) X.speed = speed;
+      X.started = true; X.stopFlag = false; X.running = true; X.paused = false;
+      shadow = {};
+      el.done.classList.remove('show');
+      setState('RUN ' + X.speed + 'x');
+      setTimeout(function () {
+        run().catch(function (e) {
+          console.error('exec run error', e);
+          setState('ERROR');
+        });
+      }, 30);
+    }
+    function pause() { if (!X.started) return; X.running = false; X.paused = true; setState('PAUSED'); }
+    function resume() {
+      if (!X.started || !X.paused) return;
+      X.running = true; X.paused = false; setState('RUN ' + X.speed + 'x');
+    }
+    function setSpeed(s) {
+      X.speed = s;
+      if (!X.started) { start(s); return; }
+      if (X.paused) { X.running = true; X.paused = false; }
+      setState('RUN ' + X.speed + 'x');
+    }
+    function stop() { X.gen++; X.stopFlag = true; resetIdle(); }
+
+    el.controls.querySelectorAll('.ac-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var a = b.dataset.ac;
+        setActive(el.controls, a === 'stop' ? null : b);
+        if (a === 'play') { X.paused ? resume() : start(1); }
+        else if (a === 'slow') setSpeed(0.5);
+        else if (a === 'fast') setSpeed(1.5);
+        else if (a === 'pause') pause();
+        else if (a === 'stop') stop();
+      });
+    });
+  }
+
+  /* ---------- boot -------------------------------------------------- */
+  function boot() {
+    try { fixHero(); } catch (e) { console.error(e); }
+    try { retrofitControls(); } catch (e) { console.error(e); }
+    try { buildExec(); } catch (e) { console.error('exec build failed', e); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else { boot(); }
+})();
+
+</script>
+</body>
+</html>

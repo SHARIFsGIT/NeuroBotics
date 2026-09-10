@@ -1,0 +1,187 @@
+{
+ "n": 7,
+ "id": "part-07",
+ "fname": "yahboom_keyboard.py",
+ "enTitle": "Main Loop — Drive, Pause, Emergency",
+ "lang": "python",
+ "start": 150,
+ "end": 242,
+ "flags": [],
+ "explain": [
+  {
+   "a": 150,
+   "b": 153,
+   "text": "<code>def main():</code> — এই program-এর চালানোর entry function। README L7-এর ros2 run yahboomcar_ctrl yahboom_keyboard command-ই এখানে পৌঁছে দেয় (package-এর entry point থেকে — সেই সংযোগ-নথি এই folder-এ নেই, inferred)। প্রথম লাইন <code>rclpy.init()</code> দিয়ে ROS 2-এর context জন্মায় — publisher, parameter, নাম — কিছু করার আগে এই এক কল লাগবেই। এরপর <code>robot_teleop = YahboomKeyboard(\"yahboom_keyboard_ctrl\")</code>: node-টি তৈরি, নাম yahboom_keyboard_ctrl। মনে রাখো constructor (আগের Part) এখানেই চলে যায় — তিনটা publisher, দুটি speed-limit parameter, terminal-এর settings সংরক্ষণ, আর L86-এর <code>self.reset_arm()</code>: অর্থাৎ node ওঠার সঙ্গে সঙ্গেই arm ছয় joint [90, 90, 0, 0, 90, 90]-এ ফিরে যায় আর console-এ <code>[SYSTEM] Arm reset to Home Position.</code> ছাপা পড়ে। L153 ফাঁকা line — শুধু init-ভাগ আর state-ভাগের মাঝে চোখের বিভাজন।"
+  },
+  {
+   "a": 154,
+   "b": 155,
+   "text": "দুই জোড়া শুরু-মান। <code>speed, turn = 0.2, 1.0</code> — গতির জগতের দুই স্কেল: linear 0.2 m/s, angular 1.0 rad/s; এরাই পরে speedBindings-এর ×1.1 / ×0.9 চাপে নড়বে, ছাদ 1.0 আর 5.0 (L190-191)। <code>x, y, th = 0, 0, 0</code> — দিকের জগৎ: moveBindings-এর তিন-ঘরের unit int এখানে বসবে, আর তিনটিই শূন্য মানে এই মুহূর্তে robot-এর কোনো দিক-ইঙ্গিত নেই — দাঁড়িয়ে। অর্থাৎ গতি (মাপ) আর দিক (unit int) দুই আলাদা variable-জোড়ায় সাজানো, আর লুপের শেষে L226-228-এর তিনটি গুণ এদের মেলাবে — আগের Part-এর গণিত-ছাঁচ এখানে বাস্তবায়িত।"
+  },
+  {
+   "a": 156,
+   "b": 158,
+   "text": "<code>stop = False</code> — pause-এর পতাকা নেমে আছে: শুরুতে robot running অবস্থায়। <code>count = 0</code> — deadman গণনাকারী: পরপর কতগুলো খালি পোল হলো, তার হিসাব রাখবে; চেনা key পেলে শূন্যে ফিরবে, আর <code>if count &gt; 4</code> পেরোলে x, y, th শূন্য করে দেবে (L212-214) — নিচের গণিতের মূল চরিত্র এটিই। <code>twist = Twist()</code> — বারবার ব্যবহারযোগ্য একটাই message object: লুপের প্রতিটি iteration-এ এর তিনটি field নতুন করে বসানো হবে, নতুন object বারবার তৈরি হয় না; বাকি সব field জন্মাকালীন শূন্যই থাকে।"
+  },
+  {
+   "a": 159,
+   "b": 162,
+   "text": "<code>try:</code> — এখান থেকে লুপসহ মূল কাজ exception-রক্ষার ঘেরের ভেতরে; শেষে L235-এর <code>except</code> আর L237-এর <code>finally</code> এই ঘেরেরই জোড়া। তার ভেতরে প্রথম দুই ছাপা: <code>print(msg)</code> — L17-45-এর পুরো control-panel menu একবারে পর্দায়; <code>print(robot_teleop.vels(speed, turn))</code> — বর্তমান গতির সারি, এই মুহূর্তে ছাপা পড়ে Linear: 0.20 m/s | Angular: 1.00 rad/s — vels-এর template <code>Current Speed -&gt; Linear: {speed:.2f} m/s | Angular: {turn:.2f} rad/s</code>-এ শুরুর মান বসানোর ফল। এই দুই ছাপাই node-এর প্রস্তুত-ঘোষণা: এরপর আর কোনো ভূমিকা নেই, শুধু লুপ।"
+  },
+  {
+   "a": 163,
+   "b": 165,
+   "text": "<code>while True:</code> — শর্তহীন অসীম লুপ; বেরোনোর রাস্তা ভেতরের <code>break</code> (L216 বা L221) কিংবা exception। প্রতিটি iteration-এর প্রথম কাজ <code>key = robot_teleop.getKey()</code> — আগের Part-এর function-টি: terminal raw mode-এ ফেলে 0.1 সেকেন্ড পর্যন্ত key-এর অপেক্ষা করে; এলে সেই এক অক্ষর, না এলে খালি string <code>''</code>। এই 0.1 সেকেন্ডই পুরো লুপের ছন্দ ঠিক করে — প্রতি সেকেন্ডে প্রায় 10 বার পোল, অর্থাৎ এই teleop-এর heartbeat 10 Hz। পরের গণিত-অংশের সব সময়-হিসাব এই এক সংখ্যার উপর দাঁড়িয়ে।"
+  },
+  {
+   "a": 166,
+   "b": 170,
+   "text": "L166 ফাঁকা, তারপর সিদ্ধান্ত-শৃঙ্খলের প্রথম দরজা। <code># Handle Pause/Resume</code> comment নাম বলে দিচ্ছে, আর <code>if key in (\"s\", \"S\"):</code> — s বড়-হাতের-ছোট-হাতের দুই রূপেই — সেই দরজা খোলে। <code>stop = not stop</code> এক লাইনেই toggle: True হলে False হয়, False হলে True। <code>print(f\"[SYSTEM] ALL CONTROLS PAUSED: {stop}\")</code> f-string-এর ভেতরের <code>{stop}</code> বর্তমান মান ছাপায় — pause-এ ঢোকার সময় <code>True</code>, ফেরার সময় <code>False</code>; একই বার্তা দুই অর্থে ব্যবহৃত, ছাপা দেখে বোঝা যায় এখন কোন দিকে টগল হলো।"
+  },
+  {
+   "a": 171,
+   "b": 174,
+   "text": "Toggle-এর পরের ধাপ কেবল একদিকের জন্য: <code>if stop:</code> মানে এই চাপে ঠিক pause-এ ঢোকা হলো। তখনই দুটো কাজ — <code>robot_teleop.emergency_stop() # Lock everything immediately</code> (inline comment-টি source-এর নিজের কথা: সঙ্গে সঙ্গে সব তালা): আগের Part-এর function-টি শূন্য Twist পাঠিয়ে চাকা থামায় আর arm-এর বর্তমান অবস্থাই time=100 দিয়ে পাঠিয়ে জোর-ব্রেক টানে। সঙ্গে <code>x, y, th = 0, 0, 0</code> — দিক-ইঙ্গিতও মুছে দেওয়া। লক্ষ করো বিষমতা: pause থেকে ফেরার সময় এই দুটোর কোনোটাই চলে না — শুধু পতাকা নামে; তবু ফেরার পর robot আচমকা ছুটবে না, কারণ ঢোকার সময় x, y, th শূন্য করাই ছিল — resume করে নতুন key চাপা পর্যন্ত শূন্য-গতিই চলতে থাকে। L174 পুরো-খালি line।"
+  },
+  {
+   "a": 175,
+   "b": 179,
+   "text": "দ্বিতীয় দরজা: <code>elif key == ' ':</code> — বন্ধনীর ভেতরে ঠিক একটা space অক্ষর, অর্থাৎ spacebar। কাজ তিনটি: <code>robot_teleop.emergency_stop()</code> — চাকা শূন্য, arm জোর-ব্রেক; <code>x, y, th = 0, 0, 0</code>; আর <code>print(\"[SYSTEM] EMERGENCY STOP ENGAGED.\")</code>। এখানেই pause আর emergency stop-এর তফাতটা ধরা: এই branch-এ <code>stop</code> ছোঁয়াই হয় না — SPACE এক-চাপের এক-বারের brake, latching নয়। চাপ ছেড়ে দিলে বা পরের iteration-এ সামনের দিকের কোনো key (যেমন i) পড়লেই চলা ফিরে আসে; স্থায়ী থামানো চাইলে s লাগবে। আরেকটা সূক্ষ্মতা শৃঙ্খলের ক্রম থেকে: এই <code>elif</code> লুপের সব অবস্থায় পরীক্ষিত হয়, তাই pause-এ থাকা অবস্থাতেও SPACE চাপলে এই branch-ই ধরা পড়ে — pause-এর নীরবতা সত্ত্বেও জরুরি ব্রেকের দরজাটা খোলা থাকে।"
+  },
+  {
+   "a": 180,
+   "b": 185,
+   "text": "তৃতীয় দরজা: <code>elif not stop:</code> — শুধু running অবস্থায়, অর্থাৎ গতি আর arm-এর সব key এখানেই বাঁচে; pause-এ এর ভেতরে ঢোকাই হয় না। প্রথম ভেতর-দরজা <code>if key in moveBindings.keys():</code> — চাপটা চালার 18-সংখ্যার dictionary-তে আছে কি না। থাকলে <code>x, y, th = moveBindings[key]</code> — tuple-এর তিন ঘর একসঙ্গে তিন variable-এ খোলে; খেয়াল করো পুরনো মান মুছে তিনটিই নতুন করে বসে, তাই i ধরে রেখে j চাপলে সামনে-চালা বাতিল হয়ে শুধু ঘূর্ণন থাকে — দিক জমা হয় না, বদলে যায়। এরপর <code>count = 0\t</code> — deadman গণনাকারী রিসেট; এই লাইনের শেষে source-এ একটা trailing tab আছে (L185, FACTS-এর তালিকাভুক্ত quirk) — কাজে কোনো ফরক পড়ে না, Python অদৃশ্য whitespace-কে উপেক্ষা করে, কেবল quote করার সময় সংরক্ষণ করতে হয়।"
+  },
+  {
+   "a": 186,
+   "b": 189,
+   "text": "দ্বিতীয় ভেতর-দরজা: <code>elif key in speedBindings.keys():</code> — চাপটা গতি-সুরের 12-সংখ্যার dictionary-তে। তাহলে <code>speed = speed * speedBindings[key][0]</code> linear স্কেলে গুণ (w/q হলে 1.1, x/z হলে 0.9, e/c হলে 1) আর <code>turn = turn * speedBindings[key][1]</code> angular-এ তার যমজ ঘর। <code>count = 0</code> — গতির চাপও deadman-কে শান্ত রাখে। এখানে একটা পার্থক্য লক্ষ করো: moveBindings-এর চাপ base-এর দিক বদলায়, আর এই চাপ শুধু মাপের স্কেল নাড়ায় — চলতে চলতেই q চাপলে robot দ্রুত চলা শুরু করে, দিক অপরিবর্তিত।"
+  },
+  {
+   "a": 190,
+   "b": 192,
+   "text": "গুণের পরেই ছাদ: <code>speed = min(speed, robot_teleop.linear_speed_limit)</code> linear-কে 1.0 m/s-এ আর <code>turn = min(turn, robot_teleop.angular_speed_limit)</code> angular-কে 5.0 rad/s-এ আটকে দেয় — constructor-এর L76-77-এ declare হওয়া দুই parameter-ই এখানে কাজে নামে। ছাদটা শুধু উপরের দিকে: নিচের দিকে <code>max</code>-এর কোনো যমজ নেই, তাই x বা z চেপে ×0.9 জমাতে থাকলে মান শূন্যের দিকে এগিয়ে যায় — কখনো শূন্য হয় না, কখনো ঋণাত্মক হয়ে উল্টো দিকে যায় না; আগের Part-এর সেই সূচক-হিসাবের বাস্তব লাইন এটাই। শেষে <code>print(robot_teleop.vels(speed, turn))</code> — প্রতিটি সুর-চাপের পর বর্তমান গতির সারি ছাপা, যাতে চালক চোখেই দেখে কোথায় দাঁড়িয়ে।"
+  },
+  {
+   "a": 193,
+   "b": 198,
+   "text": "L193 ফাঁকা, তারপর <code># Arm Controls</code> নামফলক — এবার base নয়, হাত। ছয়টি single-line <code>elif</code>: <code>elif key == '1': robot_teleop.step_arm_joint(1, -5)</code> joint 1 নামে 5 ডিগ্রি, <code>elif key == '2': robot_teleop.step_arm_joint(1, 5)</code> ওঠে, <code>elif key == '3': robot_teleop.step_arm_joint(2, -5)</code> আর <code>elif key == '4': robot_teleop.step_arm_joint(2, 5)</code> — joint 2-র নামা-ওঠা। প্রতিটি কল আগের Part-এর step_arm_joint: += delta, তারপর joint-অনুযায়ী clamp (0..180), ArmJoint message id/joint/time=500 নিয়ে arm_joint topic-এ, আর console-এ <code>[ARM] Joint {joint_id} -&gt; {action} -&gt; {arm_msg.joint} deg</code> ছাঁচের সারি। খেয়াল রাখো — এই চাপে x, y, th বা count কিছুই বদলায় না: ঘুরন্ত robot-এর উপর হাত নাড়ানো যায়, দুই কাজ একে অন্যকে বাগাড়ম্বর করে না।"
+  },
+  {
+   "a": 199,
+   "b": 204,
+   "text": "একই ছাঁচের বাকি ছয়টি: <code>elif key == '5': robot_teleop.step_arm_joint(3, -5)</code> আর <code>elif key == '6': robot_teleop.step_arm_joint(3, 5)</code> — joint 3 (elbow); <code>elif key == '7': robot_teleop.step_arm_joint(4, -5)</code> আর <code>elif key == '8': robot_teleop.step_arm_joint(4, 5)</code> — joint 4 (wrist); <code>elif key == '9': robot_teleop.step_arm_joint(5, -5)</code> আর <code>elif key == '0': robot_teleop.step_arm_joint(5, 5)</code> — joint 5 (wrist rotation, সীমা 0..270 — বাকিদের চেয়ে বহু চওড়া)। menu-র promise মিলে যায়: প্রতি চাপে ঠিক 5 ডিগ্রি, odd key নামে, even key ওঠে; দশটি চাপ ছয়টি joint-এর পাঁচটি ধরে রাখে — ষষ্ঠ joint 6-এর জন্য পরের জোড়া আলাদা।"
+  },
+  {
+   "a": 205,
+   "b": 208,
+   "text": "L205 ফাঁকা, তারপর <code># NEW Gripper Controls (g to close, h to open)</code> — comment-এর NEW শব্দটুকুই বলে দেয় এই জোড়া পরে জোড়া হয়েছে, আর বন্ধনীর ভেতরে কাজের কথা। <code>elif key in ('g', 'G'): robot_teleop.step_arm_joint(6, -5)</code> — gripper বন্ধ, আর <code>elif key in ('h', 'H'): robot_teleop.step_arm_joint(6, 5)</code> — খোলা; বড়-হাতের যমজ দুই দিকেই ঢোকে। এখানেও সেই step_arm_joint, কিন্তু অন্যরকম দুই ব্যবহার: joint 6-এর clamp 30..180 আলাদা, আর action word-ও আলাদা — Up/Down নয়, delta-এর চিহ্ন অনুযায়ী Opening/Closing। menu-র <code>g / h       : Joint 6 (Gripper)   Close / Open</code> সারির সঙ্গে চিহ্ন-মিলও নজর করো: g = -5 = Close।"
+  },
+  {
+   "a": 209,
+   "b": 214,
+   "text": "L209 ফাঁকা, তারপর এক লাইনে <code>elif key in ('r', 'R'): robot_teleop.reset_arm()</code> — ছয় joint একসঙ্গে [90, 90, 0, 0, 90, 90]-এ, time=2000, arm6_joints topic-এ, console-এ রিসেট-বার্তা। এবার শেষ দরজা — সবখানে বাদ পড়া চাপের আশ্রয়: <code>else:</code>-এর <code>count = count + 1</code> গণনাকারী বাড়ায়, আর <code>if count &gt; 4:</code> পেরোলে <code>x, y, th = 0, 0, 0</code>। এই else-এ কারা পড়ে? দুই দল — খালি পোলের <code>''</code> (কেউ কিছু চাপলই না), আর অপরিচিত যেকোনো key (dictionary-তে নেই এমন)। অর্থাৎ এটাই deadman: শেষ চেনা চাপের পর যদি পরপর যথেষ্ট খালি পোল যায়, দিক-ইঙ্গিত মুছে দেওয়া হয় — চালকের হাত keyboard থেকে সরে গেলে robot নিজে নিজেই থেমে যায়। কতক্ষণ পরে? পাঁচটি খালি পোল, অর্থাৎ 0.5 সেকেন্ড — নিচের গণিতের মূল হিসাব।"
+  },
+  {
+   "a": 215,
+   "b": 218,
+   "text": "else-এর ভেতরেই বিদায়ের প্রথম দরজা: <code>if key == '\\x03':  # Ctrl+C</code> — <code>\\x03</code> হলো raw mode-এ Ctrl+C-এর রূপ। getKey যেহেতু terminal raw করে রাখে, চাপটা আর সাধারণ signal নয়, সাধারণ এক অক্ষরের মতোই read হয় — তাই বিদায় লুপের ভেতরেই লিখতে হয়েছে, আর <code>break</code> সেই অক্ষর পেলেই <code>while True</code> ভেঙে দেয়। খেয়াল করো \\x03 কোনো dictionary-তে নেই, তাই এটা সবসময় else-এর ভেতরে পড়ে — count আগে বেড়ে থাকলেও x, y, th শূন্য হতে হতে যা হয় হলো, break-ই শেষ কথা। L217 ফাঁকা, L218-এর <code># If paused, ignore everything except Ctrl+C</code> comment পরের else-এর নামফলক।"
+  },
+  {
+   "a": 219,
+   "b": 223,
+   "text": "সিদ্ধান্ত-শৃঙ্খলের শেষ দরজা: <code>else:</code> — এখানে পৌঁছায় মাত্র তখনই যখন stop সত্য এবং চাপটা s/S বা space-ও নয়, অর্থাৎ pause-এ থাকা অবস্থা। ভেতরে মাত্র দুটি পথ: <code>if key == '\\x03':</code> হলে <code>break</code> — থামা অবস্থাতেও Ctrl+C-র বিদায় বহাল; আর <code>elif key != '':</code> — খালি-নয় এমন যেকোনো key হলে <code>print(\"[SYSTEM] System paused. Press 's' to resume.\")</code>। অর্থাৎ pause সম্পূর্ণ: এ অবস্থায় arm-এর 1-0, g/h, r, গতির q/z সবই এই বার্তা-ছাপা ছাড়া আর কিছু করে না — কোনো চাকা নড়ে না, কোনো joint নড়ে না, গতির স্কেলও বদলায় না। খালি পোলের <code>''</code> একদম নীরব — নাহলে 10 Hz ছন্দে এই বার্তাই পর্দা ভরিয়ে ফেলত। ফেরার একটাই রাস্তা: আবার s।"
+  },
+  {
+   "a": 224,
+   "b": 228,
+   "text": "L224 ফাঁকা, <code># Calculate and publish base movement</code> নামফলক, তারপর লুপের প্রতিটি iteration-এর শেষ-গুণ — pause-এ হোক বা চালু অবস্থায়, কোনো branch-এর ভেতরে নয়, সবার নিচে সমান চলে: <code>twist.linear.x = speed * x</code>, <code>twist.linear.y = speed * y</code>, <code>twist.angular.z = turn * th</code>। প্রথম গুণ সামনে-পেছনে, দ্বিতীয়টি সাইড-চালা — linear.y field-টি সাধারণ চাকার robot-এ থাকলেও অব্যবহৃত থাকে, mecanum base-এ এটিই strafe-এর বাহন; তৃতীয়টি ঘূর্ণন। দিকের unit int (-1/0/1) গতির স্কেলের সঙ্গে গুণ হয়ে মাপানো আদেশ হয়। খেয়াল করো pause-এ x, y, th শূন্য থাকায় এই তিন গুণের ফলও শূন্যই আসে — গণনাটা তখনও চলে, ফল নিরর্থক।"
+  },
+  {
+   "a": 229,
+   "b": 233,
+   "text": "L229 ফাঁকা, তারপর পাঠানোর দুই-রূপ: <code>if not stop:</code> মানে চালু — <code>robot_teleop.pub_cmd_vel.publish(twist)</code>, ভরা twist যায় cmd_vel topic-এ (relative নাম, Part-06 দেখেছিল)। <code>else:</code> মানে pause — <code>robot_teleop.pub_cmd_vel.publish(Twist())</code>: তাজা একটা Twist object, সব field জন্ম-শূন্য। অর্থাৎ pause-এ publisher চুপ হয়ে যায় না — উল্টো প্রতিটি iteration-এ ঠিক একটা শূন্য-আদেশ পাঠায়, 0.1 সেকেন্ডের ছন্দে, মোটামুটি 10 Hz শূন্য-আদেশের stream; লুপ চলাকালীন cmd_vel-এর শেষ বার্তা কখনো 0.1 সেকেন্ডের বেশি পুরনো হয় না। বাকি দুই মোডের ফল এক নয়: চালু অবস্থায় গণনা করা twist যায়, pause-এ সদ্য-বানানো শূন্য — দুই-ই একই দরজা দিয়ে।"
+  },
+  {
+   "a": 234,
+   "b": 236,
+   "text": "L234 ফাঁকা, তারপর ঘেরের প্রথম জোড়া: <code>except Exception as e:</code> — লুপের ভেতরে যেকোনো সাধারণ exception ধরা পড়ে, আর <code>print(f\"[ERROR] {e}\")</code> তার বার্তা ছাপে। কীসে হতে পারে এমন? publisher বিকল হলে বা নাড়া-চাড়ায় কোনো call ভেঙে পড়লে — তারপর নিয়ন্ত্রণ finally-তে চলে যায়। খেয়াল রাখো KeyboardInterrupt এখানে ধরা পড়ে না — সে Exception-এর subclass নয়; তবে এই file-এ সে অবস্থাই আসে না, কারণ raw mode-এ Ctrl+C exception ওঠে না, \\x03 অক্ষর হয়ে break-পথেই যায়। এই দুই লাইনের পরেই লুপের জীবন শেষ — বাকি সব সুসংগত বিদায়ের।"
+  },
+  {
+   "a": 237,
+   "b": 242,
+   "text": "<code>finally:</code> — break-এর পথেই হোক বা error-এর পথে, লুপ ছাড়লেই এই block নিশ্চিত চারটে কাজ করবে। <code># Graceful shutdown: stop everything before exiting</code> comment নিজেই ঘোষণা দেয়। <code>robot_teleop.emergency_stop()</code> — বিদায়ের ব্রেক: শূন্য Twist আর arm-এর বর্তমান অবস্থা time=100 দিয়ে, যাতে বন্ধ হওয়ার মুহূর্তে চাকা বা joint কেউ আধা-চালু না থাকে। <code>termios.tcsetattr(sys.stdin, termios.TCSADRAIN, robot_teleop.settings)</code> — constructor-এ L83-এ তুলে রাখা terminal-এর পুরোনো setting ফিরিয়ে দেওয়া: এটা না হলে বিদায়ের পরেও terminal raw অবস্থায় আটকে থাকত — চাপা key আর পর্দায় দেখা যেত না। শেষে <code>robot_teleop.destroy_node()</code> node-এর মৃত্যু ঘোষণা করে আর <code>rclpy.shutdown()</code> L151-এর init-এর যমজ — context বন্ধ। বিদায়টাও তাই পুরো বৃত্ত: init থেকে shutdown, আর মাঝের প্রতিটি মুহূর্ত থেকে নেওয়া দায় শেষ হওয়া পর্যন্ত জমা রাখা।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর সব সময়-হিসাবের শিকড় একটি সংখ্যা — getKey-এর ভেতরের select-এর 0.1 সেকেন্ড timeout (L90)। এটিই লুপের প্রতিটি পোলের সর্বোচ্চ দৈর্ঘ্য, তাই এটিই publisher-এর ছন্দ আর deadman-এর ঘড়ি। দুটি প্রশ্ন: চালকের হাত সরে গেলে robot কত পরে থামে, আর ওই অপেক্ষার জানালায় robot কতটা গড়ায়। উত্তর ধাপে ধাপে — পোল-পিরিয়ড, গণনাকারী, 0.5 সেকেন্ড, দূরত্ব।",
+  "levels": [
+   {
+    "label": "Level 1 — পোল-পিরিয়ড ও 10 Hz ছন্দ",
+    "latex": "\\[ T \\le 0.1\\ \\mathrm{s}, \\qquad f = \\frac{1}{T} \\approx \\frac{1}{0.1} = 10\\ \\mathrm{Hz} \\]",
+    "text": "getKey প্রতিবার সর্বোচ্চ 0.1 সেকেন্ড অপেক্ষা করে — key এলে আগেই ফেরে, না এলে timeout। তাই লুপের পিরিয়ড T-এর সর্বোচ্চ মান 0.1 সেকেন্ড, আর গড় ছন্দ প্রায় 10 iteration প্রতি সেকেন্ডে। এই এক সংখ্যাই দুই জায়গায় কাজে লাগে — publisher প্রতি সেকেন্ডে প্রায় 10 বার message পাঠায় (চালু হোক বা pause), আর deadman-এর গণনাকারী প্রতি সেকেন্ডে মোটামুটি 10 ধাপ বাড়ে।"
+   },
+   {
+    "label": "Level 2 — deadman গণনাকারী",
+    "latex": "\\[ c_{n+1} = \\begin{cases} c_n + 1 & \\text{empty / unknown poll} \\\\ 0 & \\text{move or speed key} \\\\ c_n & \\text{arm / gripper / reset key} \\end{cases} \\]",
+    "text": "count-এর নিয়ম তিন রকম: খালি পোল বা অচেনা key পেলে else-branch এক বাড়ায় (L212), চালার বা গতির চেনা চাপে শূন্যে ফেরে (L185, L189), আর arm-এর চাপে অপরিবর্তিত থাকে। সুতরাং count মাপে সর্বশেষ চেনা-চাপের পর থেকে পরপর কতটি ব্যর্থ পোল জমেছে — চালক হাত ধরে রাখলে terminal-এর auto-repeat প্রতি পোলেই চাপ এনে গণনাকারীকে বারবার শূন্যে ফেলে রাখে।"
+   },
+   {
+    "label": "Level 3 — ০.৫ সেকেন্ডের সীমা",
+    "latex": "\\[ c > 4 \\iff n_{\\mathrm{empty}} \\ge 5, \\qquad t_{\\mathrm{stop}} = 5 \\times 0.1\\ \\mathrm{s} = 0.5\\ \\mathrm{s} \\]",
+    "text": "L213-এর শর্ত কঠোরভাবে বড়: c &gt; 4 মানে পঞ্চম বা তার পরের ব্যর্থ পোল। শেষ চাপের পর প্রথম খালি পোলে c = 1, দ্বিতীয়তে 2, এভাবে চতুর্থ পোল শেষে c = 4 — শর্ত তখনো মিথ্যা, দিক-ইঙ্গিত বহাল, লুপ পুরোনো twist-ই পাঠায়। পঞ্চম খালি পোলে c = 5 &gt; 4 — x, y, th শূন্য, এবং সেই iteration-এর publish-এ প্রথম শূন্য-আদেশ যায়। মোট সময় 5 × 0.1 = 0.5 সেকেন্ড। এই বিলম্বই deadman-এর স্বভাব: ভুলে যাওয়া চালকের হাতের জন্য অর্ধ-সেকেন্ডের অবকাশ, তারপর স্বয়ংক্রিয় থামা।"
+   },
+   {
+    "label": "Level 4 — grace জানালার দূরত্ব",
+    "latex": "\\[ d = v \\cdot t_{\\mathrm{stop}}, \\qquad \\Delta\\theta = \\omega \\cdot t_{\\mathrm{stop}} \\]",
+    "text": "ওই 0.5 সেকেন্ডের জানালায় robot থেমে থাকে না — শেষ চাপের দিক-ইঙ্গিত বহাল থাকায় সে সময়জুড়ে আগের গতিতেই চলে (গড় গতি ধ্রুব ধরে)। সোজা চলায় দূরত্ব গতি × সময়, ঘূর্ণনে কোণ কৌণিক গতি × সময়। শুরুর ডিফল্ট মানে (speed 0.2, turn 1.0) এই লেজ ছোট, কিন্তু গতির key দিয়ে স্কেল বাড়ালে (ছাদ 1.0 / 5.0) লেজও সেই অনুপাতে লম্বা হয় — deadman থামায় নির্দিষ্ট সময়ে, নির্দিষ্ট দূরত্বে নয়।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ n_{\\mathrm{empty}} = 1 + 4 = 5, \\qquad 5 \\times 0.1\\ \\mathrm{s} = 0.5\\ \\mathrm{s} \\]",
+    "text": "চালক শেষ চাপ ছাড়লো ধরো। পোল 1: c = 1, শর্ত মিথ্যা — পুরোনো twist যায়। পোল 2: c = 2। পোল 3: c = 3। পোল 4: c = 4, তবু মিথ্যা — চতুর্থবারও পুরোনো twist। পোল 5: c = 5 &gt; 4 — x, y, th শূন্য, শূন্য-আদেশ যায়। অর্থাৎ ছাড়ার পর ঠিক চারটি ভরা publish আর পঞ্চম পোলে প্রথম শূন্য, মোট সময় 5 × 0.1 = 0.5 সেকেন্ড। এই অর্ধ-সেকেন্ডই FACTS-এ deadman: ~5 empty polls to stop motion।"
+   },
+   {
+    "latex": "\\[ d = 0.2\\ \\mathrm{m/s} \\times 0.5\\ \\mathrm{s} = 0.1\\ \\mathrm{m} \\]",
+    "text": "শুরুর speed 0.2 m/s-এ সোজা চলতে চলতে চাপ ছাড়লে robot আরও প্রায় 0.1 মিটার গড়িয়ে যায় (সঠিক ব্রেক-দূরত্ব নয় — এই হিসাবে জানালাজুড়ে গতি ধ্রুব ধরা হয়েছে)। q চেপে speed ছাদ 1.0 m/s-এ নিলে একই জানালায় লেজ 0.5 মিটারে দাঁড়ায় — দ্রুত চালালে থামার লেজও সেই অনুপাতে দীর্ঘ, তাই সংকীর্ণ জায়গায় গতি কমিয়ে চালানোই বিচক্ষণতা।"
+   },
+   {
+    "latex": "\\[ \\Delta\\theta = 1.0\\ \\mathrm{rad/s} \\times 0.5\\ \\mathrm{s} = 0.5\\ \\mathrm{rad} \\approx 28.6^{\\circ} \\]",
+    "text": "j চেপে জায়গায় ঘুরছিল robot (x = 0, y = 0, th = 1), চাপ ছাড়লো। 0.5 সেকেন্ডের জানালায় আরও 0.5 radian ঘুরে যায় — radian থেকে ডিগ্রি রূপান্তরে 0.5 × 57.29578 মানে প্রায় 28.6 ডিগ্রি। SLAM চালানোর সময় এই লেজের হিসাব মাথায় রাখা দরকার: map-এর সঙ্গে মিলিয়ে সূক্ষ্ম মোড় দিতে চাইলে চাপ ছাড়ার পরের এই অতিরিক্ত ঘূর্ণনও ঘটে যাবে।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "key = robot_teleop.getKey()",
+    "math": "\\( T \\le 0.1\\ \\mathrm{s} \\;\\Rightarrow\\; f \\approx 10\\ \\mathrm{Hz} \\)",
+    "text": "L165 — এক কলে সর্বোচ্চ 0.1 সেকেন্ড, তাই এটিই লুপের ঘড়ি। এই পিরিয়ড থেকেই publisher-এর 10 Hz ছন্দ (L231/L233) আর deadman-এর প্রতি সেকেন্ডে 10 ধাপ বৃদ্ধি — দুই কাণ্ডই এক শিকড়ের।"
+   },
+   {
+    "code": "count = count + 1",
+    "math": "\\( c_{n+1} = c_n + 1 \\)",
+    "text": "L212 — গণনাকারীর এক ধাপ। শুধু else-branch-এ বাড়ে, মানে খালি পোল বা অচেনা key-তে; চেনা চালার/গতির key-তে L185/L189 একে 0-তে ফেরায়। সময়-ভাষায় এই ঢাল প্রতি সেকেন্ডে প্রায় 10।"
+   },
+   {
+    "code": "if count > 4:",
+    "math": "\\( c > 4 \\iff t_{\\mathrm{empty}} \\ge 5 \\times 0.1\\ \\mathrm{s} = 0.5\\ \\mathrm{s} \\)",
+    "text": "L213 — কঠোর অসমতা, তাই থামা চতুর্থ নয় পঞ্চম পোলে। increment আগে, তুলনা পরে — একই iteration-এ; ফলে 4টি অনুগ্রহ-পোল পেরোনোর পরেই একমাত্র x, y, th শূন্য হয় (L214)। 4 সংখ্যাটি আর 0.1 পিরিয়ড মিলে দাঁড়ায় 0.5 সেকেন্ড।"
+   },
+   {
+    "code": "robot_teleop.pub_cmd_vel.publish(Twist())",
+    "math": "\\( v_x = v_y = \\omega_z = 0 \\ \\text{at} \\approx 10\\ \\mathrm{Hz} \\)",
+    "text": "L233 — pause-এর পাঠানো: সদ্য-জন্মানো Twist, সব field শূন্য, প্রতি পোলে একবার। থামা মানে চুপ নয় — শূন্য-আদেশের ধারাবাহিক stream; লুপ চলাকালীন cmd_vel-এর শেষ বার্তা কখনো 0.1 সেকেন্ডের বেশি পুরনো হয় না।"
+   }
+  ],
+  "failure": [
+   "সবচেয়ে সাধারণ ভুল — চার ধাপে থামা: শর্ত <code>count &gt; 4</code> দেখে ভাবা 4 × 0.1 = 0.4 সেকেন্ড, বা চতুর্থ খালি পোলেই থেমে যাবে। আসলে বৃদ্ধি আগে হয়ে যায়, তুলনা পরে — চতুর্থ পোল শেষে c = 4, শর্ত তখনো মিথ্যা, পুরোনো twist-ই যায়; থামা পঞ্চম পোলে, 0.5 সেকেন্ডে। একই পরিবারের আরও বড় ভ্রান্তি — চাপ ছাড়ার সঙ্গে সঙ্গেই থামবে ভাবা: বরং উল্টো, একটানা i চেপে ছাড়লে robot পুরো 0.5 সেকেন্ড ধরে আগের গতিতেই চলে, 0.2 m/s-এ প্রায় 0.1 মিটার।",
+   "দ্বিতীয় ভুল ধারণা — pause মানে চালক-সংযোগ বিচ্ছিন্ন: মনে করা হয় s চাপলে publisher চুপে যাবে, আর থামার দায় নিচের চাকা-driver-এর হাতে চলে যাবে। আসলে L230-233 উল্টো কথা বলে — pause-এ প্রতিটি পোলে ঠিকই publish হয়, তবে সদ্য-বানানো শূন্য Twist, 10 Hz ছন্দে। আর grace জানালাতেও নীরবতা নেই: ছাড়ার পরের চারটি পোলে পুরোনো ভরা twist-ই বারবার যায়। অর্থাৎ এই লুপে cmd_vel কখনো শূন্য-খবর হয়ে পড়ে না — থামা মানে এখানে শূন্য-বার্তার stream, নীরবতা নয়।"
+  ]
+ },
+ "robot": {
+  "correct": "বাস্তব robot-এ README L7-এর ros2 run yahboomcar_ctrl yahboom_keyboard command চালালেই এই Part জেগে ওঠে: node জন্মানোর সঙ্গে arm ঘরে ফিরে যায়, menu আর বর্তমান-গতির সারি ছাপা হয়, তারপর থেকে প্রতি 0.1 সেকেন্ডে একবার key পড়া হয়। i ধরে রাখলে terminal-এর auto-repeat প্রতি পোলেই i এনে দেয় — প্রতিটি চাপ count-কে শূন্যে ফেলে আর একই দিক-ইঙ্গিত বসায়, ফলে cmd_vel-এ প্রতি সেকেন্ডে প্রায় 10টি একই আদেশ যায় আর চলা মসৃণ থাকে। চাপ ছাড়ার পর ঠিক 0.5 সেকেন্ড (পাঁচটি খালি পোল) পর্যন্ত robot আগের গতিতেই গড়ায় — ডিফল্ট 0.2 m/s-এ প্রায় 0.1 মিটার (গতি ধ্রুব ধরে — ব্রেক-দূরত্ব নয়), j দিয়ে ঘুরলে আরও প্রায় 0.5 radian — তারপর deadman নিজেই শূন্য পাঠিয়ে থামিয়ে দেয়। s চাপলে সব তালা: ব্রেক টানা হয়, আর তারপর থেকে শূন্য-আদেশ 10 Hz ছন্দে চলতে থাকে; এ অবস্থায় arm, গতি সব key নীরব — শুধু আবার s চাপলে ছেড়ে দেওয়া হয়, আর তখনই robot ছুটবে না, নতুন চালার key লাগবে। SPACE তাৎক্ষণিক ব্রেক টানে কিন্তু কিছু আটকে রাখে না — পরের i-তেই চলা ফেরে। Ctrl+C (বা কোনো error) হলে finally-র ব্রেক, terminal-র স্বাভাবিক অবস্থায় ফেরা, node বন্ধ — পরিষ্কার বিদায়। gmapping চালু থাকা SLAM-যাত্রায় এই লুপই robot-এর সিকান্দার: i/, দিয়ে এগোনো, j/l দিয়ে জায়গায় ঘোরা, a/d দিয়ে পাশে সরা — প্রতিটি নড়াচড়ায় map বাড়ে, আর চাপ ছাড়ার পরের 0.5 সেকেন্ডের লেজটুকুও scan-এ জড়িয়ে থাকে।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: চাপ ছাড়ার সঙ্গে সঙ্গে robot থেমে যাবে, বা এক টোকা i মানে এক মুহূর্তের নড়া। আসলে এক টোকাতেও 0.5 সেকেন্ড পূর্ণ চলা যায় — ডিফল্ট গতিতেই প্রায় 0.1 মিটার, তাই সংকীর্ণ জায়গায় এক-টোকা চালানো ঠেলার মতো নয়; আবার চাপ ছেড়ে দেওয়ার 0.4 সেকেন্ড পরে তাকালে robot এখনো চলছে দেখে ভয় পাওয়ার কিছু নেই — 4 নয়, 5 পোল লাগে। দ্বিতীয়: SPACE-কে pause ভাবা — চাপ ছাড়ার পর পরের চালার key-তেই robot আবার চলে; স্থায়ী থামানো s toggle-এর কাজ। তৃতীয়: pause-এ থাকতে w বা 1 চাপলে গতি বা arm নড়বে ভাবা — এই লুপে সেসব key শুধু বার্তা ছাপায়, publisher-ও তখন শূন্যই পাঠায়; ফেরার একটাই রাস্তা, আবার s। চতুর্থ: Ctrl+C দিলে terminal নষ্ট হয়ে যাবে বা robot ছুটতেই থাকবে ভাবা — raw mode-এ চাপটা \\x03 অক্ষর হয়ে break পথে যায়, আর finally ব্রেক টেনে terminal সংস্কার করে নোড বন্ধ করে; তবে উল্টো ভুলে s-পause করে বসে থাকলে robot আর নড়বে না — দ্বিতীয়বার s না চাপা পর্যন্ত লুপ শুধু শূন্যই পাঠাতে থাকে।"
+ },
+ "animType": null
+}

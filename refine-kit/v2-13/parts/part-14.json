@@ -1,0 +1,109 @@
+{
+ "n": 14,
+ "id": "part-14",
+ "fname": "laser_Warning.py",
+ "enTitle": "Deadzone, Damping & Spin-Only Publish",
+ "lang": "python",
+ "start": 111,
+ "end": 124,
+ "flags": [],
+ "explain": [
+  {
+   "a": 112,
+   "b": 112,
+   "text": "L112 <code>print(\"orin_angular.z: \", velocity.angular.z)</code> — sign branch (L106-110) যে মান বসিয়েছে ঠিক সেটাই ছাপা হয়; লাইনের comment <code># Original calculated turn speed</code> বলে দেয় এটি এখনো \"original\": deadzone-ও প্রযোজ্য হয়নি, damping-ও নয়। এটি console debugging-এর baseline — L85-এর <code>minDist</code> আর L99-এর <code>minDistID</code>-এর পরে steering pipeline-এর আগে-পরে দেখানো print জোড়ার প্রথম সদস্য, শেষটি L120-এ। minDistID ঠিক 0.0 হলে কোনো sign branch-ই ঢোকেনি, তাই এখানে 0.0 ছাপা হবে; minDistID positive হলে +u, negative হলে −u।"
+  },
+  {
+   "a": 114,
+   "b": 115,
+   "text": "L114-এর comment <code># Deadzone: If the object is almost directly in front, don't turn.</code> আর L115 সেটাই কোডে করে: <code>if abs(ang_pid_compute) &lt; 0.5: velocity.angular.z = 0.0</code> — এক লাইনেই লেখা compound statement, শর্ত সত্য হলে body সেই লাইনেই চলে। খেয়াল করো: শর্তটি z-কে নয়, PID-এর raw output <code>ang_pid_compute</code>-কে পরীক্ষা করে, আর <code>abs()</code> থাকায় মানটির magnitude-ই দেখা হয় — Kp-view-তে u সাধারণত অঋণাত্মক (illustrative), কিন্তু বড় Kd-এর কোনো transient কখনো ঋণাত্মক করলেও deadzone-টি ঠিকই কাজ করে। 0.5-টি একটি bare magic number, ফাইল কোথাও এর ব্যাখ্যা দেয় না। Kp-only view-তে (illustrative) u = 3·(|a|/72) = |a|/24, তাই শর্তটি আসলে <b>|a| &lt; 12 ডিগ্রি</b>-র সমান: object সামনের দিক থেকে ১২ ডিগ্রির মধ্যে থাকলে turn-ই হবে না। সীমানায় ঠিক 12 ডিগ্রি হলে u = 0.5 ঠিক পড়ে, <code>&lt; 0.5</code> False হয়ে value pass করে যায়, z = ±0.25 বেঁচে থাকে। folder 12-র tracker-এ (Kp=2) এই edge ছিল 18 ডিগ্রি — guard-এর deadzone-টি লক্ষ্যমুখী আরও সরু।"
+  },
+  {
+   "a": 117,
+   "b": 118,
+   "text": "L117-এর comment <code># Slow down the turning speed to 50% so the robot doesn't whip around too fast.</code> আর L118 <code>velocity.angular.z = velocity.angular.z * 0.5</code> — comment ৫০% বলছে আর কোড হুবহু তাই করে (folder 12-র tracker-এ এই জায়গায় 0.6 ছিল, guard আরও ধীরে ঘোরে)। Damping-টি deadzone-এর <b>পরে</b> বসেছে, তাই deadzone-এ শূন্য হওয়া z এখানে 0.0×0.5 = 0.0-ই থাকে — নতুন কোনো turn জন্মায় না; আর pass করা মান অর্ধেক হয়ে যায়। ফলে effective ceiling: cone-এর ধারে |a| 45 ডিগ্রির একেবারে নিচে গেলে u প্রায় 3·(45/72) = 1.875 হয়, damping-এর পরে z প্রায় ±0.9375 rad/s (tracker-টিতে ছিল ±0.75)। Wave A-তে u = 0.583 pass করেছে, তাই এই লাইনের পরে z = +0.292 rad/s।"
+  },
+  {
+   "a": 120,
+   "b": 120,
+   "text": "L120 <code>print(\"angular.z: \", velocity.angular.z)</code> — comment <code># Final turn speed</code>: deadzone ও damping দুই ধাপের পরের চূড়ান্ত মান। L112-এর <code>orin_angular.z</code>-এর সাথে জোড়া বাঁধলে এই দুটি লাইন console-এ পুরো pipeline-টি দেখিয়ে দেয়: Wave D-তে orin −0.833 থেকে final −0.417 (শুধু damping খেয়েছে), Wave F-এ orin +0.333 থেকে final 0.0 (deadzone-ই খেয়ে গেছে)। Debugging-এ orin-কেই final ভেবে নেওয়া সবচেয়ে সহজ ভুল — মানটি এই দুই ধাপে বদলে গেছে।"
+  },
+  {
+   "a": 122,
+   "b": 124,
+   "text": "L122-এর comment <code># Send the movement command to the wheels!</code> আর L124 <code>self.pub_vel.publish(velocity)</code> — L30-এ তৈরি <code>/cmd_vel</code> publisher-এ (depth 1) এই Twist-টি যায়, base driver সেটিকে wheel-এর গতিতে ভাঙে। মাঝের L123-এর comment-টি এই script-এর সবচেয়ে গুরুত্বপূর্ণ স্বীকারোক্তি: <code># Note: linear.x is never set here, so the robot stays perfectly still and just spins in place!</code> — সত্যিই সত্যি: পুরো ফাইলে linear.x কোথাও assign হয় না, linear PID-ও নেই, তাই L98-এর <code>velocity = Twist()</code>-এর default 0.0-ই রয়ে যায়। ফলে publish হওয়া command সবসময় (0, z) আকারের pure-rotation: robot জায়গায় ঘুরে সবচেয়ে কাছের object-মুখী হয়, কিন্তু কখনো তার দিকে এগোয় না — folder 12-র tracker-এর approach আচরণটি এই guard-এ নেই। এটি warning node: মুখ ফেরানো আর বাজানোই কাজ, এগিয়ে গিয়ে ধরা নয়।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত তিনটি প্রশ্নের উত্তর দেয় — PID output কত ছোট হলে turn বাতিল হয় (deadzone), বেঁচে থাকা মান কত হয় (damping), আর publish হওয়া command-এর চূড়ান্ত আকার কী (spin-only Twist)।",
+  "levels": [
+   {
+    "label": "Level 1 — Symbols ও units",
+    "latex": "\\[ u = \\texttt{ang\\_pid\\_compute}, \\qquad z = \\texttt{velocity.angular.z}\\ \\left[\\tfrac{\\mathrm{rad}}{\\mathrm{s}}\\right], \\qquad T_d = 0.5,\\quad \\gamma = 0.5 \\]",
+    "text": "u হলো L103-এর <code>pid_compute</code>-এর raw output — deadzone-এর আগের, damping-এর আগের মান; z হলো শেষে publish হওয়া angular velocity। T_d হলো deadzone-এর threshold আর γ হলো damping factor — দুটোর মানই 0.5, দুটোই bare magic number, ফাইল কোনোটিরই ব্যাখ্যা দেয় না।"
+   },
+   {
+    "label": "Level 2 — Kp-view মৌলিক সম্পর্ক (illustrative)",
+    "latex": "\\[ u = K_p\\,e = 3\\cdot\\frac{|a|}{72} = \\frac{|a|}{24}, \\qquad e = \\frac{|\\mathrm{minDistID}|}{72} \\]",
+    "text": "L103-এ e = |minDistID|/72 ঢুকে গিয়েছিল; Ki = 0 হওয়ায় Kp-only view-তে u দাঁড়ায় শুধু |a|/24 — a হলো সবচেয়ে কাছের object-এর angle (ডিগ্রি)। SinglePID-এর ভেতরের হিসাব এই folder-এ নেই, তাই রূপটি illustrative।"
+   },
+   {
+    "label": "Level 3 — Deadzone-এর algebra",
+    "latex": "\\[ \\frac{|a|}{24} < 0.5 \\;\\Longleftrightarrow\\; |a| < 12^{\\circ} \\;\\Rightarrow\\; z = 0 \\]",
+    "text": "object সামনের দিক থেকে ১২ ডিগ্রির মধ্যে থাকলে turn হয় না — L115 আসলে এই সরু band-টিকেই কোডে লিখেছে। সীমানায় |a| = 12° হলে u = 0.5 ঠিক সমান, <code>&lt; 0.5</code> False হয়ে শর্তটি pass করে — তখন z = ±0.25 বেঁচে যায়। folder 12-র tracker (Kp = 2) একই শর্তে পেয়েছিল 18° — guard-এর deadzone কাছাকাছি offset-গুলোতে আরও strict।"
+   },
+   {
+    "label": "Level 4 — Damping ও effective ceiling",
+    "latex": "\\[ z_{final} = 0.5\\,z_{pre}, \\qquad |a| \\to 45^{-}:\\;\\; z \\to 0.5\\times 3\\times\\tfrac{45}{72} = 0.9375\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "damping deadzone-এর পরে বসেছে, তাই শূন্য থাকা মান শূন্যই থাকে (0×0.5 = 0), আর cone-এর ধারের সর্বোচ্চ মানও অর্ধেক হয়ে যায় — সর্বোচ্চ প্রায় ±0.9375 rad/s (tracker-টিতে ছিল ±0.75)। Comment-এর ৫০% আর কোডের <code>* 0.5</code> হুবহু মিলে যায়।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ e = \\tfrac{14}{72} = 0.194, \\quad u = 3e = 0.583 \\ge 0.5 \\;\\Rightarrow\\; z = 0.5\\times 0.583 = +0.292\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "Wave A (pillar 0.90 m @ +14 deg): deadzone pass, sign branch positive — robot বাঁয়ে (CCW) ঘোরে; 0.90 &gt; 0.55 হওয়ায় buzzer চুপ। সব সংখ্যা Kp-view, illustrative।"
+   },
+   {
+    "latex": "\\[ e = \\tfrac{0}{72} = 0, \\quad u = 0 < 0.5 \\;\\Rightarrow\\; z = 0.0, \\qquad 0.48 \\le 0.55 \\Rightarrow /beep = 1 \\]",
+    "text": "Wave C (0.48 m @ 0 deg): object একেবারে সামনে আর danger zone-এর ভেতরে — L115 deadzone-টি z = 0.0 করে, কিন্তু alarm (L89-95) আগেই fire করে রেখেছে, তাই robot দাঁড়িয়ে শুধু বাজতে থাকে (illustrative)।"
+   },
+   {
+    "latex": "\\[ u = 3\\cdot\\tfrac{8}{72} = 0.333 < 0.5 \\;\\Rightarrow\\; z = 0.0 \\]",
+    "text": "Wave F (0.80 m @ +8 deg): 8 ডিগ্রি ১২ ডিগ্রির band-এর ভেতরে, তাই ছোট offset-টি deadzone-এ চাপা পড়ে — ঘোরে না; দূরত্ব 0.55 m-এর বাইরে বলে buzzer-ও চুপ (illustrative)।"
+   },
+   {
+    "latex": "\\[ u = 3\\cdot\\tfrac{20}{72} = 0.833 \\ge 0.5 \\;\\Rightarrow\\; z = -0.5\\times 0.833 = -0.417\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "Wave D (0.50 m @ −20 deg): sign branch (L109-110) মানটি ঋণাত্মক করেছে, damping-এর পর −0.417 — robot ডানে (CW) ঘোরে, আর 0.50 ≤ 0.55 হওয়ায় বাজতে বাজতেই ঘোরে (illustrative)।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "if abs(ang_pid_compute) < 0.5: velocity.angular.z = 0.0",
+    "math": "\\( |u| < T_d \\;\\Rightarrow\\; z = 0 \\)",
+    "text": "শর্তটি চলে z-এর উপরে নয়, damping-এর আগের u-এর উপরে — কোন turn বাতিল হবে সেই সিদ্ধান্তটি এখানেই হয়; 0.5 threshold-এর কোনো ব্যাখ্যা ফাইলে নেই।"
+   },
+   {
+    "code": "velocity.angular.z = velocity.angular.z * 0.5",
+    "math": "\\( z_{final} = \\gamma\\, z_{pre}, \\;\\gamma = 0.5 \\)",
+    "text": "comment ৫০% বলে আর কোড হুবহু তাই ঘটায় — tracker-এর 0.6-এর বদলে 0.5, অর্থাৎ একই u-তে guard-এর wheel আরও ধীরে ঘোরে।"
+   },
+   {
+    "code": "self.pub_vel.publish(velocity)",
+    "math": "\\( v = (\\,\\underbrace{0,\\ 0}_{\\mathrm{linear}},\\ z\\,) \\)",
+    "text": "linear.x কোথাও set হয়নি বলে published Twist-টির linear অংশ সবসময় সব-শূন্য — একমাত্র অশূন্য field হলো z; এটিই pure rotation, কোনো translation নেই।"
+   }
+  ],
+  "failure": [
+   "Deadzone-এর threshold বাড়িয়ে দিলে ব্যান্ডটি চওড়া হয়ে যায় — সামনের দিকের কাছাকাছি object-গুলোর দিকে robot আর মুখ ফেরায় না, অথচ 0.55 m-এর ভেতরে এলে buzzer বাজতেই থাকে: শব্দ আছে, movement নেই।",
+   "L118-এর damping বাদ দিলে ceiling 0.9375 থেকে লাফিয়ে 1.875 rad/s হয় — comment-এর \"whip around too fast\" সত্যি হয়ে দাঁড়ায়: robot হঠাৎ জোরে ঘুরে যায়, wheel-এর grip আর lidar-এর steering দুটোই খারাপ হয়।",
+   "Deadzone-এর শর্তটি damping-এর পরের z-এর উপরে বসিয়ে দিলে সীমা দ্বিগুণ চওড়া হয়ে যায় — |a| &lt; 24 deg পর্যন্ত সব turn বাতিল হয়ে robot কাছের object-কে ফিরেও তাকায় না।",
+   "Console-এ orin_angular.z-কেই final ভেবে নিলে turn speed দ্বিগুণ বড় মনে হয় — Wave A-তে 0.583 ছাপা হলেও wheel-এ আসলে 0.292 যায়; deadzone ও damping দুই ধাপের ফারাক মিলিয়ে না দেখলে tuning-এ ভুল হয়।",
+   "L123-এর অনুমান ভেঙে কেউ linear.x set করে দিলে spin-only আচরণটি হারিয়ে যায় — robot যে object-এর জন্য warning দিচ্ছে ঠিক তার দিকেই এগোতে শুরু করে, 0.55 m-এর danger zone-এ ঢুকে পড়ে।"
+  ]
+ },
+ "robot": {
+  "correct": "Wave A-তে (pillar 0.90 m @ +14 deg) console-এ পরপর <code>orin_angular.z: 0.583</code> আর <code>angular.z: 0.292</code> ছাপা হয়, আর wheel-গুলো pure spin-এ চলে — বাম দিক পিছনে, ডান দিক সামনে — robot জায়গায় বসে CCW ঘুরে object-মুখী হয়, এক চুলও সামনে যায় না (linear.x = 0.0); 0.90 &gt; 0.55 হওয়ায় buzzer চুপ। Wave C-তে (0.48 m, একেবারে সামনে) deadzone z = 0.0 করে দেয় — robot দাঁড়িয়ে থেকে শুধু বাজতে থাকে, lidar-এর ring ঘুরতেই থাকে। Wave D-তে (0.50 m @ −20 deg) বাজতে বাজতে −0.417 rad/s-এ ডানে ঘোরে। প্রতিটি scan-এ এই chain আবার চলে, তাই object সরলে দিক বদলে যায় — এগোনো কখনো হয় না।",
+  "incorrect": "Damping-টি (L118) উঠে গেলে প্রতিটি publish-এ wheel-এ 1.875 rad/s পর্যন্ত যেতে পারত — robot হঠাৎ ঝাঁকুনি দিয়ে ঘুরে যেত, ঘুরন্ত অবস্থায় lidar-এর scan-ও ঘোলা হয়ে object-এর দিক নির্ভুল বের করতে ভুল করত। Deadzone-এর threshold বেশি চওড়া হলে সামনের কাছের object-কে ফিরে তাকানোই বাদ পড়ত — buzzer বাজছে কিন্তু robot নীরব-স্থির, মনে হতো warning-টি ভুল। আর এই node-এর উপরে approach আশা করা ভুল — linear.x কোথাও set হয়নি, তাই object এগিয়ে এলে দূরত্ব কমার একমাত্র কারণ object-নিজেই এগিয়ে আসা; কেউ linear drive যোগ করে দিলে robot danger zone-এ ঢুকে যাওয়া বিপদটিকেই নিজে তৈরি করত।"
+ },
+ "animType": "cmdVelVectors"
+}

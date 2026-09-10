@@ -1,0 +1,89 @@
+{
+  "n": 11,
+  "id": "part-11",
+  "fname": "laser_Tracker.py",
+  "enTitle": "Closest Beam & Override Gates",
+  "lang": "python",
+  "start": 73,
+  "end": 88,
+  "flags": [],
+  "explain": [
+    {
+      "a": 73,
+      "b": 75,
+      "text": "Beam-লুপ (L65-72) শেষ হওয়ার পর এই decision point-এ আসা হয়। লুপ থেকে <code>minDistList</code> আর <code>minDistIDList</code> দুটো parallel list ভরে গেছে — প্রতিটা গ্রহণকৃত বিমের জন্য distance আর angle একসাথে append হয় (L71-72), তাই দুটোর দৈর্ঘ্য সবসময় সমান। L75-এর <code>if len(minDistList) != 0:</code> guard শুধু distance-list-এর দৈর্ঘ্য দেখে। List ফাঁকা মানে একটাও বিম L70-এর দুই শর্ত — <code>abs(angle) &lt; self.LaserAngle</code> আর <code>ranges[i] !=0.0</code> — পাস করেনি; অর্থাৎ tracker-এর চোখে সামনের ±45° cone-এ ট্র্যাক করার মতো কিছু নেই।"
+    },
+    {
+      "a": 76,
+      "b": 77,
+      "text": "<code>minDist = min(minDistList)</code> — Python-এর built-in <code>min()</code> পুরো list একবার স্ক্যান করে সবচেয়ে ছোট দূরত্বটা বের করে; ইউনিট মিটার। Illustrative fused ring-এ front cone-এ ৮৯টা বিম থাকতে পারে, কিন্তু ট্র্যাকিং-এর জন্য দরকার একটাই সংখ্যা: সবচেয়ে কাছের বস্তুর দূরত্ব। এই মানটাই পরে <code>self.ResponseDist</code> (0.55 m) এর সাথে তুলনা হবে (L96, L102), তাই min বেছে নেওয়াটাই আসল টার্গেট-নির্বাচন সিদ্ধান্ত।"
+    },
+    {
+      "a": 78,
+      "b": 79,
+      "text": "<code>minDistID = minDistIDList[minDistList.index(minDist)]</code> — এটা হাতে-লেখা argmin, দুই ধাপে: <code>minDistList.index(minDist)</code> খুঁজে দেয় সবচেয়ে ছোট দূরত্ব list-এর কোন position-এ আছে, তারপর parallel list থেকে ঠিক সেই position-এর angle-টা তোলা হয়। নাম দেখে বিভ্রান্ত হবেন না — <code>minDistID</code> কোনো index নয়, এটা ওই বিমের angle, degree-তে (L67-এ গণনা করা)। Tie-এর ক্ষেত্রে <code>index()</code> FIRST occurrence ফেরত দেয়: একাধিক বিম একই দূরত্বে থাকলে যে বিমের i সবচেয়ে ছোট সেটাই জেতে; illustrative ring-এ angle = -180 + i হওয়ায় জেতে সবচেয়ে negative angle-এর বিমটা।"
+    },
+    {
+      "a": 80,
+      "b": 83,
+      "text": "else-branch মানে cone একদম খালি। L82-এর <code>print(\"-----------------------\")</code> console-এ dashes-এর একটা লাইন ছাপে — এই callback প্রতিটা /scan message-এ চলে, তাই সামনে কিছু না থাকলে এই লাইনটা scan rate-এ বারবার terminal-এ ভাসতে থাকবে। এরপর L83-এর bare <code>return</code> callback থেকে বেরিয়ে যায়। সবচেয়ে গুরুত্বপূর্ণ ব্যাপার: এই পথে কোনো publish নেই — <code>/cmd_vel</code>-এ শেষ পাঠানো command-টাই জ্যান্ত থাকে, মোটর এখানে stop করা হয় না। শেষ command সামনে যাওয়ার হলে চাকা সেই গতিতেই ঘুরতে থাকবে; এটা নীরবতা, active brake নয়। আর যেহেতু return-টা L86-এর আগেই, Joy_active-এর brake-ও এই পথে আর ডাকা হয় না।"
+    },
+    {
+      "a": 84,
+      "b": 86,
+      "text": "Search-এর পরের দ্বিতীয় gate: <code>if self.Joy_active :</code> (colon-এর আগের space-টা source-এই আছে, পরিষ্কার করা হয়নি)। Flag-টা set করে <code>JoyStateCallback</code> (L54), যেটা /JoyState topic-এ human-এর joystick-এর Bool পায় — True মানে human ড্রাইভ করছে, AI pause। লক্ষণীয়, guard-টা search-এর পরে বসানো: minDist/minDistID হিসাব হয়ে যাওয়ার পরেও ফল ব্যবহার হবে না। Flag hold থাকাকালীন এই branch প্রতিটা scan-এ আবার আবার চলবে।"
+    },
+    {
+      "a": 87,
+      "b": 88,
+      "text": "<code>self.pub_vel.publish(Twist())</code> — fresh <code>Twist()</code> মানে সব field শূন্য (<code>linear.x</code>, <code>angular.z</code> সবকটা 0.0), অর্থাৎ এটা একটা active brake। Else-branch-এর নীরবতার ঠিক উল্টো: এখানে flag hold করা অবস্থায় প্রতিটা /scan-এ zero-Twist আবার পাঠানো হয় — brake-টা scan rate-এ বারবার refresh হয়, তাই একটা পুরনো অ-শূন্য command এই channel-এ টিকে থাকতে পারে না। এরপর L88-এর <code>return</code> বাকি সব স্কিপ করে দেয়: velocity-বিল্ডিং (L90-125), minDist/minDistID-এর console print (L91-92), PID-দের চলা — কোনোটাই এই scan-এ ঘটবে না।"
+    }
+  ],
+  "math": {
+    "intro": "এই Part-এর গণিত argmin-এর প্রশ্নের উত্তর দেয়: সামনের cone-এর গ্রহণকৃত বিমগুলোর ভিড় থেকে সবচেয়ে কাছের বিমটা কোনটা, তার angle কত, tie-তে কে জেতে, আর list ফাঁকা হলে কোন পথটা খোলে।",
+    "levels": [
+      {
+        "label": "Level 1 — Symbols & units",
+        "latex": "\\[ d^{*}=\\min_k d_k\\ \\mathrm{(m)}, \\qquad \\theta^{*}=\\theta_{k^{*}}\\ \\mathrm{(deg)}, \\qquad k^{*}=\\mathrm{index}(d^{*}) \\]",
+        "text": "minDistList-এর k-তম entry হলো d_k (মিটারে দূরত্ব), parallel list minDistIDList-এর ওই একই entry হলো theta_k (degree-তে angle, L67-এ বের করা)। k* মানে জয়ী বিমের list-position — source সেটাকে minDistList.index(minDist) দিয়ে খুঁজে তারপর minDistIDList থেকে angle তোলে।"
+      },
+      {
+        "label": "Level 2 — argmin ও tie-break",
+        "latex": "\\[ k^{*}=\\min\\{\\,k:\\ d_k=d^{*}\\,\\} \\]",
+        "text": "Tie-এর নিয়ম: একাধিক বিম একই দূরত্বে থাকলে Python-এর index() প্রথম occurrence ফেরত দেয়, তাই k* হলো সবচেয়ে ছোট i-এর বিম (np.argmin-ও একই আচরণ করে)। Illustrative fused ring-এ angle_i = -180 + i, তাই ছোট i মানে বেশি negative angle — tie-এ জেতে সবচেয়ে negative angle-এর বিম, মানে robot-এর ডান-সামনের দিকটা। খেয়াল রাখুন, min() আর index() মিলে মোট দুইবার list স্ক্যান হয়।"
+      }
+    ],
+    "numeric": [
+      {
+        "latex": "\\[ \\min(\\mathrm{minDistList})=0.90\\ \\mathrm{m}, \\qquad \\mathrm{minDistID}=+12^{\\circ} \\]",
+        "text": "Wave A (illustrative): সামনে একটাই pillar, 0.90 m দূরে +12 ডিগ্রিতে। Guard পাস করে, minDist = 0.90, minDistID = +12 — এই দুটো মানই পরের Part-গুলোর linear ও angular PID-এর ইনপুট হয়ে যায়।"
+      },
+      {
+        "latex": "\\[ \\mathrm{minDistList}=[0.90,\\,0.70,\\,0.70], \\quad \\mathrm{index}(0.70)=1 \\ \\Rightarrow\\ \\theta^{*}=-15^{\\circ} \\]",
+        "text": "Tie (illustrative): minDistIDList = [-29, -15, +20] ধরুন — ডান-সামনে -15 ডিগ্রিতে আর বাঁ-দিকে +20 ডিগ্রিতে দুটো বস্তুই 0.70 m দূরে। index() প্রথম occurrence নেয় (ছোট i, negative angle), তাই minDistID = -15 — ডান-দিকের বস্তু জেতে, ঠিক সমান কাছের বাঁ-দিকেরটা বাদ পড়ে।"
+      }
+    ],
+    "mapping": [
+      {
+        "code": "minDist = min(minDistList)",
+        "math": "\\( d^{*}=\\min_k d_k \\)",
+        "text": "পুরো front-cone ভিড় একটা scalar-এ ভাঁজ হয়ে যায়; L96-এর deadzone আর L102-এর linear PID এই d*-ই ব্যবহার করে।"
+      },
+      {
+        "code": "minDistID = minDistIDList[minDistList.index(minDist)]",
+        "math": "\\( \\theta^{*}=\\theta_{k^{*}},\\;\\; k^{*}=\\text{first } k \\text{ with } d_k=d^{*} \\)",
+        "text": "দুই পাসের argmin: min() খোঁজে মান, index() খোঁজে position, তারপর parallel list থেকে angle। np.argmin না ব্যবহার করে list-idiom-এই কাজটা করা হয়েছে।"
+      }
+    ],
+    "failure": [
+      "List ফাঁকা হলে else-branch-এ কোনো publish হয় না — শেষ command যদি Wave B-এর মতো সামনে যাওয়ার হয়, তাহলে সামনের corridor খালি হয়ে গেলেও চাকা সেই পুরনো গতিতেই ঘুরতে থাকে; মোটর stop করার দায়িত্ব এই branch-এর নেই, সেটা শুধু Joy_active-এর zero-Twist (L87) বা exit_pro-র shell brake (L133) করে।",
+      "Tie-তে সবসময় most-negative angle জেতে: দুটি সমান-দূরত্বের বস্তুর ক্ষেত্রে robot ডান-দিকেরটাকে lock করে ডানে ঘোরে, যদিও বাঁ-দিকের বস্তু ঠিক ততটাই কাছে — বাছাইটা শুধু distance-ভিত্তিক, মাঝামাঝি বা সাম্প্রতিকতার কোনো নীতি নেই।",
+      "L70-এর ছাঁকনি শুধু ঠিক 0.0-ই বাদ দেয়; upstream chain যদি no-return বিমের inf-কে 0.0 করে না দেয়, তাহলে খোলা corridor-এ inf-ও minDistList-এ ঢুকতে পারে। সব গ্রহণকৃত রিডিং-ই inf হলে min(minDistList) = inf — len-guard পাস করে যায়, কিন্তু পরের Part-গুলোর PID-এর ইনপুট আবর্জনা হয়ে যায়।"
+    ]
+  },
+  "robot": {
+    "correct": "সামনে 0.90 m দূরে +12°-এ pillar থাকলে (Wave A, illustrative) guard পাস করে: minDist = 0.90 আর minDistID = +12 বের হয়, আর পরের লাইনে console-এ সেই মানগুলো ছাপা হয়। Human joystick-এ pause দিলে (Joy_active = True) প্রতিটা scan-এ শূন্য Twist /cmd_vel-এ যায় — দুই চাকা সক্রিয়ভাবে শূন্য গতিতে আটকে থাকে, robot দাঁড়িয়ে থাকে আর lidar ঘুরতেই থাকে। সামনে কিছু না থাকলে console-এ শুধু dashes-এর লাইন আসে, চাকায় নতুন কোনো command যায় না।",
+    "incorrect": "সামনের corridor খালি হওয়ার আগে শেষ command যদি সামনে যাওয়ার হয়, তাহলে else-branch নতুন কিছু না পাঠিয়ে নীরব হয়ে যায় — মোটর পুরনো গতিতেই চালিয়ে যায়, robot বাধা ছাড়া এগিয়ে যেতে থাকে। দুটি সমান-দূরত্বের বস্তুতে (0.70 m at -15° ও +20°, illustrative) tie নিয়মে ডান-দিকেরটা জেতে — robot বাঁ-দিকের সমান-কাছের বস্তুটাকে ফেলে ডানে ঘুরে যায়। আর inf যদি একমাত্র গ্রহণকৃত রিডিং হয়, minDist = inf হয়ে পরের PID-গুলো অর্থহীন মান নিয়ে চলে।"
+  },
+  "animType": null
+}

@@ -145,7 +145,7 @@ class LineDetect(Node):
 				self.Track_state = 'tracking'
 
 	def callback(self,color_frame,depth_frame):
-        # opencv
+        # 将画面转为 opencv 格式
 		rgb_image = self.rgb_bridge.imgmsg_to_cv2(color_frame,'rgb8')
 		rgb_image = np.copy(rgb_image)
 

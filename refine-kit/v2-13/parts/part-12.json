@@ -1,0 +1,124 @@
+{
+ "n": 12,
+ "id": "part-12",
+ "fname": "laser_Warning.py",
+ "enTitle": "Alarm Logic — Danger Zone & Buzzer",
+ "lang": "python",
+ "start": 86,
+ "end": 95,
+ "flags": [],
+ "explain": [
+  {
+   "a": 87,
+   "b": 88,
+   "text": "L87-এর banner <code># --- THE ALARM LOGIC ---</code> block-টির নাম দেয়, আর L88 কাজটা বলে: <code># If the closest object is inside the Danger Zone (0.55m)...</code> — Danger Zone মানে সামনের 0.55 মিটারের ব্যান্ড, যার সংখ্যাটি L41-42-এ <code>ResponseDist</code> parameter থেকে আসে। folder 12-এর laser_Tracker-এ এই block-টিই ছিল না — <code>/beep</code> channel নতুন, আর এই কয়েক লাইনই guard-কে tracker থেকে আলাদা করে এমন সিদ্ধান্ত-অংশ। নিচের tracking logic-এর (L97-এর পর) সাথে এর সম্পর্ক সম্পূর্ণ parallel: alarm শুধু distance দেখে, steering শুধু angle — একই <code>minDist</code>-এর দুই জন আলাদা ভোক্তা।"
+  },
+  {
+   "a": 89,
+   "b": 89,
+   "text": "L89 <code>if minDist &lt;= self.ResponseDist and minDist != 0.0:</code> — দুটি clause একটি <code>and</code>-এ বাঁধা। প্রথমটিই মূল প্রশ্ন: সবচেয়ে কাছের object কি 0.55 m-এর ভেতরে বা ঠিক সীমানায়? <code>&lt;=</code> inclusive, তাই হুবহু 0.55 m-ও zone-এর ভেতরে গণ্য। দ্বিতীয় clause-টি belt-and-suspenders — L68-এর cone filter <code>ranges[i] !=0.0</code> ইতিমধ্যেই exact 0.0-কে list-এ ঢুকতে দেয়নি, তাই এখানে <code>minDist</code> আসলে কখনো 0.0 হতেই পারে না; clause-টি কেবল দ্বিতীয় প্রহরী। বিশেষ মানগুলো: <code>inf &lt;= 0.55</code> False, তাই সব-ইনফ cone নিচের else-এ গিয়ে buzzer চুপ করায়; আর NaN-এর সাথে কোনো comparison-ই সত্য হয় না — <code>minDist &lt;= self.ResponseDist</code> False হয়ে পুরো শর্ত False, ফলে NaN-ও else branch-এ পড়ে।"
+  },
+  {
+   "a": 90,
+   "b": 91,
+   "text": "L90 <code>b = UInt16()</code> — খালি constructor-এ default <code>data = 0</code> সহ একটি message তৈরি হয়, তারপর L91 <code>b.data = 1               # 1 means BEEP!</code> সেই মানটিকে 1 করে (১-এর পরে comment-অবধি লম্বা space-run-টি source-এই আছে)। UInt16-এর একটিই field — <code>data</code>, unsigned 16-bit, সীমা 0 থেকে 65535; কিন্তু vendor convention এখানে মাত্র দুটি মান চেনে: 1 = beep ON, 0 = beep OFF — L6-এর comment বলেই এটি buzzer ON/OFF-এর message type। খেয়াল করো, ON-এর পথ দুই লাইনে লেখা — construct করা, তারপর assign করা; নিচের OFF-পথ দেখবে একই কাজ এক লাইনেই সেরে ফেলে।"
+  },
+  {
+   "a": 92,
+   "b": 92,
+   "text": "L92 <code>self.pub_Buzzer.publish(b)</code> — তৈরি করা message-টি <code>/beep</code> topic-এ বেরোয়; publisher-টি L32-তে <code>create_publisher(UInt16,'/beep',1)</code> দিয়ে বানানো, queue depth 1। hardware-এর দিক থেকে এটি কোনো one-shot trigger নয় — একটি level command, যেটি object zone-এ থাকা অবধি প্রতিটি scan-এ বারবার যায়। illustrative Wave C-তে (0.48 m @ 0 deg) এই branch-ই চলে: console-এ <code>minDist: 0.48</code> লাইনের পরপরই buzzer বাজতে থাকে, আর একই scan-এর steering chain deadzone-এ গিয়ে <code>angular.z</code>-কে 0.0 রাখে — অর্থাৎ robot জায়গায় স্থির দাঁড়িয়ে বাজতে থাকে।"
+  },
+  {
+   "a": 93,
+   "b": 94,
+   "text": "L93 <code>else:</code> — উপরের শর্ত মিথ্যা হলেই এই পথ: object zone-এর বাইরে, কিংবা মানটি <code>inf</code>/NaN-এর মতো তুলনায় টেকে না এমন কিছু — সবাই এখানেই নামে। L94-এর comment <code># If the object is outside the danger zone, turn the buzzer off (0).</code> পরের লাইনের কাজ আগেই ব্যাখ্যা করে দেয়: এখন buzzer বন্ধ করতে হবে, আর বন্ধের মান 0।"
+  },
+  {
+   "a": 95,
+   "b": 95,
+   "text": "L95 <code>self.pub_Buzzer.publish(UInt16()) </code> — নতুন <code>UInt16()</code> inline বানিয়ে সরাসরি publish করা হলো (লাইনের শেষে একটি trailing space source-এ আছে); default constructor-এর <code>data</code> মান 0, তাই এটিই BEEP OFF। L90-91-এর দুই-লাইন কাজ এখানে এক লাইনে — কোনো variable লাগে না, কারণ 0-ই তো default। আসল তফাতটা অন্য জায়গায়: এই OFF মানটি object visible থাকা অবধি <b>প্রতিটি</b> scan-এ বারবার publish হয় — buzzer-এর signal level-ধর্মী, প্রতি scan-এ refresh হয়, edge event নয়। আর ঠিক এ কারণেই দুটি early return বিপজ্জনক: L73 (খালি cone) ও L81-83 (Joy) — দুটোই alarm block-এর আগেই ফিরে যায়, refresh বাদ পড়ে, আর <code>/beep</code> তার শেষ state-এ latch হয়ে থাকে — এটাই buzzer-stays-on trap; illustrative Wave E-তে D-এর beep ON ঠিক এভাবেই আটকে থাকে।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটিই প্রশ্নের চারপাশে — এই scan-এ buzzer বাজবে কি না — আর উত্তরটি দাঁড়ায় দূরত্ব-অক্ষে একটি half-open ব্যান্ড, একটি inclusive সীমানা, আর hysteresis-এর সম্পূর্ণ অনুপস্থিতি মিলিয়ে।",
+  "levels": [
+   {
+    "label": "Level 1 — তিনটি symbol ও তাদের unit",
+    "latex": "\\[ d_{min}\\ \\text{[m]}, \\qquad R = \\mathit{ResponseDist} = 0.55\\ \\text{[m]}, \\qquad b \\in \\{0,\\, 1\\} \\]",
+    "text": "d_min হলো L76-এর <code>min(minDistList)</code>-এর ফল — এই scan-এ সামনের cone-এর সবচেয়ে কাছের valid দূরত্ব। R হলো L41-42-এ declare করা <code>ResponseDist</code> parameter, ডিফল্ট 0.55 মিটার — vendor-এর ভাষায় Danger Zone-এর সীমা। b হলো <code>/beep</code>-এ পাঠানো UInt16 message-এর <code>data</code> মান; type-টি 0 থেকে 65535 ধরলেও vendor convention মাত্র দুটি মান ব্যবহার করে — 1 = beep ON, 0 = beep OFF।"
+   },
+   {
+    "label": "Level 2 — সিদ্ধান্ত-সমীকরণ (predicate)",
+    "latex": "\\[ b = \\begin{cases} 1, & (d_{min} \\le R) \\wedge (d_{min} \\ne 0) \\\\ 0, & \\text{otherwise} \\end{cases} \\]",
+    "text": "L89-এর দুই clause-এর AND-ই পুরো সমীকরণ। truth table ছোট: প্রথম clause False হলেই পুরো শর্ত False — Python-এর <code>and</code> short-circuit করে, দ্বিতীয়টি তখন আর মূল্যায়নই হয় না — আর else branch-এ যাওয়ার পথ তৈরি। দ্বিতীয় clause-টি ব্যবহারিকভাবে redundant (L68-এর cone filter আগেই exact 0.0 বাদ দিয়েছে), কিন্তু ভবিষ্যতে কেউ filter-টা বদলালে এটিই দ্বিতীয় প্রহরী হয়ে দাঁড়ায়।"
+   },
+   {
+    "label": "Level 3 — দূরত্ব-অক্ষে half-open ব্যান্ড",
+    "latex": "\\[ \\mathcal{D}_{\\mathrm{ON}} = \\{\\, d \\in \\mathbb{R} : 0 < d \\le 0.55 \\,\\} = (0,\\ 0.55]\\ \\text{[m]} \\]",
+    "text": "সংখ্যা-রেখায় ON-অঞ্চল একটি half-open interval — দূরের প্রান্তে closed (<code>&lt;=</code> বলে ঠিক 0.55 অন্তর্ভুক্ত), কাছের প্রান্তে open (0 বাদ)। অর্থাৎ object ঠিক 0.55 m-এ দাঁড়ালেও beep হবে, কিন্তু মান 0 হলে হবে না — যে অবস্থাটি প্রয়োগে কখনো আসেই না, কারণ cone filter 0.0-কে আগেই ফেলে দিয়েছে। এই ব্যান্ডটাই animation-এর distance-axis-এ রঙিন zone হিসেবে দেখা যায়: 0-এর ঠিক পরে থেকে 0.55-সহ পর্যন্ত।"
+   },
+   {
+    "label": "Level 4 — Hysteresis সম্পূর্ণ অনুপস্থিত",
+    "latex": "\\[ H = R_{\\mathrm{off}} - R_{\\mathrm{on}} = 0.55 - 0.55 = 0 \\]",
+    "text": "থার্মোস্ট্যাট-ধাঁচের alarm দুটি সীমা রাখে — কাছে গেলে ON (R_on), আরও দূরে গেলে OFF (R_off &gt; R_on); ফলে সীমানার গায়ে মান কাঁপলেও অবস্থা সহজে বদলায় না। এখানে ON আর OFF দুটোই একই 0.55 পড়ে — hysteresis-এর প্রস্থ H = 0। সুতরাং 0.55 m-এর গায়ে hover করা object-এর দূরত্ব lidar-এর noise-এ সামান্য দুললেই b প্রতি scan-এ উল্টে যেতে পারে — এটাই chatter।"
+   },
+   {
+    "label": "Level 5 — Scan-দৃষ্টিতে level signal ও latch",
+    "latex": "\\[ b_k = \\begin{cases} 1, & 0 < d_k \\le 0.55 \\\\ 0, & \\text{else} \\end{cases} \\quad \\text{(each scan)}, \\qquad \\text{refresh skipped} \\Rightarrow b_k = b_{k-1} \\]",
+    "text": "k নম্বর scan-এ callback যদি L89 পর্যন্ত পৌঁছায়, buzzer-এর মান সেই scan-এর d_k থেকে নতুন করে হিসাব হয় — level signal, প্রতি scan-এ refresh। কিন্তু L73 (খালি cone) বা L81-83 (Joy) পথে callback আগেই ফিরলে refresh-ই হয় না; <code>/beep</code> topic-এ শেষ publish-কৃত মানটি পড়ে থাকে — b_k = b_{k-1}, অর্থাৎ latch। এই একটি সমীকরণই ব্যাখ্যা করে কেন সামনে কিছু না থাকা বা মানুষের joystick ধরার সময়ও বেজে-ওয়া buzzer চুপ হয়ে যায় না।"
+   },
+   {
+    "label": "Level 6 — সীমানায় chatter-এর সম্ভাবনা",
+    "latex": "\\[ d_k = R + \\varepsilon_k, \\quad \\varepsilon_k\\ \\text{zero-mean noise} \\ \\Rightarrow\\ P(b_k = 1) = P(\\varepsilon_k \\le 0) = \\tfrac{1}{2} \\]",
+    "text": "object হুবহু সীমানায় (d = 0.55 m) থাকলে আর measurement noise ε শূন্য-কেন্দ্রিক হলে (illustrative ধরে নেওয়া) যেকোনো একটি scan-এ beep হওয়ার সম্ভাবনা অর্ধেক — scan-গুলোর একটি বড় অংশে 1, বাকিটায় 0। ফলে দীর্ঘ সময় ধরে buzzer scan rate-এ on-off করা একটা কাঁপা শব্দ ছাড়া আর কিছু না। hysteresis থাকলে (যেমন R_on = 0.55, R_off = 0.65) object-কে সত্যিই 0.65 m পেরোতে হতো OFF হতে — এই সম্ভাবনা-ঘড়ি তখন বন্ধ।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 0.48 \\le 0.55\\ (\\text{True}) \\ \\wedge\\ 0.48 \\ne 0.0\\ (\\text{True}) \\ \\Rightarrow\\ b = 1 \\]",
+    "text": "illustrative Wave C (0.48 m @ 0 deg): দুই clause-ই True, তাই if-branch — <code>b.data = 1</code>, buzzer বাজে। একই scan-এ steering chain-এ e = 0/72 = 0 হওয়ায় deadzone robot-কে স্থির রাখে: শরীর থেমে আছে, শব্দ চালু আছে।"
+   },
+   {
+    "latex": "\\[ 0.55 \\le 0.55\\ (\\text{True}) \\ \\Rightarrow\\ b = 1 \\quad \\text{(closed boundary)} \\]",
+    "text": "boundary-numeric: <code>&lt;=</code> inclusive বলে ঠিক 0.55 m-এ বসে থাকা object-ও zone-এর ভেতরে গণ্য — buzzer বাজবে। vendor L41-এর comment যে সংখ্যাটিকে The \"Danger Zone\" distance (0.55 meters) বলে, L89-এর তুলনা সেই সংখ্যাটিকেই ON-অঞ্চলের ভেতরে রাখে, বাইরে নয়।"
+   },
+   {
+    "latex": "\\[ 0.70 \\le 0.55\\ (\\text{False}) \\ \\Rightarrow\\ \\text{else}: b = 0, \\qquad \\infty \\le 0.55\\ (\\text{False}) \\ \\Rightarrow\\ b = 0 \\]",
+    "text": "illustrative Wave B (0.70 m @ +20 deg): প্রথম clause-ই False, else branch <code>UInt16()</code>-এর default 0 পাঠায় — buzzer চুপ, আর এই OFF object visible থাকা অবধি প্রতিটি scan-এ বারবার publish হয়। সব qualifying beam-ই <code>inf</code> এমন cone-ও একই পথে নামে — <code>inf &lt;= 0.55</code> False।"
+   },
+   {
+    "latex": "\\[ d_k = 0.5499 \\Rightarrow b_k = 1, \\qquad d_k = 0.5501 \\Rightarrow b_k = 0 \\]",
+    "text": "illustrative chatter: পরপর দুই scan-এ দূরত্ব 0.5499 আর 0.5501 হলে buzzer প্রথমটায় বাজে, দ্বিতীয়টায় চুপ; তৃতীয় scan-এ আবার 0.5499 হলে আবার বাজে। hysteresis H = 0 বলে মাত্র 0.2 mm দোলাতেই অবস্থা উল্টে যায় — scan rate-এ চলা এই toggling-ই chatter, আর animation-এর distance-axis-এ object-টি সীমানা-রেখার ঠিক গায়ে দাঁড়িয়ে থাকলে বাজার-থামার এই কাঁপুনি দেখা যায়।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "if minDist <= self.ResponseDist and minDist != 0.0:",
+    "math": "\\( b = \\mathbf{1}\\left[ (d_{min} \\le R) \\wedge (d_{min} \\ne 0) \\right] \\)",
+    "text": "দুই clause-এর AND-কে একটি indicator-এ ভাঁজ করা যায় — শর্ত সত্য হলে 1, নাহলে 0। কল-অর্ডার খেয়াল করো: তুলনাটি <code>minDist &lt;= self.ResponseDist</code> — বাঁয়ে এই scan-এর মাপা মান, ডানে parameter; দ্বিতীয় clause-টি L68-এর আগের ছাঁকনির সাথে মিলে গিয়ে কার্যত প্রতিরক্ষামূলক।"
+   },
+   {
+    "code": "b.data = 1               # 1 means BEEP!",
+    "math": "\\( b = 1 \\)",
+    "text": "L90-এর <code>UInt16()</code> প্রথমে default 0 নিয়ে জন্মায়, তারপর এই assignment সেটিকে 1 করে — অর্থাৎ ON বানাতে দুই ধাপ লাগে। <code>data</code> ছাড়া UInt16-এর আর কোনো field নেই, তাই message-টির একটাই অস্তিত্ব: এই সংখ্যাটি।"
+   },
+   {
+    "code": "self.pub_Buzzer.publish(UInt16()) ",
+    "math": "\\( b = 0 \\)",
+    "text": "else-পথে variable নেই — default constructor-এর <code>data = 0</code> মানটাই inline temporary হিসেবে সোজা publish হয়ে যায়; লাইনের শেষ trailing space-টি source-fidelity। গাণিতিকভাবে এটি Level 2-এর সমীকরণের দ্বিতীয় লাইন: otherwise-এর মান 0।"
+   }
+  ],
+  "failure": [
+   "<code>ResponseDist</code> খুব বড় করে দিলে (যেমন 5.0) ঘরের দেয়াল বা 2 m দূরের জিনিসও zone-এ পড়ে — প্রতিটি scan-এ b = 1, buzzer সত্যিকারের constant বাজতে থাকে। alarm তখন তথ্য দেয় না, শুধু শব্দ দেয়; কিছুক্ষণ পরেই মানুষ beep-কে উপেক্ষা করা শিখে ফেলে।",
+   "<code>ResponseDist</code> খুব ছোট করলে (যেমন 0.05) উল্টো বিপদ: obstacle প্রায় contact-এর দূরত্বে না এলে শর্তই সত্য হয় না — buzzer প্রায় সবসময় চুপ, ঠিক ধাক্কার আগ মুহূর্তে হয়তো কয়েকটি scan বাজে। কার্যত silent-until-contact: guard নামের script-টি সতর্কতার কাজটাই করতে পারে না।",
+   "Hysteresis না থাকায় (H = 0) ঠিক 0.55 m-এ hover করা object-এ noise-এর দোলায় b প্রতি scan-এ flip করে — buzzer scan rate-এ on-off করে কাঁপতে থাকে (chatter)। শব্দটা অসংলগ্ন শোনায়, আর বারবার চালু-বন্ধ হওয়া buzzer-এর নিজের আয়ুও কমে।",
+   "else branch-টি মুছে ফেললে out-of-zone scan-গুলোতে আর কেউ 0 publish করে না — প্রথমবার b = 1 যাওয়ার পরই <code>/beep</code>-এ সেই 1 latch হয়ে যায়। খোলা মাঠে একা দাঁড়িয়েও robot বাজতেই থাকে; L73/L83-এর সাময়িক latch-ফাঁদ তখন স্থায়ী রূপ নেয়।",
+   "<code>&lt;=</code>-এর জায়গায় <code>&lt;</code> লিখে ফেললে closed সীমানাটি খুলে যায় — ঠিক 0.55 m দূরত্বে থাকা object-এর জন্য শর্ত False হয়ে else-এ পড়ে, buzzer চুপ থাকে। vendor নিজেই যে সংখ্যাটিকে Danger Zone-এর সীমা বলে চিহ্নিত করেছে, সীমানার ঠিক ওই বিন্দুতে দাঁড়ানো object সেটিকে বিশ্বাস করাতে পারে না।"
+  ]
+ },
+ "robot": {
+  "correct": "illustrative Wave C-তে (0.48 m @ 0 deg) L89 সত্যি হওয়ায় প্রতিটি scan-এ <code>/beep</code>-এ 1 যায় — buzzer টানা বাজতে থাকে, console-এ <code>minDist: 0.48</code> লাইন নামে, আর deadzone-এর কারণে <code>angular.z = 0.0</code> হওয়ায় চাকা স্থির — lidar ঘুরছে, শরীর দাঁড়িয়ে, শব্দ চালু। Wave B-তে (0.70 m @ +20 deg) else branch প্রতিটি scan-ে default-0 publish করে buzzer চুপ রাখে, আর robot একই scan-এর steering chain মেনে +0.417 rad/s-এ বাঁদিকে ঘোরে। Wave D-এর (0.50 m, in-zone) পরে Wave E এলে (সামনে কোনো valid beam নেই) L73-এর return আসার আগে alarm block পড়েই না — <code>/beep</code> D-এর 1-ই latch করে রাখে: buzzer বাজতেই থাকে, চাকা শেষ command মেনে চলে, শুধু console-এর minDist লাইনটুকু হঠাৎ থেমে যায়।",
+  "incorrect": "<code>ResponseDist</code> 5.0 করে দিলে 2 m দূরের দেয়ালও zone-এ পড়ে — buzzer বিরতিহীন বাজতে থাকে, robot সেই দিকে ঘুরে দাঁড়ায়, আর alarm-এর শব্দ অল্প সময়েই অর্থহীন হয়ে যায়। 0.05 করলে উল্টোটা ঘটে — object একেবারে গায়ের কাছে না এলে buzzer চুপ, robot নীরবে spin করে প্রায় ধাক্কা খায়। Hysteresis না থাকায় ঠিক 0.55 m-এ hover করা object-এ প্রতি scan-এ beep চালু-বন্ধ হয়ে buzzer কাঁপা শব্দ ছাড়ে। আর else branch উঠিয়ে দিলে প্রথম beep-এর পর খোলা মাঠেও buzzer চিরকাল বাজে — Joy-এর zero-Twist brake চাকা থামালেও শব্দ থামে না, কারণ L83-এর return <code>/beep</code> ছুঁয়েই দেখে না; Ctrl+C-র পরেও শব্দ থামে না — exit_pro-র brake শুধু <code>/cmd_vel</code> শূন্য করে, <code>/beep</code>-কে নয়।"
+ },
+ "animType": "alarmBuzzer"
+}

@@ -1,0 +1,188 @@
+{
+ "n": 9,
+ "id": "part-09",
+ "fname": "follow_line.py",
+ "enTitle": "Imports, Wildcard & the Blocking Arm Wait",
+ "lang": "python",
+ "start": 1,
+ "end": 57,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 3,
+   "text": "L1-এর <code>#ros lib</code> হলো প্রথম নামফলক — নিচের ROS 2 import-দলকে এক নজরে চেনায়। <code>import rclpy</code> মূল ROS 2 client library লোড করে, আর <code>from rclpy.node import Node</code> base class Node-টি আনে যার উপর L28-এ <code>class LineDetect(Node):</code> দাঁড়াবে। আগের প্রতিটা behavior app-এর মতোই এই file-এর সব ক্ষমতা — spin, publisher, subscription, parameter — এই দুই লাইনের উপর দাঁড়িয়ে; এদের ছাড়া script-টি ROS 2 graph-এ ঢুকতেই পারত না।"
+  },
+  {
+   "a": 4,
+   "b": 6,
+   "text": "<code>from std_msgs.msg import Bool,Int16,UInt16,String</code> — চারটা ছোট message type এক লাইনে (comma-এর পরে space নেই, source-এ যেমন আছে): <code>Bool</code> যাবে <code>/JoyState</code> আর <code>grasp_done</code> subscription-এ (L38, L49), <code>Int16</code> বহন করবে joint5/joint6-এর কোণ (L46-47), <code>UInt16</code> হলো buzzer-এর <code>/beep</code> channel-এর type (L36), আর <code>String</code> যাবে L50-এর <code>/action_feedback</code>-এর খবরে। <code>from geometry_msgs.msg import Twist</code> velocity-বার্তার type — L34-এর pub_cmdVel পরে ঠিক এটাই চাকায় পাঠাবে। <code>from sensor_msgs.msg import CompressedImage, LaserScan, Image</code> — এই তিনের মধ্যে <code>LaserScan</code> খাবার হবে L39-এর <code>/scan1</code>-এর, <code>Image</code> কাজে লাগবে display-প্রকাশনা আর camera-র দুই stream-এ; কিন্তু <code>CompressedImage</code> নামটি পুরো file-এ আর কোথাও নেই — আমদানি হয়েই অচল, template-এর উত্তরাধিকার।"
+  },
+  {
+   "a": 7,
+   "b": 10,
+   "text": "L7-এর দ্বিতীয় নামফলক <code>#common lib</code> — এবার Python-এর নিজের toolbox। <code>import os</code> পরে file-অস্তিত্ব-খোঁজায় কাজে লাগবে: L317-এ <code>os.path.exists(self.hsv_text)</code> দিয়ে দেখা হবে HSV calibration-ফাইল আগে থেকে আছে কি না। <code>import threading</code> এই file-এর সবচেয়ে কৌশলী সিদ্ধান্তগুলোর একটির যোগান — L336-এ প্রতিটি tracking frame-এ <code>threading.Thread(target=self.execute, args=(self.circle[0], self.circle[2])).start()</code> দিয়ে steering-brain আলাদা সুতোয় ছুটে। <code>import math</code> শুধু এক জায়গায় লাগবে, কিন্তু সেটাই পরের লাইনের factor-এর প্রাণ — <code>math.pi</code>।"
+  },
+  {
+   "a": 11,
+   "b": 11,
+   "text": "<code>from M3Pro_demo.follow_common import *</code> — এই এক লাইনই পুরো file-এর সবচেয়ে বড় অদৃশ্য সেতু। Star মানে follow_common module-এর সব public নাম হুবহু এই file-এর namespace-এ ঢুকে গেল; নিচের আর ওপরের অনেক লাইন তার সাক্ষ্য দেয় — <code>cv</code> (L14!), <code>time</code> (L54, L106), <code>simplePID</code> (L221), <code>color_follow()</code> (L89), <code>read_HSV(self.hsv_text)</code> আর <code>write_HSV</code> (L317, L322), <code>ManyImgs</code> (L173) — একটিরও স্থানীয় সংজ্ঞা এই file-এ নেই। এমনকি 'q' চাপলে চলা L301-এর <code>self.cancel()</code>-ও follow_common থেকেই আসতে হবে, নাহলে AttributeError। মনে রাখো: module-টি vendor-এর, এই folder-এ নেই — ভেতরের implementation আমাদের অজানা, internals illustrative; আমরা শুধু এই file যেভাবে ডাকছে সেটুকুই বলতে পারি। Star-import-এর স্বাভাবিক ঝুঁকিও এখানে সত্য: কোন কোন নাম ঢুকছে, এই লাইন পড়ে বলা যায় না।"
+  },
+  {
+   "a": 12,
+   "b": 13,
+   "text": "L12 <code>RAD2DEG = 180 / math.pi</code> — module-level constant, মান প্রায় 57.29578 degree per radian; module load-এর মুহূর্তে একবার হিসাব হয়ে যায়, তারপর আর বদলায় না। LaserScan-এর সব angle raw radian-এ আসে, অথচ এই node-এর বাধা-চোখ registerScan (L122) ভাবে degree-এ — L127-এ <code>angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code> হিসাবে ঠিক এই ধ্রুবকটিই প্রতিটি beam-এর কোণ একক-বদলে দেয়; পূর্ণ হিসাব নিচের math-অংশে। L13 <code>print (\"import finish\")</code> — import-পর্বের সমাপ্তি-ঘোষণা; খেয়াল করো print-এর নাম আর bracket-এর মাঝে একটা space বসে আছে, Python এটায় ক্ষমাশীল কিন্তু দাগটা source-এ রয়ে গেছে — আগের app-গুলোর load-শেষ-এর ছাপার সঙ্গেই একই ঘরানার লেখা। এই লাইন console-এ দেখা মানে L2 থেকে L11 পর্যন্ত প্রতিটি import সফল।"
+  },
+  {
+   "a": 14,
+   "b": 15,
+   "text": "L14 <code>cv_edition = cv.__version__</code> — এই লাইনটাই সবচেয়ে বড় চমক: <code>cv</code> নামটা এখানে ব্যবহৃত হচ্ছে, অথচ <code>import cv2</code> লেখা হয়েছে তিন লাইন নিচে, L17-এ। কোনো স্থানীয় সংজ্ঞা নেই — <code>cv</code> এসেছে ওপরের L11-এর wildcard থেকে; অর্থাৎ follow_common নিজেই OpenCV কোথাও আমদানি করে রেখেছিল, আর star-import সেই নামটা এখানে পৌঁছে দিয়েছে। L15 <code>print(\"cv_edition: \",cv_edition)</code> সেই সংস্করণ console-এ ছাপে — node জন্মানোর অনেক আগে, module load-এর মুহূর্তেই। কাজে লাগে debug-এ: ছবি-সংক্রান্ত কোনো সমস্যা হলে সবার আগে দেখা যায় robot-এ কোন OpenCV বসে আছে।"
+  },
+  {
+   "a": 16,
+   "b": 17,
+   "text": "L16 blank — import-দলের মাঝে এক পাল্লা শ্বাস। L17 <code>import cv2</code> — এবার OpenCV নিজের নামে এলো, অথচ L14-এ কাজ চলে গেছে <code>cv</code> দিয়েই। ফলে পুরো file-জুড়ে দুই নাম পাশাপাশি চলতে দেখা যাবে: <code>cv2.resize</code> (L154), <code>cv2.waitKey(1)</code> (L166), আবার <code>cv.imshow</code> (L173) — শেষেরটা আবার wildcard-এর <code>cv</code>! সবসম্ভবত follow_common-এই OpenCV-কে cv নামে বাঁধা আছে — illustrative অনুমান, ভেতরটা আমাদের দেখা নেই। দুই নামে একই engine — quirky ব্যবস্থা, কিন্তু চলে; পাঠকের কাজ মনে রাখা: এই file-এ OpenCV-র ডাক দুই নামেই আসে।"
+  },
+  {
+   "a": 18,
+   "b": 19,
+   "text": "L18 <code>from arm_msgs.msg import ArmJoints</code> — ছয় joint-এর কোণ-নির্দেশ এক বার্তায়; এই একই package আর message README L13-এর ম্যানুয়াল arm-pose command-তেও ব্যবহৃত হয়েছিল, আর এই file-এর L44 publisher লিখবে ঠিক সেই একই <code>arm6_joints</code> topic-এ। L19 <code>from message_filters import Subscriber, TimeSynchronizer,ApproximateTimeSynchronizer</code> — তিনটা নাম আসল (দ্বিতীয় comma-এর পরে space নেই), কাজে লাগবে দুটো: <code>Subscriber</code> (L42-43) আর <code>ApproximateTimeSynchronizer</code> (L56) — যেটা camera-র রঙ আর depth ছবি সময়-মিলিয়ে জোড় দেবে। <code>TimeSynchronizer</code> আমদানি হয়েই অলস — পুরো file-এ আর কোথাও নামটা নেই; template থেকে সঙ্গে এসেছে, ক্ষতি কিছু না, তবে import-তালিকা পড়লে ভুল ইঙ্গিত দেয়।"
+  },
+  {
+   "a": 20,
+   "b": 21,
+   "text": "L20 <code>from cv_bridge import CvBridge</code> — ROS-এর Image বার্তাকে OpenCV-র numpy-ছবিতে বদলানোর সেতু; পরে দুটো আলাদা instance বাঁধা হবে, রঙ আর depth-এর জন্য আলাদা দুটো bridge (L59-60)। L21 <code>encoding = ['16UC1', '32FC1']</code> — depth-ছবির দুই সম্ভাব্য pixel-টাইপের তালিকা: 16-bit unsigned integer নাকি 32-bit float। কিন্তু পুরো file-ে ব্যবহৃত হয়েছে কেবল দ্বিতীয়টা — L152 আর L162 দুই জায়গাতেই <code>encoding[1]</code>, মানে '32FC1'; তালিকার প্রথম প্রবেশিকার (index 0) কোনো ডাক পুরো file-ে নেই। তালিকাটা তাই অর্ধেক অচল — vendor-এর সাধারণ তালিকা থেকে এসেছে, এই node কেবল float-পথই চেনে।"
+  },
+  {
+   "a": 22,
+   "b": 24,
+   "text": "L22 <code>from dt_apriltags import Detector</code> — AprilTag শনাক্তকারী engine; L62-69-এ এর বড় configuration-ব্লক বসবে (tag36h11 পরিবার, 8 thread — পরের Part-এ)। L23 <code>from M3Pro_demo.vutils import draw_tags</code> — শনাক্ত হওয়া tag-এর চার কোণ আর কেন্দ্র ছবির উপর আঁকার হেল্পার; L159-এ লাল কোণ, সবুজ কেন্দ্র রঙে সেটা ডাকা হয়। L24 <code>import numpy as np</code> — ছবি আর beam-দূরত্ব সবই numpy-র জগতে ঘুরবে: <code>np.copy</code> (L150), <code>np.array(scan_data.ranges)</code> (L125), <code>astype(np.float32)</code> (L155)। তিন লাইন মিলে এই node-এর যন্ত্রপাতি — এক চোখে লাইন আর tag (camera), অন্য চোখে বাধা (lidar)।"
+  },
+  {
+   "a": 25,
+   "b": 26,
+   "text": "L25 <code>from arm_interface.msg import AprilTagInfo,CurJoints</code> — দুটো বার্তা: <code>AprilTagInfo</code> বহন করবে পাওয়া tag-এর id, কেন্দ্র আর দূরত্ব (Remove-মোডের শেষে L374-এ <code>PosInfo</code> topic-এ যাবে), আর <code>CurJoints</code> arm-এর বর্তমান ভঙ্গির প্রতিবেদন — L48-এর publisher আর L134-137-এর pubCurrentJoints এটাই ছাপবে। L26 <code>from M3Pro_demo.compute_joint5 import *</code> — দ্বিতীয় আরেকটা wildcard! এখান থেকে আসে <code>compute_joint5(vx,vy)</code> — L368-এ tag-এর কোণ থেকে joint5-এর লক্ষ্য-মান হিসাব করতে ডাকা হবে; vendor module, ভেতরের সূত্র আমাদের কাছে নেই — illustrative। এক file-এ দুই wildcard মানে namespace-এ বহু অদৃশ্য নাম — এটাই এই vendor-ধারার রীতি।"
+  },
+  {
+   "a": 27,
+   "b": 30,
+   "text": "L27 blank-এর পর L28 <code>class LineDetect(Node):</code> — মূল class-এর জন্ম: নাম LineDetect, গায়ে Node base class। L29-এ <code>def __init__(self,name):</code> constructor শুরু, আর L30 <code>super().__init__(name)</code> দিয়ে node-টা ROS 2 graph-এ নাম নিয়ে ঢোকে — main-এর L462 থেকে ডাক আসবে <code>LineDetect(\"follow_line\")</code> রূপে, তখন node-এর নাম হবে follow_line। এরপর constructor-এর প্রতিটা লাইন node জন্মানোর মুহূর্তেই, উপর থেকে নিচে, একবার চলবে — আর এই যাত্রার মাঝে L52-এ এমন এক অপেক্ষা-স্তম্ভ আছে যে পুরো node-এর ভাগ্য কিছুক্ষণ তার উপরেই ঝুলে থাকবে।"
+  },
+  {
+   "a": 31,
+   "b": 36,
+   "text": "L31-32 দুটো blank, তারপর L33-এর নামফলক <code>#create a publisher</code> — নিচের দলকে চেনায়। L34 <code>self.pub_cmdVel = self.create_publisher(Twist,\"/cmd_vel\",1)</code> — চাকার গতির একমাত্র দুয়ার; steering-brain execute (L245) পরে ঠিক এখানেই twist পাঠাবে, আর README-র SLAM-যাত্রায় এই node-ই তো চালক — map বাড়ে এই <code>/cmd_vel</code>-এর সিদ্ধান্তে। L35 <code>self.pub_rgb = self.create_publisher(Image,\"/linefollow/rgb\",1)</code> — নিজের প্রক্রিয়াজাত ছবি বাইরে পাঠানোর পথ। L36 <code>self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)</code> — buzzer channel; আগের app-এর guard-এর মতোই বাধা পেলে এটাই বেজে উঠবে (L275)। তিনটার depth-ই 1 — প্রতি frame-এ সদ্য-বার্তাই দামি, জমে-থাকা পুরনো বার্তা নয়।"
+  },
+  {
+   "a": 37,
+   "b": 38,
+   "text": "L37-এর নামফলক <code>#create a subscriber</code>, তারপর L38 <code>self.sub_JoyState = self.create_subscription(Bool,\"/JoyState\",self.JoyStateCallback,1)</code> — joystick-নিয়ন্ত্রণের চাবি-topic; <code>Bool</code> বার্তা এলে JoyStateCallback চলে আর Joy_active flag উত্তোলিত হয়। execute-এর ভেতরে (L247) প্রথম যাচাইই এই flag — Joy সক্রিয় থাকলে following থেমে থাকে। এই channel-টাই আগের প্রতিটা node-এর সঙ্গে মিলে যায়; নতুন গল্প হলো — এই subscription-টাই একবার নয়, দুইবার তৈরি হবে, আর callback-এরও দুই সংজ্ঞা আছে (L118 আর L397 — দ্বিতীয়টাই কার্যকর); সে হিসেব দুই লাইন পরে।"
+  },
+  {
+   "a": 39,
+   "b": 39,
+   "text": "L39 <code>self.sub_laser = self.create_subscription(LaserScan,\"/scan1\",self.registerScan,1)</code> — বাধা-চোখের খাবারের দুয়ার। নামটা খেয়াল করো: <code>/scan1</code> — gmapping.launch-এর merger যে fused 360-degree <code>/scan</code> বানায়, এটা সেটা নয়; এটা একটাই raw lidar-এর নিজের stream, যে একক-উৎসের ধারা lidar-পর্বের শুরুতে দেখেছিলাম। অর্থাৎ SLAM map বানায় merged /scan দিয়ে, আর এই node-এর থামার সিদ্ধান্ত নেয় /scan1 দিয়ে — দুই দৃষ্টি দুই পথে। প্রতিটা scan-এ registerScan (L122) সামনের cone-এর কাছের beam গোনে; LaserAngle 60, সীমা 0.375 m — সেই হিসাব পরের Part-এ খুলবে।"
+  },
+  {
+   "a": 40,
+   "b": 40,
+   "text": "L40 <code>self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)</code> — L38-এর কাজ আবার একবার: একই topic, একই callback, একই depth; শুধু quote-চিহ্ন আর comma-পরের একটা space আলাদা। ফলে <code>self.sub_JoyState</code> attribute নতুন subscription object দিয়ে বসে যায়, আগেরটা আর কোনো নামে ধরা থাকে না — garbage collection তুলে নিলে সেই subscription-ও বন্ধ হয়ে যায়। দুই object একই topic-এ একই callback-ই নিবন্ধন করেছিল, তাই নিট ফল: একটাই জীবিত subscription, প্রতিটা /JoyState বার্তায় callback একবারই চলে। ক্ষতি নেই, তবে এটা template-সম্পাদনার কাটা-দাগ — কপি করা ব্লক থেকে একবার মুছতে ভুলে যাওয়ার ছাপ; source-এ যেমন আছে তেমনই বর্ণনা, কোনো 'সংশোধন' নয়।"
+  },
+  {
+   "a": 41,
+   "b": 43,
+   "text": "L41 blank-এর পর দুই লাইনে camera-র দুই দুয়ার — কিন্তু এবার rclpy-র নিজের নাম নয়: L42 <code>self.rgb_image_sub = Subscriber(self, Image, '/camera/color/image_raw')</code> আর L43 <code>self.depth_image_sub = Subscriber(self, Image, '/camera/depth/image_raw')</code> — message_filters-পরিবারের Subscriber (L19 থেকে এসেছে)। কারণ এই দুই stream আলাদা নয়, জোড়া হিসেবে দরকার: রঙ-ছবিতে লাইন আর tag খোঁজা হবে, depth-ছবিতে tag-এর দূরত্ব — দুটোই একই মুহূর্তের হতে হবে। জোড়া-বাঁধার কাজ L56-এর ApproximateTimeSynchronizer করবে; আর এই দুই topic-এর উৎস এই যাত্রায় README L9-এর camera_arm_kin launch-এ ওঠা camera driver — সে launch না উঠলে এখানে কোনো frame-ই আসবে না।"
+  },
+  {
+   "a": 44,
+   "b": 45,
+   "text": "L44 <code>self.pub_SixTargetAngle = self.create_publisher(ArmJoints, \"arm6_joints\", 10)</code> — ছয় joint-এর কোণ-আদেশের প্রধান দুয়ার; arm-পরিবারের সঙ্গে যোগাযোগের মূল মাধ্যম এটাই (লাইনের শেষে কিছু অতিরিক্ত tab রয়ে গেছে — source-এর নিজস্ব ছাপ)। README L13-এর ম্যানুয়াল command-ও ঠিক এই topic-এই লিখেছিল; L52-এর অপেক্ষা-লুপ থেকে শুরু করে পরের সব arm-নির্দেশ এই publisher দিয়েই যাবে। L45 <code>self.pos_info_pub = self.create_publisher(AprilTagInfo,\"PosInfo\",1)</code> — পাওয়া AprilTag-এর প্রতিবেদন ওপরের স্তরের state machine-এ পাঠানোর পথ; Remove-মোডের শেষ দৃশ্যে L374 এখানে লিখবে।"
+  },
+  {
+   "a": 46,
+   "b": 48,
+   "text": "L46 <code>self.TargetJoint5_pub = self.create_publisher(Int16, \"set_joint5\", 10)</code> — tag দেখে হিসাব করা joint5-এর লক্ষ্য-কোণ পাঠানোর পথ; Remove-মোডে L375-376-এ একই বার্তা পরপর দুইবার publish হয় — source-এর নিজস্ব বৈশিষ্ট্য, সে-গল্প সংশ্লিষ্ট Part-এ। L47 <code>self.TargetJoint6_pub = self.create_publisher(Int16, \"set_joint6\", 10)</code> — প্রতিবেশী তৈরি হলো, কিন্তু পুরো file-এ <code>TargetJoint6_pub</code> আর কোথাও publish হয় না — জন্মেছে, কাজে লাগেনি; dead publisher, quirk হিসেবে রেখে দেওয়া। L48 <code>self.pub_cur_joints = self.create_publisher(CurJoints,\"Curjoints\",1)</code> — arm-এর বর্তমান ভঙ্গির প্রতিবেদন-দুয়ার; constructor-ই L99-এ pubCurrentJoints রূপে প্রথম প্রতিবেদন পাঠাবে।"
+  },
+  {
+   "a": 49,
+   "b": 50,
+   "text": "L49 <code>self.sub_grasp_status = self.create_subscription(Bool,\"grasp_done\",self.get_graspStatusCallBack,100)</code> — ওপরের স্তরের হাত-নেওয়ার handshake: grasp শেষের সংকেত এলে get_graspStatusCallBack (L140) move_flag আর pubPos_flag দুটোই ফের জাগিয়ে দেয়, প্রয়োজনে Track_state-কে 'tracking'-এ ফেরায় — অর্থাৎ হাত সরিয়ে আবার লাইন-ধরার প্রস্তাব। depth 100 — কাজ-শেষের খবর দেরিতে হারালে চলবে না। L50 <code>self.largemodel_arm_done_pub = self.create_publisher(String,'/action_feedback',1)</code> — উল্টো দিকের খবরের দুয়ার (লাইনের শেষে একটা tab আছে): লাইন হারিয়ে গেলে execute (L255) এখানে 'follow_line_clear_future_done' খবর পাঠায় — ওপরের state machine তা শুনে পরের পরিকল্পনা সাজায়।"
+  },
+  {
+   "a": 51,
+   "b": 51,
+   "text": "L51 <code>self.init_joints = [90, 90, 12, 20, 90, 0]</code> — এই node-এর কাছে arm-এর ঘরের ভঙ্গির সংজ্ঞা: joint1 90, joint2 90, joint3 12, joint4 20, joint5 90, joint6 0। মনে আছে যাত্রী-নিয়ন্ত্রণ yahboom_keyboard কে ঘর মনে ছিল [90, 90, 0, 0, 90, 90]? দুই file-এ দুই রকের ঘর — এখানে joint3-4 হলো 12 আর 20, আর gripper-joint6-এর জন্ম-কোণ 0। পরের লাইন থেকেই এই ভঙ্গিটাই বারবার পাঠানো হবে; আর pubSixArm-এর ভেতরে (L178) joint1 আয়নায়িত হয় <code>arm_joints.joint1 = 180 - joints[0]</code> নিয়মে — 90 নিজেই থাকে, অন্য মান হলে আয়না-লাফ দেয় (সে হিসাব সংশ্লিষ্ট Part-এ)।"
+  },
+  {
+   "a": 52,
+   "b": 54,
+   "text": "L52 <code>while not self.pub_SixTargetAngle.get_subscription_count():</code> — এই এক লাইনে constructor-এর চরিত্র বদলে যায়। <code>get_subscription_count()</code> গোনে এই মুহূর্তে কে কে arm6_joints topic-এ কান পেতেছে; গণনা শূন্য হলে not সেটাকে সত্য করে, লুপ চলে। ভেতরে L53 <code>self.pubSixArm(self.init_joints)</code> — ঘরের ভঙ্গির ArmJoints-বার্তা, তারপর L54 <code>time.sleep(0.1)</code> — এক-দশমাংশ সেকেন্ড থেমে আবার গণনা। অর্থাৎ arm driver না আসা পর্যন্ত প্রতি 0.1 সেকেন্ডে একবার করে ঘরে-ফেরার আদেশ পাঠাতে থাকে, আর constructor ঠিক সেখানেই আটকে থাকে — এটা blocking অপেক্ষা: এর নিচের আর কিছুই (synchronizer, state, callback) চলবে না, spin পর্যন্ত পৌঁছাবে না। অপেক্ষিত শ্রোতা হলো arm driver-পরিবার — README L9-এর launch-এর আওতায় যেটা arm6_joints-এ subscribe করে।"
+  },
+  {
+   "a": 55,
+   "b": 55,
+   "text": "L55 <code>self.pubSixArm(self.init_joints)</code> — লুপ ভাঙার পর আরেকবার, শেষবারের মতো, একই ঘরের ভঙ্গির আদেশ। এবার শ্রোতা নিশ্চিত — এই বার্তাটাই arm driver সত্যিই পাবে, মানে arm সরে গিয়ে [90, 90, 12, 20, 90, 0]-র দিকে (joint1 আয়না-নিয়মে 180-90=90, নিজেই) যাত্রা শুরু করবে। লুপের ভেতরের বার্তাগুলো তখন কেউ শোনেনি — খালি আকাশে ডাক; ক্ষতি কিছু নেই, কারণ একই আদেশই বারবার যাচ্ছিল। এভাবে node আগে থেকেই নিজের arm-সংযোগ নিশ্চিত করে নেয় — পরের জীবনে কোনো বার্তা আধ-আধ ভঙ্গিতে থেমে থাকবে না।"
+  },
+  {
+   "a": 56,
+   "b": 57,
+   "text": "L56 <code>self.ts = ApproximateTimeSynchronizer([self.rgb_image_sub, self.depth_image_sub], 1, 0.5)</code> — camera-র দুই দুয়ার (L42-43) অবশেষে জোড়ায় বাঁধা হলো। দ্বিতীয় argument 1 হলো queue-র আকার — প্রতি stream-এ জায়গা মাত্র এক frame-এর, পুরনো frame অপেক্ষা করে না; তৃতীয় argument 0.5 হলো slop — সেকেন্ডে মাপা সহনশীলতা: রঙ আর depth frame-এর timestamp-পার্থক্য 0.5 সেকেন্ডের মধ্যে হলেই জোড় ধরা হয়। মজার প্রসঙ্গ: L19-এ exact-মিলের TimeSynchronizer আমদানি করেও এই file তা ব্যবহার করেনি — exact মিল বাস্তব camera-তে ভঙ্গুর, approximate-ই বাস্তবের মধ্যপন্থা। L57 <code>self.ts.registerCallback(self.callback)</code> — জোড় পেলেই ছুটবে callback (L147); এখান থেকেই এই node-এর প্রাণ-স্রোত — প্রতি জোড়া frame-এ একবার সনাক্তকরণ, সিদ্ধান্ত, স্টিয়ারিং।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটাই ধ্রুবকের — L12-এর RAD2DEG। Lidar-এর সব কোণ আসে radian-এ, অথচ registerScan-এর cone-যাচাই (L127-128) ভাবে degree-এ, আর সেতু হলো 180/math.pi। প্রশ্ন তিনটে: 57.29578 সংখ্যাটি কোথা থেকে, একটা beam-এর উপর এটি ঠিক কী করে, আর ভুল দিক থেকে গুণ করলে বাধা-পাহারার কী হয়।",
+  "levels": [
+   {
+    "label": "Level 1 — Units ও π-identity",
+    "latex": "\\[ \\pi\\ \\mathrm{rad} = 180^{\\circ}, \\qquad 1\\ \\mathrm{rad} = \\frac{180}{\\pi}\\ \\mathrm{deg} \\approx 57.29578\\ \\mathrm{deg} \\]",
+    "text": "একটি অর্ধবৃত্ত একই সাথে π radian আর 180 ডিগ্রি — এই identity-টিই একক-বদলের factor দেয়: 180/pi। L12-এর <code>RAD2DEG = 180 / math.pi</code> মানটি module load-এর সময় একবার হিসাব হয়ে যায়, আর কখনো বদলায় না; radian-কে ডিগ্রি-তে নিতে হলে শুধু এটি দিয়ে গুণ করতে হয়।"
+   },
+   {
+    "label": "Level 2 — Linear রূপান্তর",
+    "latex": "\\[ \\theta_{\\mathrm{deg}} = \\theta_{\\mathrm{rad}} \\times \\frac{180}{\\pi} = \\theta_{\\mathrm{rad}} \\times \\mathit{RAD2DEG} \\]",
+    "text": "রূপান্তরটি বিশুদ্ধ রৈখিক গুণ — কোনো offset নেই: শূন্য শূন্যেই থাকে, ঋণাত্মক কোণ ঋণাত্মকই থাকে। এ কারণেই L127-এ raw radian-মানের উপর একবার গুণ করলেই beam-এর কোণ ডিগ্রি-তে চলে আসে, আর সেটি সরাসরি LaserAngle parameter-এর ডিগ্রি-মানের সঙ্গে তুলনা করা যায়।"
+   },
+   {
+    "label": "Level 3 — Beam-কোণ ও cone-এর ডিগ্রি-সীমা",
+    "latex": "\\[ \\theta_i = \\left(\\theta_{\\min} + i\\,\\Delta\\theta\\right) \\times 57.29578\\ \\mathrm{deg}, \\qquad |\\theta_i| \\lt 30^{\\circ} \\ \\ \\mathrm{or} \\ \\ |\\theta_i| \\gt 330^{\\circ} \\]",
+    "text": "registerScan-এর প্রতিটি beam-এর কোণ বাঁধা হয় scan-এর radian metadata আর index দিয়ে, তারপর এই ধ্রুবকে গুণ। LaserAngle parameter-এর মান 60 (L211-এ ঘোষিত) — তার অর্ধেক 30, তাই cone-টেস্ট লেখা <code>self.LaserAngle*0.5</code> আর 360 থেকে ওই একই বিয়োগ — সীমা দুই দিক থেকে: সামনে 30 ডিগ্রির ভেতরে, আর wrap-পাশে 330 ডিগ্রির ওপারে। RAD2DEG না থাকলে ডিগ্রি-সীমার সঙ্গে radian-মানের এই তুলনাই অর্থহীন হয়ে পড়ত।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ \\frac{\\pi}{6}\\ \\mathrm{rad} \\times 57.29578 = 0.5236 \\times 57.29578 \\approx 30.0^{\\circ} \\]",
+    "text": "cone-এর ধার ঠিক কোথায় — লক্ষ্য-সীমা 30 ডিগ্রির radian-রূপ হলো π/6, আনুমানিক 0.5236। ওই রেখার ওপারের একটি beam-এর radian-মান এই ধ্রুবকে গুণ করলে ফল দাঁড়ায় প্রায় ঠিক 30.0 — অর্থাৎ L12-এর এক লাইনই beam-কে ডিগ্রি-মাপকাঠিতে বসিয়ে দেয়, যেখানে 30-এর সীমা অর্থবহ।"
+   },
+   {
+    "latex": "\\[ 2\\pi\\ \\mathrm{rad} \\times \\frac{180}{\\pi} = 2 \\times 180 = 360^{\\circ} \\]",
+    "text": "পুরো বৃত্ত দিয়ে যাচাই — factor-টি π-কে কাটাকাটি করে দেয়: 2π × (180/π) = 2 × 180 = 360। এজন্যই wrap-পাশের 330 ডিগ্রির সীমাটাও (360 থেকে 30 বিয়োগ) একই স্কেলে বসে যায় — গোটা বৃত্ত এক গুণেই পূর্ণ ডিগ্রি-জগতে চলে আসে, কোনো beam-ই মাপকাঠির বাইরে থাকে না।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "RAD2DEG = 180 / math.pi",
+    "math": "\\( \\mathit{RAD2DEG} = \\frac{180}{\\pi} \\approx 57.29578 \\)",
+    "text": "সংজ্ঞা-লাইন — module-এর জন্মের মুহূর্তে একবার হিসাব, তারপর প্রতিটি scan-এর প্রতিটি beam-এ একবার করে খরচ। ধ্রুবকটি বদলায় না বলে এই এক সংখ্যাই পুরো file-এর সব কোণ-হিসাবের একক-নীতি।"
+   },
+   {
+    "code": "angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG",
+    "math": "\\( \\theta_i = (\\theta_{\\min} + i\\,\\Delta\\theta) \\times 57.29578\\ \\mathrm{deg} \\)",
+    "text": "ধ্রুবকের কাজে নামার জায়গা L127 — scan-এর radian metadata (<code>angle_min</code>, <code>angle_increment</code>) আর beam-index i জুড়ে গুণ করে beam-এর ডিগ্রি-কোণ বানায়। পরের Part-এ দেখা যাবে: ঠিক এই মানটাই cone-টেস্টে ঢুকে সামনের বাধা নির্ধারণ করে।"
+   },
+   {
+    "code": "self.LaserAngle*0.5",
+    "math": "\\( 60 \\times 0.5 = 30^{\\circ} \\)",
+    "text": "cone-টেস্টের সীমা লেখা হয়েছে parameter দিয়ে, সরাসরি 30 লিখে নয়: LaserAngle-এর মান 60 হলে অর্ধেক 30, আর দ্বিতীয় ধার 360 থেকে ওই একই প্রকাশ বিয়োগ করে 330। ডিগ্রি-তে লেখা এই সীমার সঙ্গেই মেলাতে beam-কোণও RAD2DEG দিয়ে ডিগ্রি-তে আনা হয়েছে — দুই পক্ষ এক মাপকাঠিতে।"
+   }
+  ],
+  "failure": [
+   "factor উল্টে লেখা হলে — যেমন math.pi/180, মান প্রায় 0.01745 — কোণের পুরো স্কেল স্থূল হয়ে যায়: পেছন-মুখী 180 ডিগ্রি beam-এর radian-মান π, আনুমানিক 3.1416; সেটি ভুল factor-এ গুণ হয়ে পড়ে মাত্র 0.0548 — অর্থাৎ গোটা বৃত্তের সবচেয়ে চরম beam-ও 30-এর সীমার অনেক নিচে। ফলে cone-টেস্ট প্রতিটি beam-এর জন্যই সত্য হয়ে যায় — সামনে নয়, চারদিকেই সবই 'সামনে'; পাশের দেয়ালের 0.375 m-এর ভেতরের beam-গুলোও গোনা পড়ে, front_warning সহজেই 10 পার করে — খোলা রাস্তায়ও robot 'Obstacles ahead !!!' ভেবে থেমে থাকে আর buzzer বাজায়।",
+   "একই কোণে RAD2DEG দুইবার গুণ করা হলে (double conversion) 1 ডিগ্রির beam হয়ে যায় প্রায় 57.3 ডিগ্রি — 30-এর সীমা পার; কেবল ঠিক সোজা 0 ডিগ্রির beam-গুলোই cone-এ টিকে থাকে। কয়েকটি beam দিয়ে front_warning-এর গোনা কখনো 10 ছুঁতে পারে না, তাই থামার শর্ত সত্যই হয় না — সত্যিকারের বাধা সামনে থাকলেও robot চলতেই থাকে, buzzer-ও নীরব থাকে।"
+  ]
+ },
+ "robot": {
+  "correct": "আসল robot-এ README L11-এর ros2 run M3Pro_demo follow_line command ছুটলে সবার আগে এই Part চলে — module load-এর মুহূর্তেই console-এ <code>import finish</code>, তার ঠিক পরে <code>cv_edition: </code>সংখ্যাটা ছাপা পড়ে; এই দুই লাইন দেখা মানে L2 থেকে L11 পর্যন্ত প্রতিটা import সফল, wildcard follow_common-ও পাওয়া গেছে। এরপর constructor পুরো দল গড়ে — তিনটি মূল publisher, /JoyState-র দুইবার-লেখা তবু নিট একটাই জীবিত subscription, আর /scan1-এ raw lidar-এর খাবার আসা শুরু। তারপর L52-এর blocking অপেক্ষা: runbook-এর ক্রমে README L9-এর camera_arm_kin launch আগেই উঠে থাকলে arm driver-পরিবার arm6_joints-এ ইতিমধ্যে কান পেতে থাকে, ফলে গণনা প্রথম যাচাইতেই অশূন্য — লুপ একবারও ঘোরে না, এক লাফে L55-এ: arm সত্যিই ঘরের ভঙ্গি <code>[90, 90, 12, 20, 90, 0]</code>-র দিকে যাত্রা শুরু করে (joint1 আয়না-নিয়মে নিজেই 90 থাকে)। এই পর্যায়ে চাকা নড়ে না — <code>/cmd_vel</code>-এ এখনো কিছু যায়নি; শুধু arm ঘরে ফেরে। এরপর synchronizer দুই camera stream জোড়ে বাঁধে, constructor ফুরিয়ে console-এ <code>Init Done.</code> ছাপা পড়ে, আর node তার spin-জীবনে পা রাখে।",
+  "incorrect": "সাধারণ ভুল প্রত্যাশা এক: <code>import finish</code> ছাপা পড়লেই node প্রস্তুত ভাবা। আসলে arm driver না থাকলে L52-এর লুপে node নিঃশব্দে আটকে থাকে — কোনো error নেই, প্রতি 0.1 সেকেন্ডে শূন্য আকাশে ঘরের ভঙ্গি পাঠিয়েই চলে, <code>Init Done.</code> কখনো ছাপা হয় না, camera callback একবারও চলে না, keyboard বা joystick-এ কোনো সাড়া নেই — দেখে মনে হয় node মরে গেছে, আসলে সে কেবল অপেক্ষায় দাঁড়িয়ে। ভুল দুই: অপেক্ষাটাকে একবারের ব্যাপার ভাবা — শ্রোতা এলে তবেই একবার পাঠাবে; বরং উল্টো, শ্রোতা না আসা পর্যন্ত প্রতি 0.1 সেকেন্ডে বারবার পাঠে, আর শ্রোতা এলেই L55-এর শেষ বার্তাটাই arm-কে সত্যিই নাড়ায়। ভুল তিন: <code>/scan1</code>-কে SLAM-স্ট্যাকের merged <code>/scan</code> ভেবে নেওয়া — এই node-এর থামার চোখ একটাই raw lidar দেখে, merger-এর 360-degree দৃষ্টির সুবিধা এখানে নেই। আর <code>TargetJoint6_pub</code>-কে কাজের দুয়ার ভাবাও ভুল — সেটি এই file-এ কখনো publish-ই হয় না।"
+ },
+ "animType": null
+}

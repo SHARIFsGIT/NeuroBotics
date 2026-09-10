@@ -1,0 +1,90 @@
+{
+ "n": 14,
+ "id": "part-14",
+ "fname": "laser_Tracker.py",
+ "enTitle": "Turn Deadzone, Damping & Publish",
+ "lang": "python",
+ "start": 115,
+ "end": 125,
+ "flags": [],
+ "explain": [
+  {
+   "a": 116,
+   "b": 117,
+   "text": "Turning-এর deadzone: <code>if abs(ang_pid_compute) &lt; 0.5: velocity.angular.z = 0.0</code> — এক লাইনে লেখা combined if+statement। Part 13-এর <code>ang_pid_compute</code>-এর মান যদি জোড়া-লাইনের মানের চেয়ে ছোট হয়, তাহলে আগের দুই branch-এ যে <code>angular.z</code>-ই set হোক না কেন, এখানে তাকে <code>0.0</code> করে দিয়ে বলা হচ্ছে — এত ছোট turn-কে মোটেও turn ধরব না। Kp-item দিয়ে হিসাব করলে (Kp=2, target = |angle|/72): <code>2 × |angle|/72 = |angle|/36</code>, তাই শর্ত হয়ে দাঁড়ায় <code>|angle| &lt; 18°</code> — মানে object সামনের দিক থেকে 18 degree-এর কমে সরে থাকলে robot একদম ঘুরবেই না, শুধু সোজা এগোবে (illustrative — Kd=2 term প্রথম call-এ step change-এ কিছু ক্ষণিক বাড়তি যোগ করতে পারে, vendor <code>SinglePID</code>-এর ভেতরটা এই folder-এ নেই)। L118-এর blank line দুই ধাপের মাঝে শুধু পাঠ-গোছানোর ফাঁক।"
+  },
+  {
+   "a": 119,
+   "b": 120,
+   "text": "Turn damping: <code>velocity.angular.z = velocity.angular.z * 0.6</code> — comment-এর ভাষায় robot যেন <i>whip around</i> না করে। যেকোনো চূড়ান্ত <code>angular.z</code>-এর উপর সর্বজনীন 60% স্কেল — deadzone-এ পড়ে 0.0 হয়ে যাওয়া মানের উপরেও এটা চলে (0 × 0.6 = 0, ক্ষতি নেই), আর বাকি সব মান সত্যিই ছোট হয়। সর্বোচ্চ মানের হিসাব (illustrative): cone-এর কিনারায় |angle| যখন 45-এর একটু নিচে, তখন PID-এর target হয় 45/72 = 0.625-এর একটু নিচে; Kp-item দিয়ে u দাঁড়ায় প্রায় 2 × 0.625 = 1.25-এ, আর তার উপর ×0.6 করলে চূড়ান্ত <code>angular.z</code> নামে আসে প্রায় 0.75 rad/s-এ — declared <code>angular</code> parameter-টা (1.0, Part 7) কোথাও enforce হয় না, বাস্তব ceiling এই দুই ধাপ (deadzone নয়, damping) থেকেই আসে।"
+  },
+  {
+   "a": 122,
+   "b": 122,
+   "text": "<code>print(\"angular.z: \", velocity.angular.z)</code> — প্রতিটা scan message-তে console-এ চূড়ান্ত turn-মান ছাপা হয়, ঠিক আগের <code>minDist</code>/<code>minDistID</code> print-এর মতোই (L91-92)। Lidar-এর scan rate-এ এটা প্রতি সেকেন্ডে বহুবার চলে — debugging-এ সুবিধা, কিন্তু terminal-এ টানা লাইন-বৃষ্টি। L121/L123-এর blank line-গুলো কেবল ভিজ্যুয়াল বিভাজক।"
+  },
+  {
+   "a": 124,
+   "b": 125,
+   "text": "<code>self.pub_vel.publish(velocity)</code> — এই callback-এর শেষ কাজটাই আসল আউটপুট: একটাই <code>Twist</code>, যার <code>linear.x</code> (Part 13-এর approach মান) আর <code>angular.z</code> (এই Part-এর চূড়ান্ত damped মান) একসঙ্গে বসে <code>/cmd_vel</code>-এ যায় (L29-এর publisher, queue depth 1)। Comment বলে <i>Send the movement command to the wheels!</i> — wheel-দের base driver এই topic-ই শোনে। পরের scan message আসা পর্যন্ত motor এই কমান্ডই ধরে রাখে; সামনে কিছু না থাকলে (Part 11-এর <code>return</code>) নতুন কোনো publish হয় না, শেষ কমান্ড জমে থাকে।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-টা দুটো সরল কিন্তু শক্তিশালী post-processing নিয়ম — একটা deadzone আর একটা স্কেল — তাই গণিতটাও দুই ধাপে: শর্তটা inequality রূপে খোলা, তারপর তার কার্যকর সীমা বের করা।",
+  "levels": [
+   {
+    "label": "Level 1 — Symbols",
+    "latex": "\\[ u = \\text{ang\\_pid\\_compute}, \\quad \\omega = \\text{velocity.angular.z}, \\quad \\omega_{\\max} = 0.75\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "<code>u</code> হলো Part 13-এর angular PID-এর রা (এখানে Kp-item দিয়ে u ≈ 2|a|/72 = |a|/36, illustrative), <code>ω</code> চূড়ান্ত turn rate (rad/s)। 0.5 হলো deadzone-এর threshold, 0.6 হলো damping factor — দুটোই source-এর hard-coded সংখ্যা।"
+   },
+   {
+    "label": "Level 2 — দুই নিয়ম",
+    "latex": "\\[ \\omega_1 = \\begin{cases} 0 & |u| < 0.5 \\\\ u & |u| \\ge 0.5 \\end{cases} \\qquad \\omega = 0.6\\,\\omega_1 \\]",
+    "text": "L117 piecewise-ভাবে deadzone, L120 সব ক্ষেত্রে 60% স্কেল। দুই নিয়ম ক্রমান্বয়ে লাগে — আগে কাট-টু-জিরো, তারপর স্কেল।"
+   },
+   {
+    "label": "Level 3 — Substitution: কত degree পর্যন্ত চুপ?",
+    "latex": "\\[ \\frac{|a|}{36} < 0.5 \\;\\Longleftrightarrow\\; |a| < 18^{\\circ} \\qquad\\text{and}\\qquad \\omega \\to \\max: \\; 0.6 \\times 2 \\times \\frac{45^{-}}{72} = 0.75 \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\]",
+    "text": "Kp-item পেতে deadzone-এর কার্যকর সীমা: 18 degree-এর নিচে কোনো turn নেই; cone-এর কিনারা (|a| যখন 45-এর একটু নিচে) চূড়ান্ত ceiling 0.75 rad/s।"
+   },
+   {
+    "label": "Level 4 — জ্যামিতিক অর্থ",
+    "latex": "\\[ v = \\omega \\cdot r \\;\\Rightarrow\\; \\text{chassis center turn radius} \\; r = \\frac{v_{\\mathrm{lin}}}{\\omega} \\]",
+    "text": "Robot একই সাথে এগোয় (v = linear.x) আর ঘোরে (ω) — মিলিত গতির পথ বৃত্তচাপ, যার ব্যাসার্ধ r = v/ω। যেমন Wave B-তে v ≈ 0.15 m/s, ω ≈ 0.33 rad/s হলে r ≈ 0.45 m — object-এর দিকে বেঁকে এগোনোর মসৃণ বাঁক (illustrative)।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ u = 2 \\times \\frac{20}{72} = 0.5556 \\;\\ge\\; 0.5 \\;\\Rightarrow\\; \\text{deadzone pass}, \\quad \\omega = 0.5556 \\times 0.6 = 0.333\\ \\tfrac{\\mathrm{rad}}{\\mathrm{s}} \\;(\\text{left, } +) \\]",
+    "text": "Wave B (illustrative): object 20° বাঁয়ে, 0.70 m — u = 0.556, deadzone পার হয়, ×0.6-এ ω ≈ +0.33 rad/s। এক কথায়: 20° এখনো যথেষ্ট বড় যে robot ঘুরবে, কিন্তু damping-এ ঘূর্ণন মার্জিত লেভেলে নেমে আসে।"
+   },
+   {
+    "latex": "\\[ u = 2 \\times \\frac{12}{72} = 0.3333 \\;\\lt\\; 0.5 \\;\\Rightarrow\\; \\omega = 0 \\;\\; (\\text{Wave A: } 12^{\\circ} \\text{ error, no turn}) \\]",
+    "text": "Wave A (illustrative): 12° বাঁয়ে — u = 0.333, deadzone-এর ভিতরে, তাই ω = 0। Robot শুধু সামনে এগোয়; ত্রুটি 18° ছাড়ানো পর্যন্ত ঘোরা শুরুই হবে না। এই তুলনাটাই (A বনাম B) deadzone-এর সীমার বাস্তব প্রদর্শন।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "if abs(ang_pid_compute) < 0.5: velocity.angular.z = 0.0",
+    "math": "\\( |u| < 0.5 \\Rightarrow \\omega_1 = 0 \\)",
+    "text": "abs() নিয়ে তুলনা — বাঁয়ে হোক ডানে হোক, মানের বিশালতাই দেখে। ঠিক এই কারণে sign branch (L110-114) আগে, deadzone পরে — sign ঠিক করে, deadzone সেটাকে চুপ করাতে পারে।"
+   },
+   {
+    "code": "velocity.angular.z = velocity.angular.z * 0.6",
+    "math": "\\( \\omega = 0.6\\,\\omega_1 \\)",
+    "text": "নিজের উপরেই গুণ — self-scaling idiom। PID-এর Kp-এর সঙ্গে এটা কার্যত গুণিত হয়ে যায়: সামগ্রিক লাভ হয় 0.6 × Kp = 1.2 — অথচ PID-এর ভিতরের state অপরিবর্তিত থাকে, তাই damping-টা tune করতে PID আবার গড়তে হয় না।"
+   }
+  ],
+  "failure": [
+   "Threshold 0.5 কমিয়ে যেমন 0.05 করা হলে: মাত্র 1-2 degree-এর সামান্য সরও turn জাগিয়ে দিত — scan noise-এর সঙ্গে মিলে motor সারাক্ষণ ছোট ছোট কাঁপা (jitter) শুরু করত, যে জিনিসটা এই deadzone আটকাতেই চেয়েছে।",
+   "Threshold আরও বাড়ালে (যেমন 0.8): turn শুরু হতে |a| ≥ 29° লাগত — object প্রায় পাশে চলে যাওয়ার আগে robot সোজা এগোতেই থাকত, 0.55 m stand-off ঠিক রাখলেও centering প্রায় অচল।",
+   "0.6 damping বাদ দিলে ceiling হয়ে যেত 1.25 rad/s — comment-এর ভাষায় whip around: হঠাৎ বড় turn, মাঝপথে center ছাড়িয়ে যাওয়া, আর Kd=2-এর transient-এর সঙ্গে মিলে বাঁয়ে-ডানে দোলা (oscillation) শুরু হতে পারত।",
+   "এই সব সীমা যেহেতু hard-coded (0.5, 0.6) আর declared <code>angular</code> parameter (1.0) কোথাও enforce-ই হয় না — field-এ আসল চূড়ান্ত turn গতি 0.75 rad/s পর্যন্ত উঠতে পারে, যা parameter-এর দাবির সঙ্গে মেলে না (Part 7-এর dead-parameter তথ্য)।"
+  ]
+ },
+ "robot": {
+  "correct": "Wave B-র মতো মুহূর্তে robot পায় একটাই যৌথ আদেশ — সামনে ধীরে এগোনো (linear.x ≈ +0.15 m/s) সঙ্গে বাঁদিকে মার্জিত ঘূর্ণন (angular.z ≈ +0.33 rad/s), damping-এর কারণে ঝটকা ছাড়া। Object 18°-এর ভিতরে থাকলে robot ঘোরে না, শুধু দূরত্ব গুছিয়ে 0.55 m stand-off-এ থামে; console-এ প্রতিটা scan-এ angular.z-এর মান ছাপা হতে থাকে।",
+  "incorrect": "Deadzone বা damping-এর মান ভুল হলে আচরণ দুই দিকেই ভেঙে পড়ে: threshold ছোট হলে বা 0.6 না থাকলে robot object-এর দিকে ঝাঁকিয়ে ঘোরে, center পেরিয়ে ওপারে গিয়ে আবার ফিরে আসে — বাঁয়ে-ডানে দোলা; threshold বড় হলে object স্পষ্ট সরে গেলেও robot সোজা এগিয়ে stand-off-টা ভুল দিক থেকে মেলে — tracking নামের আচরণটাই অর্ধেক নিষ্ক্রিয়।"
+ },
+ "animType": "cmdVelVectors"
+}

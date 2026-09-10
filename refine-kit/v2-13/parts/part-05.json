@@ -1,0 +1,89 @@
+{
+ "n": 5,
+ "id": "part-05",
+ "fname": "laser_Warning.py",
+ "enTitle": "Warning Node — Module Head",
+ "lang": "python",
+ "start": 1,
+ "end": 16,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 3,
+   "text": "L1-এর <code>#ros lib</code> হলো দুই comment-block-এর প্রথম নামফলক — নিচের পাঁচটা ROS 2 import এর অধীনে সাজানো। <code>import rclpy</code> মূল ROS 2 client library-টি লোড করে, আর <code>from rclpy.node import Node</code> base class Node-টি আনে যেটার উপর L18-এ <code>class laserWarning(Node)</code> দাঁড়াবে। node-এর spin, parameter, subscription, publisher — সবের শিকড় এই দুই লাইনে; এদের ছাড়া script-টি ROS 2 graph-এ ঢুকতেই পারত না।"
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "text": "<code>from geometry_msgs.msg import Twist</code> হলো velocity message-এর type: <code>linear.x</code> আর <code>angular.z</code> field বহন করে, L30-এর <code>/cmd_vel</code> publisher পরে চাকার দিকে ঠিক এটাই পাঠাবে। <code>from sensor_msgs.msg import LaserScan</code> হলো lidar-এর <code>/scan</code> message-এর type — শুধু <code>ranges</code> array নয়, <code>angle_min</code> আর <code>angle_increment</code> metadata-ও সঙ্গে থাকে, যেগুলোর উপর L65-এর degree-হিসাব দাঁড়াবে। guard-এর পুরো সিদ্ধান্ত-চক্র এই দুই data-source মিলিয়েই চলে: দূরত্ব LaserScan থেকে, প্রতিক্রিয়া Twist-এ।"
+  },
+  {
+   "a": 6,
+   "b": 6,
+   "text": "<code>from std_msgs.msg import UInt16</code> — L6-এর নিজের comment-টিই ব্যাখ্যা করে: এটি buzzer ON/OFF করার message type। folder 12-এর laser_Tracker-এ এই channel ছিলই না; guard-এর সবচেয়ে বড় সংযোজন এখানেই, কারণ L32-তে <code>/beep</code> publisher এই type-ই ব্যবহার করে। unsigned 16-bit পূর্ণসংখ্যা হিসেবে এর মান ঋণাত্মক হতে পারে না; <code>UInt16()</code> constructor-এর default value হলো 0, অর্থাৎ beep OFF — L95-এর else-branch ঠিক এই default-এ ভর করেই buzzer চুপ করায়, আর alarm-এ <code>b.data = 1</code> মানে beep ON।"
+  },
+  {
+   "a": 8,
+   "b": 10,
+   "text": "L8-এর দ্বিতীয় নামফলক <code>#commom lib</code> — <code>common</code>-এর typo source-এই আছে, কখনো ঠিক করা হয়নি। <code>import math</code> দেয় <code>math.pi</code>, যেটা মাত্র কয়েক লাইন পরেই L16-এর conversion factor-এ কাজে লাগবে। <code>import numpy as np</code> array-গণিতের জন্য — L56-এ <code>np.array(scan_data.ranges)</code> দিয়ে beam-দের দূরত্বের array তৈরি হয়, তারপর min আর index-খোঁজার হিসাব ওই array-র উপরেই চলে।"
+  },
+  {
+   "a": 11,
+   "b": 12,
+   "text": "L11 <code>import time</code> আর L12 <code>from time import sleep</code> — verified সত্য: পুরো file-এ এই দুটি আর কোথাও ব্যবহৃত হয় না, দুটোই dead import। সম্ভবত vendor-এর অন্য কোনো script থেকে পাওয়া উত্তরাধিকার। runtime-খরচ নগণ্য, কিন্তু পাঠক ভাবে নিচে কোথাও delay বা timing-লজিক আছে — সেই ভুল ইঙ্গিতটাই আসল ক্ষতি, কারণ guard-এর timing আসলে একটিই: প্রতিটি <code>/scan</code> message-এর আগমন।"
+  },
+  {
+   "a": 13,
+   "b": 13,
+   "text": "<code>from yahboom_M3Pro_laser.common import *</code> — vendor-এর comment বলছে custom Yahboom tools। এই star-import থেকে মূলত দুটি নাম এই script-এ কাজে লাগে: <code>Bool</code> (L26-এর <code>/JoyState</code> subscription-এর message type) আর <code>SinglePID</code> (L48-এ <code>SinglePID(3.0, 0.0, 5.0)</code>)। module-টি এই folder-এ নেই, তাই এর ভেতরের implementation অজানা — এই label inferred। star-import নিজেই ঝুঁকি: কোন কোন নাম namespace-এ ঢুকছে, শুধু এই লাইন পড়ে বলা যায় না।"
+  },
+  {
+   "a": 14,
+   "b": 15,
+   "text": "<code>import os</code> পরে exit_pro function-এ (L127-132) কাজে লাগবে — <code>os.system(cmd)</code> দিয়ে node-এর বাইরে থেকে shell-এ zero <code>/cmd_vel</code> পাঠানো brake-টি সেখানেই চলে। এরপরই import-পর্ব শেষের স্বীকৃতি: L15 <code>print (\"improt done\")</code> — <code>import</code>-এর typo এবং print-এর নামের পরের space দুটোই source-এ আছে, পাশের comment-টিও নিজেই স্বীকার করে typo-টা। module load-এর মুহূর্তে console-এ ঠিক এই লাইনটি ছাপা পড়ে, তাই এটি দেখা মানে L2 থেকে L14 পর্যন্ত প্রতিটি import সফল হয়েছে।"
+  },
+  {
+   "a": 16,
+   "b": 16,
+   "text": "L16 <code>RAD2DEG = 180 / math.pi</code> — module-level constant, মান প্রায় 57.29578 degree per radian। LaserScan-এর সব angle raw অবস্থায় radian-এ আসে, অথচ guard-এর প্রতিটি সিদ্ধান্ত degree-এ: 45.0-এর <code>LaserAngle</code> cone, minDistIDList-এ জমা কোণ। L65-এ <code>(scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code> হিসাবে ঠিক এই constant-টিই প্রতিটি beam-এর কোণ একক-বদল করে দেয় — একবার define, তারপর প্রতিটি scan-এর প্রতিটি beam-এ একবার করে ব্যবহার।"
+  }
+ ],
+ "math": {
+  "intro": "L16-এর এক লাইনেই এই Part-এর গণিত: LaserScan-এর angle আসে radian-এ, কিন্তু guard-এর cone-যাচাই আর steering-হিসাব degree-এ। প্রশ্ন হলো 180/math.pi সংখ্যাটি কেন ঠিক দুই এককের সেতু, এবং একটি beam-এর উপর এটি ঠিক কী মান দেয়।",
+  "levels": [
+   {
+    "label": "Level 1 — Units ও π-identity",
+    "latex": "\\[ \\pi\\ \\mathrm{rad} = 180^{\\circ}, \\qquad 1\\ \\mathrm{rad} = \\frac{180}{\\pi}\\ \\mathrm{deg} \\approx 57.29578\\ \\mathrm{deg} \\]",
+    "text": "একটি অর্ধবৃত্ত একই সাথে π radian আর 180 degree — এই identity-টিই একক-বদলের factor দেয়: 180/pi। L16-এর <code>RAD2DEG = 180 / math.pi</code> সংখ্যাটি module load-এর সময় একবার হিসাব হয়ে যায়, আর আর কখনো বদলায় না; radian-কে degree-এ নিতে হলে শুধু এটি দিয়ে গুণ করতে হয়।"
+   },
+   {
+    "label": "Level 2 — Linear রূপান্তর",
+    "latex": "\\[ \\theta_{\\mathrm{deg}} = \\theta_{\\mathrm{rad}} \\times \\frac{180}{\\pi} = \\theta_{\\mathrm{rad}} \\times \\mathit{RAD2DEG} \\]",
+    "text": "রূপান্তরটি একটি বিশুদ্ধ রৈখিক গুণ — কোনো offset নেই, শূন্য শূন্যেই থাকে, ঋণাত্মক কোণ ঋণাত্মকই থাকে। এ কারণেই L65-এ raw radian-মানের উপর একবার গুণ করলেই beam-এর কোণ degree-এ চলে আসে, আর সেটি সরাসরি 45.0-এর <code>LaserAngle</code> parameter-এর সাথে তুলনা করা যায় — degree-এর ভেতরে থাকলে গুণ করলে মান বাড়ে, ভাগ করলে কমে, এটাই পরে ভুল ধরার মূল লক্ষণ।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 0.0174533\\ \\mathrm{rad} \\times 57.29578 = 1.0^{\\circ} \\]",
+    "text": "illustrative fused-ring convention ধরে (FACTS-13 §3): <code>angle_increment = π/180</code>, মানে প্রতি ধাপে কোণ বাড়ে ঠিক 0.0174533 radian। এই এক ধাপকে RAD2DEG দিয়ে গুণ করলে ফল দাঁড়ায় ঠিক 1.0 degree — অর্থাৎ 360-beam ring-এ beam index i প্রতিবার এক পূর্ণ degree-ধাপে এগোয়, আর minDistIDList-এ জমা কোণগুলো পূর্ণসংখ্যা degree-এ পড়ে (যেমন +14 বা -20)। module-head-এর এই ধ্রুবকটিই scan-এর অবিন্যস্ত radian-ভিড়কে পড়ার মতো degree-স্কেলে সাজায়।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG",
+    "math": "\\( \\theta_i = \\left(\\theta_{\\min} + i\\,\\Delta\\theta\\right) \\times 57.29578\\ \\mathrm{deg} \\)",
+    "text": "L16-এ define হওয়া constant-টির কাজে নামার জায়গা L65: scan-এর radian metadata (<code>angle_min</code>, <code>angle_increment</code>) আর beam index i জুড়ে গুণ করে beam-এর degree angle বানায়। এর ঠিক পরেই L68-এর cone-টেস্ট <code>abs(angle) &lt; self.LaserAngle</code> সেই degree-মানটিকে 45.0-এর সাথে তুলনা করে — অর্থাৎ module-head-এর এই এক ধ্রুবক ছাড়া সামনের cone-এর পুরো ধারণাটাই অর্থ হারাত।"
+   }
+  ],
+  "failure": [
+   "factor উল্টে দিলে — যেমন <code>math.pi / 180</code> লেখা হলে (মান প্রায় 0.01745) — কোণের পুরো স্কেলটাই স্থূল হয়ে যায়: প্রতি degree-ধাপে ফল নামে মাত্র ~0.0003 মাপে (1 degree beam পড়ে 0.0003046-তে, 14 degree-রটা 0.00427-তে, 45 degree-রটা 0.0137-তে), তাই ±180 degree-র পুরো ring-টাই ±0.055-এর ভেতরে এসে পড়ে (180 degree beam = 0.0548) — সবচেয়ে চরম beam-ও 45-এর অনেক নিচে। ফলে L68-এর <code>abs(angle) &lt; self.LaserAngle</code> পুরো ring-এর প্রতিটি beam-এর জন্যই সত্য হয়ে যায়, front cone আর front থাকে না — পেছনের obstacle-এও robot হঠাৎ জায়গায় ঘুরে দাঁড়ায় আর বিনা কারণে buzzer বাজে।",
+   "একই কোণে RAD2DEG দুইবার গুণ করা হলে (double conversion) 1 degree হয়ে যায় প্রায় 57.3 degree, তাই <code>abs(angle) &lt; 45</code> আর কারও জন্য সত্য নয় — কেবল সোজা সামনের 0 degree beam-টি ঢোকে। এক পাশে সরে থাকা obstacle প্রতিটি scan-এ বাদ পড়ে, minDistList অনেক scan-এই খালি থাকে বলে L73-এর <code>return</code> চলে যায় — robot নড়েও না, beep-ও করে না, যদিও বাধা ধাক্কা খাওয়ার দূরত্বে।"
+  ]
+ },
+ "robot": {
+  "correct": "ros2 run দিয়ে node চালালে module load-এর সময়েই এই Part-টি চলে এবং console-এ <code>improt done</code> ছাপা পড়ে — এটাই এই পর্যায়ের একমাত্র দৃশ্যমান ফল। এই চালানোর পথটি আসে package-এর setup.py entry point থেকে — ফাইলটি এই folder-এ নেই, আর script-এ <code>__main__</code> guard-ও নেই, তাই সংযোগটি inferred। চাকা, lidar driver, buzzer — কারো দিকেই এখনো কোনো command যায় না, কারণ node instance তৈরি হয় অনেক পরে (L18-এর class, পরে main-এর instantiate)। কিন্তু বাক্সগুলো তৈরি হয়ে যায়: <code>/scan</code>-এর LaserScan, <code>/JoyState</code>-এর vendor Bool, <code>/cmd_vel</code>-এর Twist, আর guard-এর নিজের <code>/beep</code> channel-এর UInt16 — পরের Part-গুলোর প্রতিটি subscription আর publisher এই import-গুলোর উপর দাঁড়ায়। <code>RAD2DEG</code>-ও এখানে একবার 57.29578 মানে সেট হয়ে যায়, যেটা L65-এ প্রতিটি beam-এর degree-হিসাবে খরচ হবে।",
+  "incorrect": "vendor package-টি robot-এ install করা না থাকলে L13-এর star-import-ই <code>ImportError</code> ছুড়ে দেয় — <code>improt done</code> কখনো ছাপা হয় না, node জন্মায়ই না; obstacle 10 cm দূরত্বে এসেও buzzer শব্দ করে না, চাকায় কোনো ব্রেক-বা-মোড় পড়ে না, lidar যা পাঠাচ্ছে তা শোনার কেউ থাকে না। আর factor-টি ভুল হলে শরীরে লক্ষণ আরও প্রকট: cone পুরো ring হয়ে গেলে পেছনের obstacle-এও robot হঠাৎ জায়গায় ঘুরে যায় আর বিনা কারণে beep বাজে; double conversion হলে উল্টোটা ঘটে — সামনে সরে থাকা বাধায় সাড়া নেই, robot পর্যন্ত এগিয়ে ধাক্কা মারে।"
+ },
+ "animType": null
+}

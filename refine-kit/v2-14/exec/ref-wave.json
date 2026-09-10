@@ -1,0 +1,442 @@
+[
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 53,
+  "lns": [
+   53
+  ],
+  "kind": "event",
+  "cap": "প্রথম <code>/scan</code> message এসে পড়ল! Executor এখন L53-এ ঝাঁপ দিয়ে ঢুকছে — <code>def registerScan(self, scan_data):</code>। Import-pass-এ এই def শুধু define হয়ে বসে ছিল; L23-এর <code>create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code> নামটা bind করে রেখেছিল — সেই বাঁধনই এখন কাজে লাগল, queue depth 1।",
+  "op": "fire registerScan callback",
+  "dbg": [
+   [
+    "topic",
+    "/scan"
+   ],
+   [
+    "bind",
+    "subscription from L23, depth 1"
+   ],
+   [
+    "entry",
+    "executor calls registerScan(scan_data)"
+   ]
+  ],
+  "fx": "def registerScan(self, scan_data):   · first /scan arrives"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 54,
+  "lns": [
+   54,
+   55
+  ],
+  "kind": "event",
+  "cap": "<code>ranges = np.array(scan_data.ranges)</code> — L55। তার আগে L54-এর প্রহরী: <code>if not isinstance(scan_data, LaserScan): return</code> — ভুল ধরনের জিনিস এলে নিঃশব্দে ফেরত। list থেকে numpy array বানানোর কারণ সামনে: প্রতিটা beam-এর জন্য <code>ranges[i]</code> সূচক-অ্যাক্সেস বারবার লাগবে; L9-এর <code>import numpy as np</code> এখন খরচ হলো।",
+  "op": "guard type, copy ranges",
+  "dbg": [
+   [
+    "check",
+    "isinstance(scan_data, LaserScan) -> True"
+   ],
+   [
+    "data",
+    "ranges = np.array of beam distances"
+   ],
+   [
+    "size",
+    "~360 floats (illustrative)"
+   ]
+  ],
+  "fx": "ranges = np.array(scan_data.ranges)   · per-beam distances"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 65,
+  "lns": [
+   65
+  ],
+  "kind": "event",
+  "cap": "<code>angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code> — message-এর angle field-গুলো radian-এ (folder 09-এর echo: -3.14159, increment 0.0174533); RAD2DEG গুণে i-তম beam-এর কোণ degree-এ আসে — তিন zone-এর তুলনাই এই এককে।",
+  "op": "compute beam angle in degrees",
+  "dbg": [
+   [
+    "angle_min",
+    "-3.14159 rad (folder 09 echo)"
+   ],
+   [
+    "increment",
+    "0.0174533 rad = 1 deg per beam"
+   ],
+   [
+    "result",
+    "beam angle in degrees"
+   ]
+  ],
+  "fx": "angle = (angle_min + angle_increment * i) * RAD2DEG   -> degrees",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">scan 1</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">conut = 3</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">rclpy.spin - event loop open</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">beam angles in degrees (illustrative)</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#238636\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">scanning</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">F 0</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">L 0</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">R 0</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear 0.0</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular 0.0</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">clear everywhere - all beams far</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">প্রথম scan — চারদিক ফাঁকা।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">হলুদ অংশ = overlap জোন।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 68,
+  "lns": [
+   68
+  ],
+  "kind": "event",
+  "cap": "সামনের zone-এর প্রথম গেট L68: <code>abs(angle) &lt; self.LaserAngle</code> এবং <code>ranges[i] !=0.0</code> — কোণ 20.0 degree-এর ভেতরে হতে হবে (L36-এর default), আর দূরত্ব ঠিক 0.0 হলে সেটা no-return beam, বাদ। লক্ষ করো: L67-এর comment বলছে \"+/- 30 degrees\", কিন্তু কোড 20 দিয়েই চলছে — comment আর কোড মিলছে না।",
+  "op": "test front zone gate",
+  "dbg": [
+   [
+    "cond1",
+    "abs(angle) < 20.0 (LaserAngle)"
+   ],
+   [
+    "cond2",
+    "ranges[i] != 0.0 drops no-return"
+   ],
+   [
+    "mismatch",
+    "L67 comment says 30, code uses 20"
+   ]
+  ],
+  "fx": "if abs(angle) < self.LaserAngle and ranges[i] !=0.0:   · front gate"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 162,
+  "lns": [
+   162,
+   163,
+   164,
+   165
+  ],
+  "kind": "event",
+  "cap": "L162-এ console-এ <code>print ('10, no obstacles, go forward')</code>, তারপর <code>twist.linear.x = self.linear</code> (+0.2) আর <code>twist.angular.z = 0.0</code> — L165 <code>self.pub_vel.publish(twist)</code> দিয়ে <code>/cmd_vel</code>-এ সোজা সামনের কমান্ড যায়। এই branch-এ অন্যদের মতো <code>sleep(0.2)</code> নেই — clear পথে সাথে সাথেই পরের scan-এর জন্য ফেরে।",
+  "op": "publish forward twist",
+  "dbg": [
+   [
+    "print",
+    "'10, no obstacles, go forward'"
+   ],
+   [
+    "linear",
+    "self.linear = +0.2 m/s (param read at L33)"
+   ],
+   [
+    "topic",
+    "/cmd_vel via pub_vel from L29, depth 1"
+   ],
+   [
+    "sleep",
+    "none in this branch — returns at once"
+   ]
+  ],
+  "fx": "self.pub_vel.publish(twist)   · linear.x=0.2, angular.z=0.0",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">forward</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">published to /cmd_vel</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#238636\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">branch 10</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><circle cx=\"342.9\" cy=\"105.2\" r=\"2.6\" fill=\"#8b949e\"/><circle cx=\"289.4\" cy=\"112.3\" r=\"2.6\" fill=\"#8b949e\"/><circle cx=\"359.4\" cy=\"144.9\" r=\"2.6\" fill=\"#8b949e\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">F 0</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">L 0</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">R 0</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear +0.2</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular 0.0</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">F L R all &lt;= 3 - cruise forward</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">সব counter শূন্যের কাছে — সোজা এগোনো।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">sleep নেই — cruise।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 53,
+  "lns": [
+   53
+  ],
+  "kind": "event",
+  "cap": "আবার নতুন scan এসে পড়লো — L53 <code>def registerScan(self, scan_data)</code> দ্বিতীয়বার ডাক খায়, <code>/scan</code> subscription (L23) থেকে। এবারের ছবি clear নয়: প্রায় +5 degree-র দিকে কয়েকটা beam-এ কাছে কিছু একটা ধরা পড়েছে (illustrative)। Callback-এর পুরো পাইকারি আবার উপর থেকে শুরু।",
+  "op": "fire scan callback again",
+  "dbg": [
+   [
+    "trigger",
+    "second LaserScan message on /scan"
+   ],
+   [
+    "source",
+    "create_subscription call made at L23"
+   ],
+   [
+    "scene",
+    "close returns near +5 deg (illustrative)"
+   ],
+   [
+    "revisit",
+    "callback body reruns from the top"
+   ]
+  ],
+  "fx": "def registerScan(self, scan_data):   · second scan arrives on /scan"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 65,
+  "lns": [
+   65
+  ],
+  "kind": "event",
+  "cap": "সেই একই সূত্র, এবার ফলাফলটা জীবন্ত — L65: <code>angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code>। Obstacle-ঘেঁষা beam-টার কোণ আসে প্রায় +5 degree (illustrative) — এই মানটাই একটু পরে দুই zone-এ একসাথে ধরা পড়বে।",
+  "op": "compute beam angle in degrees",
+  "dbg": [
+   [
+    "formula",
+    "(angle_min + increment*i) * 57.2958"
+   ],
+   [
+    "this beam",
+    "about +5 degrees (illustrative)"
+   ],
+   [
+    "unit",
+    "degrees — matches all three zone gates"
+   ]
+  ],
+  "fx": "angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG   · +5 deg beam (illustrative)"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 73,
+  "lns": [
+   73,
+   74,
+   75
+  ],
+  "kind": "event",
+  "cap": "overlap-এর মুহূর্ত: +5 degree-র কাছাকাছি একটা beam (illustrative) <code>abs(angle) &lt; 20</code>-এ পড়ে, আবার <code>0 &lt; angle &lt; 70</code>-তেও — একই beam একই scan-এ <code>front_warning</code> আর <code>Left_warning</code> দুটোই বাড়ায়। Comment-এ লেখা \"between 60 and 90\" — code বলছে 0-70 (code is truth)।",
+  "op": "double-count beam in two zones",
+  "dbg": [
+   [
+    "front zone",
+    "|angle| < 20"
+   ],
+   [
+    "left zone",
+    "0 < angle < 70 (comment says 60-90 — stale)"
+   ],
+   [
+    "overlap",
+    "(0, 20) counted twice per scan"
+   ]
+  ],
+  "fx": "beam at +5 deg: |5|<20 -> front AND 0<5<70 -> left (double count)",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">overlap</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">improt done</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">published to /cmd_vel</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">same beam also Left_warning +1 (overlap)</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#9e6a03\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">overlap</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M322.2 74.8h2.4v2.4h-2.4zM322.4 69.2h2.4v2.4h-2.4zM326.6 75.1h2.4v2.4h-2.4zM327.2 69.6h2.4v2.4h-2.4zM331.0 75.8h2.4v2.4h-2.4zM331.9 70.2h2.4v2.4h-2.4zM335.3 76.7h2.4v2.4h-2.4zM336.6 71.2h2.4v2.4h-2.4zM339.5 77.9h2.4v2.4h-2.4zM341.3 72.6h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><circle cx=\"323.5\" cy=\"98.2\" r=\"2.6\" fill=\"#d2a8ff\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">F 1</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">L 1</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">R 0</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear 0.0</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular 0.0</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">beam at +5 deg: front AND left</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">একই beam, দুই counter।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">zone-গুলোর জানালা ওভারল্যাপ করে।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">comment বলে 60-90 — আসলে 0-70।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 129,
+  "lns": [
+   129
+  ],
+  "kind": "event",
+  "cap": "নতুন elif-এর মোড়, L129: <code>elif self.front_warning &gt; self.conut and self.Left_warning &lt; self.conut and self.Right_warning &lt; self.conut:</code> — এই scan-এ (illustrative) front=5, Left=2, Right=2; +5 degree beam-এর double-count সত্ত্বেও বাম 3 ছোঁয়নি। Chain-এ আগের branch 1, 2, 4 সব False — প্রথম True এটাই: সামনে বাধা, দুই পাশ খোলা।",
+  "op": "match branch 6 elif",
+  "dbg": [
+   [
+    "cond",
+    "front>3 and Left<3 and Right<3 — all True"
+   ],
+   [
+    "counts",
+    "front=5, Left=2, Right=2 (illustrative)"
+   ],
+   [
+    "chain",
+    "branches 1, 2, 4 already False"
+   ],
+   [
+    "branch",
+    "6 — obstacle ahead, sides clear"
+   ]
+  ],
+  "fx": "elif self.front_warning > self.conut and self.Left_warning < self.conut and self.Right_warning < self.conut:",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">turn L</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def registerScan bound (not run)</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">published to /cmd_vel</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">same beam also Left_warning +1 (overlap)</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">branch 6: front only - turn left</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#9e6a03\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">branch 6</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><circle cx=\"320.0\" cy=\"98.0\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"325.6\" cy=\"98.4\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"317.2\" cy=\"98.1\" r=\"2.6\" fill=\"#ff7b72\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">F 5</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">L 2</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">R 1</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear 0.0</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular +0.2</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">wall ahead only - pivot left</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">সামনে দেয়াল, দুই পাশ ফাঁকা।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">linear 0, angular +0.2।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">sleep(0.2) executor আটকে রাখে।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 94,
+  "lns": [
+   94
+  ],
+  "kind": "event",
+  "cap": "এবার chain-এর প্রথম দরজাই খুলে যায়, L94: <code>if self.front_warning &gt; self.conut and self.Left_warning &gt; self.conut and self.Right_warning &gt; self.conut:</code> — তিনটি শর্তই সত্য (illustrative 6, 5, 4 — সবাই 3-এর ওপরে), তাই branch 1। L91-এর comment বলে conut হলো 10, আসল মান 3 (L47) — মাপ হয় আসল মানেই।",
+  "op": "match branch 1 trapped",
+  "dbg": [
+   [
+    "cond",
+    "front>3 and Left>3 and Right>3 — True"
+   ],
+   [
+    "counts",
+    "front=6, Left=5, Right=4 (illustrative)"
+   ],
+   [
+    "first match",
+    "branch 1 — top of elif chain"
+   ],
+   [
+    "stale comment",
+    "L91 says conut is 10 — real value 3"
+   ]
+  ],
+  "fx": "if self.front_warning > self.conut and self.Left_warning > self.conut and self.Right_warning > self.conut:"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 96,
+  "lns": [
+   96
+  ],
+  "kind": "event",
+  "cap": "স্বীকৃত bug-এর line: <code>twist.linear.x = self.linear</code> — তিন দিকেই দেয়াল, তবু মান <b>+0.2</b> (সামনে যাওয়া)। Source-এর নিজের comment-ই বলে \"it should be negative to reverse, but we follow the original logic\" — source যেমন, তেমনই শেখা।",
+  "op": "assign buggy linear.x",
+  "dbg": [
+   [
+    "value",
+    "+0.2 m/s — forward"
+   ],
+   [
+    "comment admits",
+    "should be negative to reverse"
+   ],
+   [
+    "angular",
+    "-0.2 rad/s turn right"
+   ]
+  ],
+  "fx": "twist.linear.x = self.linear   # +0.2 forward despite trapped (bug admitted in comment)",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ff7b72\">bug</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">def main bound</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">main(): laserAvoid(\"laser_Avoidance_a1\")</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">published to /cmd_vel</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">same beam also Left_warning +1 (overlap)</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">branch 6: front only - turn left</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">branch 1: trapped, linear = +0.2 FORWARD</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">comment admits: should be negative</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#da3633\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#ff7b72\">branch 1</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><circle cx=\"320.0\" cy=\"98.0\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"348.3\" cy=\"109.7\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"291.7\" cy=\"109.7\" r=\"2.6\" fill=\"#ff7b72\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">F 5</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">L 5</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">R 5</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear +0.2</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular -0.2</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">trapped, yet FORWARD (bug admitted)</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">তিন দিকে দেয়াল — তবু সামনে! </text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">source-এর নিজের comment-ই দোষ স্বীকার করে।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">angular -0.2: ডানে ঘোরার চেষ্টা।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 50,
+  "lns": [
+   50
+  ],
+  "kind": "event",
+  "cap": "wave 4: <code>/JoyState</code>-এ message এলো — আগে L50-এর পাহারা, <code>if not isinstance(msg, Bool): return</code>। ভুল type হলে callback নীরবে বেরিয়ে যায়, কিছুই বদলাতো না; এখন <code>Bool</code>-ই এসেছে, তাই guard পাস করে পরের line-এর দিকে এগোয়।",
+  "op": "type-check joystate message",
+  "dbg": [
+   [
+    "type",
+    "Bool from yahboom_M3Pro_laser.common (L12)"
+   ],
+   [
+    "guard",
+    "isinstance(msg, Bool) -> True, pass"
+   ],
+   [
+    "if wrong type",
+    "silent return — no state change"
+   ]
+  ],
+  "fx": "if not isinstance(msg, Bool): return   · wave 4 guard"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 83,
+  "lns": [
+   83,
+   84,
+   85
+  ],
+  "kind": "event",
+  "cap": "beam loop শেষে আসল গেট: L83 — <code>if self.Joy_active:</code> এখন True। L84 <code>self.pub_vel.publish(Twist())</code>: argument-ছাড়া <code>Twist()</code> মানে সব field শূন্য, <code>/cmd_vel</code>-এ থামার আদেশ। তারপর L85 <code>return</code> — twist তৈরিই হলো না (L87), 9-branch decision tree তো দূরের কথা।",
+  "op": "publish zero twist, skip tree",
+  "dbg": [
+   [
+    "gate",
+    "self.Joy_active evaluates True"
+   ],
+   [
+    "publish",
+    "Twist() default — all six fields 0.0"
+   ],
+   [
+    "skipped",
+    "L87+ 9-branch tree — return exits early"
+   ],
+   [
+    "note",
+    "beam loop L63-80 ran — warning counts discarded"
+   ]
+  ],
+  "fx": "self.pub_vel.publish(Twist())   · zero twist, then return",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">manual</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">sub /scan (fused) + sub /JoyState</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">pub /cmd_vel</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">published to /cmd_vel</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">same beam also Left_warning +1 (overlap)</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 6: front only - turn left</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 1: trapped, linear = +0.2 FORWARD</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">comment admits: should be negative</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">/JoyState True - human driving</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">zero Twist published - robot halts</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#6e40c8\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">ROBOT</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">human drive</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"228\" y=\"52\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">front |a|&lt;20</text><text x=\"414\" y=\"52\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">left 0..70</text><text x=\"414\" y=\"62\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">right -70..0</text><text x=\"228\" y=\"62\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">overlap 0..20 both</text><path d=\"M321.2 102.8h2.4v2.4h-2.4zM321.5 95.2h2.4v2.4h-2.4zM322.9 102.9h2.4v2.4h-2.4zM323.5 95.3h2.4v2.4h-2.4zM324.5 103.1h2.4v2.4h-2.4zM325.5 95.6h2.4v2.4h-2.4zM326.1 103.3h2.4v2.4h-2.4zM327.4 95.9h2.4v2.4h-2.4zM327.7 103.7h2.4v2.4h-2.4zM329.4 96.2h2.4v2.4h-2.4zM329.3 104.1h2.4v2.4h-2.4zM331.3 96.7h2.4v2.4h-2.4zM330.9 104.5h2.4v2.4h-2.4zM333.2 97.3h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M309.1 104.5h2.4v2.4h-2.4zM306.8 97.3h2.4v2.4h-2.4zM310.7 104.1h2.4v2.4h-2.4zM308.7 96.7h2.4v2.4h-2.4zM312.3 103.7h2.4v2.4h-2.4zM310.6 96.2h2.4v2.4h-2.4zM313.9 103.3h2.4v2.4h-2.4zM312.6 95.9h2.4v2.4h-2.4zM315.5 103.1h2.4v2.4h-2.4zM314.5 95.6h2.4v2.4h-2.4zM317.1 102.9h2.4v2.4h-2.4zM316.5 95.3h2.4v2.4h-2.4zM318.8 102.8h2.4v2.4h-2.4zM318.5 95.2h2.4v2.4h-2.4z\" fill=\"#7ee787\" fill-opacity=\".75\"/><path d=\"M338.4 92.4h2.4v2.4h-2.4zM341.3 85.3h2.4v2.4h-2.4zM341.7 93.8h2.4v2.4h-2.4zM345.1 87.0h2.4v2.4h-2.4zM344.9 95.5h2.4v2.4h-2.4zM348.7 89.0h2.4v2.4h-2.4zM347.9 97.5h2.4v2.4h-2.4zM352.2 91.2h2.4v2.4h-2.4zM350.8 99.6h2.4v2.4h-2.4zM355.5 93.7h2.4v2.4h-2.4zM353.5 102.0h2.4v2.4h-2.4zM358.7 96.4h2.4v2.4h-2.4zM356.0 104.5h2.4v2.4h-2.4zM361.6 99.3h2.4v2.4h-2.4zM358.4 107.2h2.4v2.4h-2.4zM364.3 102.5h2.4v2.4h-2.4zM360.5 110.1h2.4v2.4h-2.4zM366.8 105.8h2.4v2.4h-2.4zM362.5 113.1h2.4v2.4h-2.4zM369.0 109.3h2.4v2.4h-2.4zM364.2 116.3h2.4v2.4h-2.4zM371.0 112.9h2.4v2.4h-2.4zM365.6 119.6h2.4v2.4h-2.4zM372.7 116.7h2.4v2.4h-2.4z\" fill=\"#e3b341\" fill-opacity=\".75\"/><path d=\"M274.4 119.6h2.4v2.4h-2.4zM267.3 116.7h2.4v2.4h-2.4zM275.8 116.3h2.4v2.4h-2.4zM269.0 112.9h2.4v2.4h-2.4zM277.5 113.1h2.4v2.4h-2.4zM271.0 109.3h2.4v2.4h-2.4zM279.5 110.1h2.4v2.4h-2.4zM273.2 105.8h2.4v2.4h-2.4zM281.6 107.2h2.4v2.4h-2.4zM275.7 102.5h2.4v2.4h-2.4zM284.0 104.5h2.4v2.4h-2.4zM278.4 99.3h2.4v2.4h-2.4zM286.5 102.0h2.4v2.4h-2.4zM281.3 96.4h2.4v2.4h-2.4zM289.2 99.6h2.4v2.4h-2.4zM284.5 93.7h2.4v2.4h-2.4zM292.1 97.5h2.4v2.4h-2.4zM287.8 91.2h2.4v2.4h-2.4zM295.1 95.5h2.4v2.4h-2.4zM291.3 89.0h2.4v2.4h-2.4zM298.3 93.8h2.4v2.4h-2.4zM294.9 87.0h2.4v2.4h-2.4zM301.6 92.4h2.4v2.4h-2.4zM298.7 85.3h2.4v2.4h-2.4z\" fill=\"#4fc3f7\" fill-opacity=\".75\"/><path d=\"M321.7 88.8h2.4v2.4h-2.4zM322.0 81.2h2.4v2.4h-2.4zM325.1 89.1h2.4v2.4h-2.4zM325.9 81.5h2.4v2.4h-2.4zM328.5 89.5h2.4v2.4h-2.4zM329.9 82.1h2.4v2.4h-2.4zM331.9 90.3h2.4v2.4h-2.4zM333.7 82.9h2.4v2.4h-2.4zM335.2 91.2h2.4v2.4h-2.4zM337.6 84.0h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><path d=\"M304.8 91.2h2.4v2.4h-2.4zM302.4 84.0h2.4v2.4h-2.4zM308.1 90.3h2.4v2.4h-2.4zM306.3 82.9h2.4v2.4h-2.4zM311.5 89.5h2.4v2.4h-2.4zM310.1 82.1h2.4v2.4h-2.4zM314.9 89.1h2.4v2.4h-2.4zM314.1 81.5h2.4v2.4h-2.4zM318.3 88.8h2.4v2.4h-2.4zM318.0 81.2h2.4v2.4h-2.4z\" fill=\"#d2a8ff\" fill-opacity=\".75\"/><circle cx=\"320.0\" cy=\"98.0\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"348.3\" cy=\"109.7\" r=\"2.6\" fill=\"#ff7b72\"/><circle cx=\"291.7\" cy=\"109.7\" r=\"2.6\" fill=\"#ff7b72\"/><rect x=\"313.5\" y=\"129.5\" width=\"13\" height=\"17\" rx=\"3\" fill=\"#30363d\" stroke=\"#e6edf3\" stroke-width=\"1\"/><circle cx=\"324.0\" cy=\"134.0\" r=\"1.6\" fill=\"#7ee787\"/><circle cx=\"316.0\" cy=\"134.0\" r=\"1.6\" fill=\"#e3b341\"/><rect x=\"228\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"254\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">F 5</text><rect x=\"286\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"312\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">L 5</text><rect x=\"344\" y=\"196\" width=\"52\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"370\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">R 5</text><text x=\"228\" y=\"226\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">cmd_vel: linear 0.0</text><text x=\"414\" y=\"226\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">angular 0.0</text><text x=\"320\" y=\"188\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">Joy_active: zero Twist every scan</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">joystick এলে AI থামে।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">প্রতিটি scan-এ শূন্য কমান্ড।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 182,
+  "lns": [
+   182,
+   183
+  ],
+  "kind": "event",
+  "cap": "wave 5, Ctrl+C: <code>rclpy.spin(laser_avoid)</code> ভেঙে পড়ল <code>KeyboardInterrupt</code>-এ, আর L182-এর <code>except KeyboardInterrupt:</code> ধরে ফেলল। L183 একটাই শব্দ, <code>pass</code> — নিজে কিছু করে না; কাজ হলো exception গিলে ফেলা, যাতা ঘরের মেঝেতে traceback না ছড়ায় আর নিয়ন্ত্রণ সরসরি <code>finally</code>-তে নামে।",
+  "op": "catch ctrl-c, swallow it",
+  "dbg": [
+   [
+    "raised at",
+    "rclpy.spin(laser_avoid) — L181"
+   ],
+   [
+    "caught by",
+    "except KeyboardInterrupt"
+   ],
+   [
+    "body",
+    "pass — exception swallowed, no traceback"
+   ]
+  ],
+  "fx": "except KeyboardInterrupt:   · spin loop breaks, pass"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 170,
+  "lns": [
+   170,
+   171,
+   172,
+   173
+  ],
+  "kind": "event",
+  "cap": "shutdown-এর brake: <code>cmd1 + cmd2</code> জোড়া লেগে <code>os.system</code> দিয়ে shell-এ <code>ros2 topic pub --once /cmd_vel ...</code> চলে — নিজের publisher নামানোর মধ্যেও এই process-লেভেল রাস্তা কাজ করে, আর চাকা শেষ কমান্ডে ছুটে থাকা বন্ধ হয়।",
+  "op": "fire shell brake command",
+  "dbg": [
+   [
+    "cmd1",
+    "ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist (trailing space)"
+   ],
+   [
+    "cmd2",
+    "\"{linear: {x: 0.0, ...}, angular: {...}}\""
+   ],
+   [
+    "why shell",
+    "survives node teardown — process-level brake"
+   ]
+  ],
+  "fx": "os.system(\"ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \" + yaml-zero)",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">braked</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">linear 0.2 · angular 0.2 · LaserAngle 20.0</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ResponseDist 0.3 -> gate 0.45 m</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">published to /cmd_vel</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">same beam also Left_warning +1 (overlap)</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 6: front only - turn left</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 1: trapped, linear = +0.2 FORWARD</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">comment admits: should be negative</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/JoyState True - human driving</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">zero Twist published - robot halts</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">exit_pro: ros2 topic pub --once</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">cmd_vel zeroed via shell</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#da3633\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">braked</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"240\" y=\"58\" width=\"160\" height=\"86\" rx=\"5\" fill=\"#161b22\" stroke=\"#da3633\"/><text x=\"320\" y=\"72\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">exit_pro()</text><text x=\"320\" y=\"84\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">os.system(ros2 topic pub</text><text x=\"320\" y=\"94\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e6edf3\">  --once /cmd_vel ...)</text><text x=\"320\" y=\"105\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">yaml-style zero message</text><rect x=\"258\" y=\"116\" width=\"124\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"320\" y=\"125.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">cmd_vel zeroed</text><text x=\"320\" y=\"152\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#484f58\">shell brake works during teardown</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">wheels stopped - safe shutdown</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">Ctrl+C ধরা পড়ল, finally চলল।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">shell-brake নামানোর মধ্যেও কাজ করে।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 187,
+  "lns": [
+   187
+  ],
+  "kind": "event",
+  "cap": "যাত্রার শেষ line, L187: <code>rclpy.shutdown()</code> — rclpy-র context বন্ধ। এরপর <code>main()</code>-এর আর কোনো statement নেই, function ফিরে গিয়ে entry point শেষ করে, process বেরিয়ে যায় (exit 0, illustrative)। runbook-এর দুই কমান্ড আর পাঁচটা wave-এর পুরো গল্প এখানেই পূর্ণ।",
+  "op": "shutdown rclpy context",
+  "dbg": [
+   [
+    "call",
+    "rclpy.shutdown() — closes rclpy context"
+   ],
+   [
+    "after",
+    "main() returns — nothing left to run"
+   ],
+   [
+    "exit",
+    "process ends, code 0 (illustrative)"
+   ]
+  ],
+  "fx": "rclpy.shutdown()   · main returns, process exits",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">done</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">conut = 3</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">rclpy.spin - event loop open</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam angles in degrees (illustrative)</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 10: linear +0.2, angular 0.0</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">published to /cmd_vel</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">beam +5 deg: front_warning +1</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">same beam also Left_warning +1 (overlap)</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 6: front only - turn left</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">branch 1: trapped, linear = +0.2 FORWARD</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">comment admits: should be negative</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/JoyState True - human driving</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">zero Twist published - robot halts</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">exit_pro: ros2 topic pub --once</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">cmd_vel zeroed via shell</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">destroy_node + rclpy.shutdown</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">clean exit</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#238636\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">RQT_GRAPH</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">verified</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"230\" y=\"56\" width=\"62\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"261\" y=\"66.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">raw front</text><rect x=\"340\" y=\"56\" width=\"62\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#9e6a03\" stroke-width=\"1\"/><text x=\"371\" y=\"66.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">raw rear</text><line x1=\"261.0\" y1=\"73.0\" x2=\"288.0\" y2=\"94.0\" stroke=\"#7ee787\" stroke-width=\"1.2\"/><line x1=\"371.0\" y1=\"73.0\" x2=\"344.0\" y2=\"94.0\" stroke=\"#e3b341\" stroke-width=\"1.2\"/><rect x=\"250\" y=\"94\" width=\"132\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#f0883e\" stroke-width=\"1\"/><text x=\"316\" y=\"104.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">/laserscan_multi_merger</text><line x1=\"316.0\" y1=\"111.0\" x2=\"316.0\" y2=\"128.0\" stroke=\"#f0883e\" stroke-width=\"1.2\"/><rect x=\"262\" y=\"128\" width=\"108\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#d29922\" stroke-width=\"1\"/><text x=\"316\" y=\"138.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">/laser_filter_node</text><line x1=\"316.0\" y1=\"145.0\" x2=\"316.0\" y2=\"162.0\" stroke=\"#d29922\" stroke-width=\"1.2\"/><rect x=\"276\" y=\"162\" width=\"80\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"316\" y=\"171.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">/scan fused</text><line x1=\"340.0\" y1=\"170.0\" x2=\"362.0\" y2=\"182.0\" stroke=\"#8b949e\" stroke-width=\"1.2\" stroke-dasharray=\"2 2\"/><rect x=\"360\" y=\"174\" width=\"56\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"388\" y=\"184.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance_a1</text><line x1=\"416.0\" y1=\"183.0\" x2=\"400.0\" y2=\"200.0\" stroke=\"#ff7b72\" stroke-width=\"1.2\"/><rect x=\"370\" y=\"196\" width=\"60\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#da3633\" stroke-width=\"1\"/><text x=\"400\" y=\"205.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#ff7b72\">/cmd_vel</text><rect x=\"230\" y=\"196\" width=\"44\" height=\"14\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"252\" y=\"205.2\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#4fc3f7\">rviz2</text><text x=\"320\" y=\"230\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">fusion chain (folder 10) + behavior node (folder 11)</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">সব বন্ধ, সব শূন্য — safe end।</text>"
+ }
+]

@@ -1,0 +1,19 @@
+{
+ "app": "13. lidar guard",
+ "file": "laser_Warning.py",
+ "files": [
+  "README.md",
+  "laser_driver.launch.py",
+  "laser_Warning.py"
+ ],
+ "note": "নিচেরটি <b>step-by-step execution simulation</b> — এই folder-এর তিনটি source file (192 lines) ঠিক <b>১৮৪টি step</b>-এ ধরে চলে। Model-টি folder-এর <b>runbook + two-pass Python নাচ</b>: README-র তিনটি command-ই chronology দেয়; <code>ros2 launch</code> যখন launch file-এর মুখোমুখি হয়, simulation সেই file-এ ডুবে যায় — প্রথমে <b>constructor phase</b> (<code>generate_launch_description()</code>-এর শরীর একবার চলে, দুটি path <i>eagerly</i> বাঁধা পড়ে), তারপর <b>run phase</b> (দুটি IncludeLaunchDescription আসলে ফায়ার হয় — folder 10-এর merger + filter, illustrative)। এরপর <code>ros2 run ... laser_Warning</code>: Python-এর দুই পাস — <b>import pass</b>-এ class-ক্লাস সব শুধু define হয় (একটাও দেহ-লাইন চলে না), <b>main pass</b>-এ constructor সত্যি চলে (দুই কান, দুই মুখ — <code>/cmd_vel</code> সঙ্গে নতুন <code>/beep</code> buzzer), তারপর <code>spin</code>-এ বসে থাকে। শেষ <b>event wave</b> গুলোতে <code>/scan</code> আর <code>/JoyState</code> message নামতে থাকে — guard-এর ছয়টি canonical wave (A 0.90m@+14°, B 0.70m@+20°, C 0.48m@0° beep+স্থির, D 0.50m@−20° beep+ডানে ঘূর্ণন, E সামনে ফাঁকা — buzzer latch, F 0.80m@+8° শান্ত), joystick override, আর Ctrl+C-র <code>finally</code>-brake। প্রতিটি step-এ <b>BEFORE → AFTER</b> debug value আর ডান পাশে robot-panel বদলায়।",
+ "w": 440,
+ "h": 330,
+ "defaultDurs": {
+  "struct": 420,
+  "exec": 1800,
+  "event": 1800
+ },
+ "defs": "<defs><linearGradient id=\"egB\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1c222b\"/><stop offset=\"1\" stop-color=\"#12161d\"/></linearGradient><linearGradient id=\"egW\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"><stop offset=\"0\" stop-color=\"#4fc3f7\" stop-opacity=\".9\"/><stop offset=\"1\" stop-color=\"#4fc3f7\" stop-opacity=\".15\"/></linearGradient><marker id=\"ea\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto\"><path d=\"M0 0L10 5L0 10z\" fill=\"#8b949e\"/></marker></defs>",
+ "rob0": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">idle</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">not started</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><text x=\"320\" y=\"145\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">robot off</text><text x=\"320\" y=\"158\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">bringup next (L1)</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">idle — কোনো command টাইপ হয়নি।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">README-র তিন command সামনে।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">robot বন্ধ ধরা হলো (illustrative)।</text>"
+}

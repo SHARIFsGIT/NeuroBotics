@@ -1,0 +1,197 @@
+{
+ "n": 10,
+ "id": "part-10",
+ "fname": "follow_line.py",
+ "enTitle": "Detector, State Defaults & Scan Callback",
+ "lang": "python",
+ "start": 58,
+ "end": 145,
+ "flags": [],
+ "explain": [
+  {
+   "a": 58,
+   "b": 60,
+   "text": "L58-এর ফাঁকা রেখার পর আগের Part-এর L56-57-এ সাজানো ApproximateTimeSynchronizer-এর দুই স্রোতের জন্য দুটো আলাদা converter: L59 <code>self.rgb_bridge = CvBridge()</code> color ফ্রেমের জন্য, L60 <code>self.depth_bridge = CvBridge()</code> depth ফ্রেমের জন্য। পরের Part-এর সিঙ্ক-callback-এ ঠিক এই দুটোই নামবে — color ফ্রেম <code>self.rgb_bridge</code> দিয়ে 'rgb8'-এ রূপান্তর হবে (L149), depth ফ্রেম <code>self.depth_bridge</code> দিয়ে (L152)। CvBridge হলো ROS Image message আর OpenCV frame-এর মাঝের অনুবাদক; vendor দুই স্রোতের জন্য দুই instance রেখেছে — নাম দেখেই বোঝা যায় কোনটা কোন ছবির দায়িত্বে, দুই ফ্রেমের রূপান্তর-পথ একে অন্যের থেকে আলাদা থাকে।"
+  },
+  {
+   "a": 61,
+   "b": 64,
+   "text": "L61-এর ফাঁকা রেখার পর L62 থেকে AprilTag detector তৈরি শুরু — AprilTag হলো QR-কোড-এর মতো ছাপ, কিন্তু ক্যামেরা তার কোণ-ঝোঁক পর্যন্ত মেপে দিতে পারে; এই robot-এ সেই tag পরে 'Remove' মোডের ভৌত obstacle-এর ভূমিকায় বসবে। <code>self.at_detector = Detector(searchpath=['apriltags'],</code> — L22-এ import হওয়া dt_apriltags-এর Detector class; bracket L69 পর্যন্ত খোলা, আর L62-এর শেষে comma-র পরে একটা space source-এই আছে। L63 <code>families='tag36h11',</code> — 36h11 পরিবারের tag খুঁজবে, AprilTag-জগতের সবচেয়ে প্রচলিত default এটি। L64 <code>nthreads=8,</code> — detection-এ জড়ানোর জন্য 8টা CPU thread; Jetson-এর একাধিক core কাজে লাগানোর চেষ্টা (এই সংখ্যাগুলোর library-ভেতরের কাজকর্ম আমাদের সামনে নেই — অর্থগুলো vendor-doc অনুযায়ী, illustrative)।"
+  },
+  {
+   "a": 65,
+   "b": 69,
+   "text": "বাকি পাঁচটা tuning-সংখ্যা, প্রতিটির প্রচলিত অর্থও vendor-doc ঘেঁটে বোঝা — illustrative হিসেবেই পড়ো। L65 <code>quad_decimate=2.0,</code> — ছবির pixel-ঘনত্ব detection-এর আগে 2 গুণ কমিয়ে নেওয়া: গতি বাড়ে, সূক্ষ্মতা কিছুটা কমে। L66 <code>quad_sigma=0.0,</code> — আগে কোনো blur নয়। L67 <code>refine_edges=1,</code> — পাওয়া tag-এর কোণার ধার আরেকবার সূক্ষ্ম করা হয়। L68 <code>decode_sharpening=0.25,</code> — ভেতরের কোড পড়ার সময় ছবির ধার পাকানোর মাত্রা। L69 <code>debug=0)</code> — debug-ছবির আউটপুট বন্ধ, আর এখানেই L62-এ খোলা bracketটা বন্ধ। এই পুরো detector-ই পরে সিঙ্ক-callback-এর L157-এ detect ডাকার সময় কাজে নামবে।"
+  },
+  {
+   "a": 70,
+   "b": 71,
+   "text": "দুটো permission-flag, জন্ম দুটোই খোলা অবস্থায়। L70 <code>self.move_flag = True </code> — শেষে একটা space source-এ আছে; এই flag পরে Remove মোডে জিজ্ঞেস করা হয়: tag-এর দিকে এঁটে এঁটে নড়ার অনুমতি এখনো আছে কি না (L350)। L71 <code>self.pubPos_flag = True</code> — tag-এর position-দূরত্বের তথ্য upstream-এ পাঠানোর অনুমতি; Remove-ক্রলে একবার তথ্য পাঠানোর পর দুটোই False করে রাখা হয় (L359-360), যাতে একই tag-এর জন্য বারবার না যায়। মনে রেখো এই পতাকা-দুটোই আবার খুলে দেওয়ার দায়িত্ব এই Part-এর একদম শেষ callback-টার।"
+  },
+  {
+   "a": 72,
+   "b": 73,
+   "text": "L72 ফাঁকা রেখা, তারপর L73 <code>self.declare_param()</code> — এক লাইনের এই ডাকটাই পুরো node-এর 14টা ROS parameter-এর জন্ম ও নামকরণ: function-টি L187-218-এ বসে আছে (পরের Part-এ পড়ব), প্রতিটা parameter declare করে সঙ্গে সঙ্গে মানটা self-attribute-এ তুলে নেয়। এই ডাকটা এই ক্রমে বসানো বলেই এর নিচের লাইনগুলো <code>self.LaserAngle</code> বা <code>self.ResponseDist</code>-এর মতো attribute-এর উপর ভর করতে পারে; আর নিচের L94 ও L108-এর comment-হয়ে-যাওয়া পুরনো hardcode লাইন দুটো সেই পুরনো যুগেরই জীবাশ্ম — parameter-যুগে তাদের দরকার শেষ।"
+  },
+  {
+   "a": 74,
+   "b": 79,
+   "text": "ছয়টা attribute-এর জন্ম, এক লাইনে একটা করে, সবাই খালি বা বন্ধ অবস্থায়। <code>self.Joy_active = False</code> — এখনো কোনো joystick বা state machine নিয়ন্ত্রণ দাবি করেনি; <code>self.img = None</code> — এখনো একটা ফ্রেমও আসেনি; <code>self.circle = ()</code> — লাইনের centroid-বৃত্ত এখনো অজানা; <code>self.hsv_range = ()</code> — লাইনের রঙের HSV-সীমা এখনো নেই; <code>self.Roi_init = ()</code> — mouse দিয়ে আঁকা ROI-বাক্সও নেই। শেষের <code>self.warning = 1</code>-টা কৌতূহলোদ্দীপক: পুরো file-এ এটি আর কোথাও পড়া হয় না — obstacle-সতর্কতা আসলে গণনা হওয়া front_warning attribute থেকে আর buzzer-অবস্থা Buzzer_state থেকে; warning নামটা বহন করে শুধু পুরনো নকশার স্মৃতি।"
+  },
+  {
+   "a": 80,
+   "b": 84,
+   "text": "রাষ্ট্র-যন্ত্রের মূল পাঁচটা switch। <code>self.Start_state = True</code> — execute-এর PID-পুনর্জন্ম-হিসাব রাখে (L248-250); <code>self.dyn_update = False</code> — নতুন HSV ক্যালিব্রেশন পেলে সেটা file-এ লিখতে হবে কি না, সেই পতাকা; <code>self.Buzzer_state = False</code> — buzzer বন্ধ; <code>self.select_flags = False</code> — mouse দিয়ে ROI টানা চলছে না। আর সবচেয়ে গুরুত্বপূর্ণ লাইন L84: <code>self.Track_state = 'identify'</code> — state machine-টা জন্মাচ্ছে 'init' অবস্থায় নয়, 'identify'-তে! অর্থাৎ node উঠেই user-এর কাছে mouse দিয়ে ROI আঁকতে বসে না; সে আগে চেষ্টা করে আগেরবারের ক্যালিব্রেশন-ফাইলটা পড়ে নিতে (L317), ফাইলটা না পেলেই কেবল 'init'-এ নেমে আঁকতে বসে।"
+  },
+  {
+   "a": 85,
+   "b": 88,
+   "text": "চারটা ঠিকানা-জাতীয় attribute। <code>self.windows_name = 'frame'</code> — OpenCV ভিডিও-উইন্ডোর নাম; L173-174-এর imshow আর L303-এর namedWindow একই নাম ধরে খোঁজে, তাই নাম এক জায়গায় রাখলে বদলে যাওয়ার ঝুঁকি থাকে না। <code>self.cols, self.rows = 0, 0</code> আর <code>self.Mouse_XY = (0, 0)</code> — mouse-ROI আঁকার শুরু-শেষ বিন্দু আর প্রথম ক্লিকের স্থান; onMouse-ই পরে এগুলো ভরবে। L88 <code>self.hsv_text = \"/home/jetson/yahboomcar_ws/src/M3Pro_demo/M3Pro_demo/LineFollowHSV.text\"</code> — সেভ করা HSV ক্যালিব্রেশনের পথ, কিন্তু দুটো জিনিস খেয়াল করো: পথটা Jetson-এর home-এর absolute পথ, তাই অন্য কম্পিউটারে ফাইল থাকলেও robot এখানেই খুঁজবে; আর extension vendor-এর নিজের বানানে <code>.text</code>, চেনা '.txt' নয় — যেমন আছে তেমনই রাখা।"
+  },
+  {
+   "a": 89,
+   "b": 93,
+   "text": "লাইন-ফলোয়িং-এর ইঞ্জিন-ঘরের পাঁচটা মান। L89 <code>self.color = color_follow()</code> — L11-এর wildcard-import থেকে আসা vendor class-এর object; এর <code>Roi_hsv</code> (L309) আর <code>line_follow</code> (L320) method-ই পরে রঙ-ছাঁকনি আর centroid বের করবে — ভেতরের algorithm আমাদের সামনে নেই, follow_common থেকে আসে, illustrative। <code>self.scale = 1000</code> — PID-লাভ ভাগ করার হর। <code>self.FollowLinePID = (50, 0, 10)</code> — লাইন ধরার PID-টির (Kp, Ki, Kd); <code>self.RemovePID = (40, 0, 15.0)</code> — tag-এর দিকে এঁটে নড়ার PID। L93 <code>self.linear = 0.2</code> — সামনের গতির প্রার্থিত মান; অথচ লক্ষ করো, L73-এর declare_param-এর ভেতরে linear parameter-এর default 0.18 পড়ে এসে self.linear-এ বসার পর এই L93 সরাসরি 0.2 লিখে দেয় — constructor শেষে attribute-টার মান দাঁড়ায় 0.2-তে। আর আসল কথা: চালানোর সময় execute() তো গতি সরাসরি 0.1 লিখে নেয় (L269), তাই এই attribute দিয়ে চাকা কখনোই আসলে ঘোরে না।"
+  },
+  {
+   "a": 94,
+   "b": 98,
+   "text": "L94 <code>#self.LaserAngle = 60</code> — জীবাশ্ম-comment: LaserAngle এখন declare_param-এর parameter (মান int 60), পুরনো hardcode লাইনটা বন্ধ করে রাখা হয়েছে; L113-এর print প্রমাণ দেখবে সেটা সত্যিই এসেছে। L95 <code>self.PID_init()\t</code> — লাইনের শেষে একটা tab আছে; এই এক ডাকেই দুটো controller তৈরি হয় যায় (follow_common-এর vendor simplePID দিয়ে): FollowLinePID-এর 50/0/10 ভাগ হয়ে 0.05/0/0.01, RemovePID-এর 40/0/15.0 হয়ে 0.04/0/0.015 — ভাগের হিসাব পরের Part-এ। L96 <code>self.img_flip = False</code> — ক্যামেরার ছবি আয়না-উল্টো করা হবে না; পরে এটাই steering-এর চিহ্ন (L263/L265) আর ছবি-উল্টানোর সিদ্ধান্ত (L296) নেয়। L97 <code>self.refresh  = False\t</code> — সমান চিহ্নের আগে দুটো space, লাইনের শেষে একটা tab: দুটোই source-এর নিজস্ব হাতের ভঙ্গি, কেউ সাজিয়ে দেয়নি। L98 ফাঁকা রেখা দিয়ে constructor-এর প্রথম পর্ব শেষ।"
+  },
+  {
+   "a": 99,
+   "b": 104,
+   "text": "দ্বিতীয় দফার attribute-জন্ম। L99 <code>self.pubCurrentJoints()</code> — এই Part-এর শেষে বসে থাকা helper-টিই এখনই একবার ডাকা হলো: arm-এর বর্তমান ভঙ্গি Curjoints topic-এ জানিয়ে দেয়। <code>self.tags = []</code> — AprilTag-তালিকা খালি, প্রথম সিঙ্ক-ফ্রেমেই detector এটা ভরবে (L157); <code>self.depth_image_info = []</code> — depth-ছবির আসনও এখনো খালি, পরে সেখানে মিলিমিটার-মানের float32 ছবি বসবে (L155)। <code>self.joint5 = Int16()</code> আর <code>self.joint6 = Int16()</code> — arm-এর কবজি-দুটোর কমান্ড-message, আর <code>self.joint6.data = 120</code> বসিয়ে দেওয়া হলো 120 ডিগ্রি default। ইয়ত্তা: L47-এর TargetJoint6_pub পুরো file-এ কোনোদিন publish-ই হয় না, তাই এই 120 কখনো বাইরে যায় না — পরে কেবল joint5-ই Remove মোডে পাঠানো হয়, তাও পরপর দুবার (L375-376)।"
+  },
+  {
+   "a": 105,
+   "b": 110,
+   "text": "সময়-জোখা আর নিরাপত্তা-গণনার জন্ম। <code>self.Start_ = True</code> আর <code>self.start_time = time.time()</code> — constructor-শেষের মুহূর্তটা ঘড়িতে পোক্ত করা হলো (time নিজে follow_common wildcard থেকে এসেছে, মনে আছে তো); এই ঘড়ি থেকেই পরে 3 সেকেন্ড গুনে robot নিজে নিজে 'tracking'-এ উঠে যাবে (L167-170)। <code>self.count = True</code> — নাম 'count', অথচ এটা সংখ্যা নয়, সত্য-মিথ্যের পতাকা: অটো-আর্মিং এখনো ঘটেনি, এই পতাকাই সেটা মনে রাখে। L108 <code>#self.ResponseDist = 0.25</code> — আরেকটা জীবাশ্ম-comment; আসল মান declare_param থেকে আসে। <code>self.front_warning = 0</code> — সামনের বাধার beam-গণনার রেজিস্টার শূন্য থেকে শুরু; প্রতিটা নতুন scan-এ সে আবার শূন্যে নামবে। আর L110-এর <code>self.Joy_active = False</code> — একই কাজ L74-এও হয়েছিল; দ্বিতীয় লেখায় ক্ষতি নেই, কিন্তু দাগটা vendor-এর template-সম্পাদনারই।"
+  },
+  {
+   "a": 111,
+   "b": 114,
+   "text": "constructor-উপসংহারের চারখানা print। <code>print(\"Init Done.\")</code> — এই এক লাইন যা বলে তার চেয়ে বেশি বলে: এখানে পৌঁছেছে মানে L52-55-এর blocking arm-প্রতীক্ষাটাও পেরিয়ে এসেছে, কারণ সেটা এর অনেক আগেই বসে ছিল। <code>print(\"----------------------------\")</code> console-এ একটা বিভাজক-রেখা দেয়। তারপর দুটো যাচাই-print: <code>print(\"self.LaserAngle: \",self.LaserAngle)</code> আর <code>print(\"self.ResponseDist: \",self.ResponseDist)</code> — declare_param সত্যিই attribute দুটো ভরেছে কি না চোখে দেখে নেওয়ার ব্যবস্থা; LaserAngle int হিসেবে declare হয়েছিল, তাই ছাপা পড়বে 60 — 60.0 নয়; ResponseDist ছাপা পড়বে 0.25।"
+  },
+  {
+   "a": 115,
+   "b": 118,
+   "text": "তিনটা ফাঁকা রেখা (L115-117) দিয়ে constructor-অধ্যায় শেষ, callback-অধ্যায় শুরু। L118 <code>def JoyStateCallback(self, msg):</code> — /JoyState topic-এর খবরের জন্য callback; আগের Part-এর L38 আর L40 — দুই subscription-ই এই নামটা ধরে রেখেছিল, মনে আছে তো? এখানে একটা সূক্ষ্ম বিষয় আছে: file-এর একদম শেষে L397-এ একই নামে আরেকটা definition বসে আছে — দেহ প্রায় হুবহু, শুধু ওখানে comma-র পরের space-টা নেই; Python class-দেহে পরের definition-ই জেতে, তাই runtime-এ আসলে কাজ চালায় L397-এরটা। যেহেতু দুটোর কাজ এক, আচরণে কিছু বদলায় না — তবু এই দ্বৈততা source-এর নিজস্ব কাটাছেঁড়ার দাগ বহন করে, কোনো ভুল নয়।"
+  },
+  {
+   "a": 119,
+   "b": 120,
+   "text": "দুই লাইনের দেহ। L119 <code>if not isinstance(msg, Bool): return</code> — রক্ষাকবচ: message সত্যিই Bool কি না, না হলে নীরবে ফেরত; ROS 2 সাধারণত ঠিক type-ই দেয়, তবু vendor-এর সতর্কতা। L120 <code>self.Joy_active = msg.data</code> — সত্য মানে বাইরের কোনো joystick বা state machine বলছে 'নিয়ন্ত্রণ এখন আমার হাতে'; পরে execute() ঠিক এই attribute দেখে following থামিয়ে দেয় (L247-251)। ছোট্ট callback, কিন্তু এটাই robot-এর হস্তক্ষেপ-সুইচ — True যাওয়া মাত্র লাইন-ফলোয়িং স্থগিত, আর Joy ছেড়ে দিলে আবার চালু।"
+  },
+  {
+   "a": 121,
+   "b": 124,
+   "text": "L122 <code>def registerScan(self, scan_data):</code> — lidar-খবরের দরজা; আগের Part-এর L39-এ এটি জুড়েছিল <code>/scan1</code>-এ — খেয়াল রেখো, এটা raw একক lidar-এর স্রোত, এই folder-এর SLAM-যাত্রায় merger যে fused 360-degree <code>/scan</code> বানায় সেটা নয়। L123 <code>self.front_warning = 0</code> — প্রতিটা নতুন scan-এর শুরুতেই গণনাকারী মুছে ফেলা হয়; তাই front_warning সবসময় শুধু সর্বশেষ scan-এ সামনে কতটা ঘন বাধা ছিল সেটা বলে, ইতিহাস জমা রাখে না। L124 <code>if not isinstance(scan_data, LaserScan): return</code> — সেই isinstance-রক্ষাকবচই, এবার LaserScan-এর জন্য।"
+  },
+  {
+   "a": 125,
+   "b": 128,
+   "text": "L125 <code>ranges = np.array(scan_data.ranges)</code> — প্রতিটা beam-এর দূরত্বের তালিকাকে numpy array-তে তোলা হলো; তারপর L126 <code>for i in range(len(ranges)):</code> — প্রতিটা beam একটা একটা করে বিচারে আসবে। L127 প্রতিটা beam-এর কোণ: <code>angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG</code> — LaserScan-এর কোণ থাকে radian-এ; শুরুর angle_min থেকে প্রতি ধাপে angle_increment করে বেড়ে i-তম beam-এর কোণ, তারপর L12-এর 57.29578 গুণে degree-এ নামে। L128 তার সঙ্গে সামনের কোণ-জানলা আর বৈধতার যাচাই একসাথে: <code>if (abs(angle) < self.LaserAngle*0.5 or abs(angle) > 360 - self.LaserAngle*0.5) and ranges[i] !=0.0 :</code> — জানলার দুই পাশ, আর দূরত্ব শূন্য-নয় শর্ত (<code>!=0.0</code>-এ space নেই, আর colon-এর আগের space-টা source-এর নিজস্ব ছাপ)। জানলার পূর্ণ হিসাব এই Part-এর math-অংশে খোলা।"
+  },
+  {
+   "a": 129,
+   "b": 131,
+   "text": "জানলার ভেতরে ঢুকলে দূরত্বের পরীক্ষা — L129 <code>if ranges[i] <= self.ResponseDist * 1.5: </code> (colon-এর পরের space-টাও source-এ আছে): ResponseDist 0.25, তাই সীমা 0.25 গুণ 1.5 বরাবর 0.375 মিটার — বাধা মাপার দূরত্বের সাড়ে-আট গুণ নয়, দেড় গুণ; অর্থাৎ থামা-দূরত্বের অনেক আগে থেকেই সতর্ক-গণনা জমতে থাকে। L130 <code>#print(\"-+-+-+-+-+-+-+-+-\")</code> — ডিবাগ-ছাপার জীবাশ্ম, বন্ধ করা আছে। L131 <code>self.front_warning += 1\t\t\t</code> — শর্ত মেলা প্রতিটা beam-এ গণনাকারী এক বাড়ে; লাইনের শেষে তিনটা tab source-এই বসে আছে। পরে execute() ঠিক এই গণনাকারীটাই বিচার করবে: 10-এর বেশি হলে থামো আর buzzer বাজাও (L270-275)।"
+  },
+  {
+   "a": 132,
+   "b": 134,
+   "text": "দুই লাইনের বিচ্ছেদ: L132 পুরো ফাঁকা, আর L133 পুরো লাইনটাই একটা একা tab-অক্ষর — চোখে ফাঁকা দেখালেও byte-এ শূন্য নয়; indentation-সম্পাদনার আঁচড় হিসেবে রয়ে গেছে, আর থাকবে। তারপর L134 <code>def pubCurrentJoints(self):</code> — ছোট্ট helper, যার ডাক আমরা এইমাত্র L99-এ দেখে এলাম; কাজ একটাই — বর্তমান arm-ভঙ্গি জানানো।"
+  },
+  {
+   "a": 135,
+   "b": 137,
+   "text": "তিন লাইনের দেহ। <code>cur_joints = CurJoints()</code> — L25-এ import হওয়া arm_interface-এর message; <code>cur_joints.joints = self.init_joints</code> — L51-এর [90, 90, 12, 20, 90, 0] ভঙ্গিটাই ভরা হলো; <code>self.pub_cur_joints.publish(cur_joints)</code> — L48-এ বানানো Curjoints topic-এ (queue 1) পাঠানো হলো। খেয়াল করো এটা কমান্ড নয়, খবর: arm-কে সরাতে বলা হচ্ছে না — বাইরের কোনো শ্রোতাকে (যেমন arm-এর UI বা state machine-কে) জানানো হচ্ছে এই মুহূর্তে arm কোথায় দাঁড়িয়ে আছে বলে এই node-টি মনে করে।"
+  },
+  {
+   "a": 138,
+   "b": 140,
+   "text": "আবার বিচ্ছেদ, আবার ভিন্ন ছাপে: L138 পুরো ফাঁকা, কিন্তু L139-এ চারটা space বসে আছে — এই file যেখানে সর্বত্র tab-এ সাজানো, কেবল এই এক জায়গায় space-এর লাইন; অন্য কারো সম্পাদকের নিজস্ব দাগ। তারপর L140 <code>def get_graspStatusCallBack(self,msg):</code> — নামেই কাজ বোঝা যায়: grasp_done topic-এর খবর নেওয়া (আগের Part-এর L49, queue 100)। এই callback-টাই upstream arm-নিয়ন্ত্রকের 'grasp শেষ' বার্তা গ্রহণের দরজা — যে হ্যান্ডশেকের অন্য পাশে এই node-এর নিজের <code>/action_feedback</code> publisher আছে।"
+  },
+  {
+   "a": 141,
+   "b": 143,
+   "text": "L141 <code>if msg.data == True:</code> — শুধু সত্য-সংবাদেই সাড়া: grasp শেষ হয়েছে। তখন তিনটা কাজের প্রথম দুটো: <code>self.move_flag = True</code> — Remove মোডে এঁটে নড়ার অনুমতি ফিরল (ক্রল-পর্বে L359-এ কেড়ে নেওয়া হয়েছিল); <code>self.pubPos_flag  = True</code> — তথ্য পাঠানোর অনুমতিও ফিরল (L360-এ False হয়েছিল); সমান চিহ্নের আগে দুটো space-এ লেখা — এই ভঙ্গিও source-এর নিজস্ব, সাজানো হয়নি। অর্থাৎ একটা tag সফলভাবে ধরে ফেলা হলে আবার robot নড়তে ও জানাতে প্রস্তুত।"
+  },
+  {
+   "a": 144,
+   "b": 145,
+   "text": "তৃতীয় কাজটা শর্তে বাঁধা: <code>if len(self.tags) == 0:</code> — ক্যামেরায় এই মুহূর্তে কোনো AprilTag দেখা যাচ্ছে না, তখনই <code>self.Track_state = 'tracking'</code> — লাইন-ফলোয়িং-এ ফেরত যাও। দুটো খেয়াল: tag চোখের সামনে থাকলে ফিরে যাওয়ার দরকার নেই, কারণ পরের ফ্রেমেই L341-এর pivot আবার তাকে 'Remove'-এ টেনে নিত; আর এই এক লাইনটাই upstream-এর 'grasp শেষ, এবার লাইন ধরো' বার্তার কার্যরূপ — robot-এর ফোকাস ফিরে আসে মেঝের লাইনে। এই Part-এর শুরুতে যে state machine 'identify' নিয়ে জন্মেছিল, তার সব গন্তব্য-দরজা এখন একে একে খুলে গেল।"
+  }
+ ],
+ "math": {
+  "intro": "registerScan-এর পুরো বিচার ঘুরে আবর্তিত হয় দুটি সংখ্যাকে ঘিরে: LaserAngle 60 থেকে কোণের জানলা, আর ResponseDist 0.25 থেকে দূরত্বের সীমা। প্রশ্ন তিনটি — কোন কোণগুলো 'সামনে' গোনা হবে, কোন দূরত্বগুলো 'কাছে', আর কতগুলো beam মিললে বিপদ। তিনটি উত্তরের শেষে আছে একটা সূক্ষ্ম wrap-জানলা, যেটা প্রথম নজরে চোখে পড়েই না।",
+  "levels": [
+   {
+    "label": "Level 1 — কেন্দ্রীয় জানলা: 30 ডিগ্রির দুই পাশ",
+    "latex": "\\[ |\\theta| < \\frac{A}{2} = \\frac{60}{2} = 30^{\\circ} \\]",
+    "text": "L128-এর প্রথম শর্ত <code>abs(angle)</code>-এর তুলনা <code>self.LaserAngle*0.5</code>-এর সঙ্গে। LaserAngle 60, তাই অর্ধেক 30 — সোজা সামনের 0° থেকে দুই দিকে 30 ডিগ্রি করে, মোট 60 ডিগ্রি চওড়া একটা কেন্দ্রীয় জানলা। symmetry-র জন্যই abs নেওয়া: -25° আর +25° — দুই-ই সামনে।"
+   },
+   {
+    "label": "Level 2 — wrap পাশ: 330 ডিগ্রি ছাড়ানো কোণ",
+    "latex": "\\[ |\\theta| > 360 - \\frac{A}{2} = 360 - 30 = 330^{\\circ} \\]",
+    "text": "দ্বিতীয় শর্তটা প্রথম নজরে অবান্তর মনে হয় — 330-এর বেশি কোণ আবার সামনে হবে কেন? কারণ অনেক lidar ঋণাত্মক কোণকে বৃত্ত ঘুরে ধনাত্মক করে পাঠায়: -1°-র বদলে 359°। সেই 359° আসলে সোজা সামনের একদিকে মাত্র 1 ডিগ্রি দূরের কোণ, পেছনের নয়। তাই জানলার দ্বিতীয় পাশ 330° থেকে 360° পর্যন্ত খোলা রাখা হয়েছে; দুই শর্ত মিলে বৃত্তের ওপর সামনের টানা 60 ডিগ্রির অংশটা পূর্ণ হয় — wrap-এর কাছে একটা beam-ও ফাঁকি দেয় না।"
+   },
+   {
+    "label": "Level 3 — দূরত্ব-গেট ও গণন-সমীকরণ",
+    "latex": "\\[ N = \\sum_i \\mathbf{1}\\!\\left[\\, r_i \\ne 0 \\ \\wedge\\ r_i \\le 1.5\\,d \\,\\right], \\qquad 1.5\\,d = 1.5 \\times 0.25 = 0.375\\ \\mathrm{m} \\]",
+    "text": "জানলার ভেতরের প্রতিটা beam-এর জন্য দুটো যাচাই: দূরত্ব r শূন্য নয় (অনেক lidar প্রতিধ্বনি না পেলে 0.0 পাঠায় — vendor-রীতি, illustrative), আর r সীমার ভেতর। দুটোই মিললে front_warning এক বাড়ে। সীমাটা সরাসরি ResponseDist নয়, তার 1.5 গুণ — থামার দূরত্বের চেয়ে আগেভাগেই সতর্ক-গণনা জমা শুরু।"
+   },
+   {
+    "label": "Level 4 — কত হলে বিপদ: 10-এর বেশি",
+    "latex": "\\[ N \\ge 11 \\quad \\text{(code: } N > 10\\text{, L270-এ execute-এর বিচার)} \\]",
+    "text": "গণনাটা পরে execute() বিচার করবে (L270): front_warning 10-এর বেশি — মানে অন্তত 11টা beam — হলে robot থেমে যায় আর buzzer বাজে। এক-একটা beam এক-একটা দিক-দূরত্বের নমুনা, তাই 11টা নমুনা 0.375 মিটারের ভেতরে মানে সামনে যথেষ্ট চওড়া কিছু যথেষ্ট কাছে; এক-আধটা মাপ কাছে পড়লেই এখনো চলবে।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 0.25 \\times 1.5 = 0.375\\ \\mathrm{m} \\]",
+    "text": "L129-এর সীমা বের করা: ResponseDist parameter-এর মান 0.25 মিটার, তার 1.5 গুণ। সামনের বাধা-গণনার একমাত্র দূরত্ব-সীমা এই গুণফল — 0.375 মিটার, মানে 37.5 সেন্টিমিটারের ভেতরের বৈধ beam-ই কেবল গোনা হয়।"
+   },
+   {
+    "latex": "\\[ \\frac{A}{2} = 30^{\\circ}, \\qquad 360 - \\frac{A}{2} = 330^{\\circ} \\]",
+    "text": "কোণ-জানলার দুই ধার: A = 60 বসালে প্রথম শর্ত 30 ডিগ্রির নিচে, দ্বিতীয় শর্ত 330 ডিগ্রির ওপরে। দুটো মিলে বৃত্তের (330, 360) আর (-30, +30) অংশ — সামনের দিকে টানা 60 ডিগ্রির সেক্টর।"
+   },
+   {
+    "latex": "\\[ \\theta_i = \\left(\\theta_{\\min} + i\\,\\Delta\\theta\\right) \\times 57.29578 \\]",
+    "text": "beam-কোণের হিসাবটা L127-এর; সংখ্যা ধরি illustrative ভাবে (এই /scan1 lidar-এর আসল metadata আমরা দেখিনি): angle_min শূন্য, প্রতি ধাপ 1 ডিগ্রির সমান radian অর্থাৎ 0.0174533। তাহলে 90 নম্বরে beam-এর কোণ 90° — দুই শর্তের কোনোটাতেই পড়ে না, গোনা হবে না; 355 নম্বরে beam-এর কোণ 355° — 330 ছাড়িয়েছে, wrap পাশ থেকে সামনে বলেই গোনা হবে।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "angle = (scan_data.angle_min + scan_data.angle_increment * i) * RAD2DEG",
+    "math": "\\( \\theta_i = \\left(\\theta_{\\min} + i\\,\\Delta\\theta\\right) \\times 57.29578^{\\circ} \\)",
+    "text": "radian metadata, beam index আর L12-এর ধ্রুবক — তিনটা মিলিয়ে i-তম beam-এর কোণ degree-এ; এরপর L128-এর প্রতিটা তুলনা এই মানটার সঙ্গেই হয়। radian-এ degree-এ না নামলে 60 বা 330-এর সঙ্গে তুলনারই অর্থ হতো না।"
+   },
+   {
+    "code": "360 - self.LaserAngle*0.5",
+    "math": "\\( |\\theta| > 360 - \\frac{A}{2} \\)",
+    "text": "জানলার wrap পাশ: পূর্ণ বৃত্ত 360 থেকে অর্ধ-কোণ বাদ দিয়ে 330; প্রথম পাশে একই অর্ধ-কোণ <code>self.LaserAngle*0.5</code> অর্থাৎ 30 — beam-এর abs-কোণ যেকোনো এক পাশের ভেতরে পড়লেই সে 'সামনে'।"
+   },
+   {
+    "code": "self.ResponseDist * 1.5",
+    "math": "\\( r_i \\le 1.5\\,d = 0.375\\ \\mathrm{m} \\)",
+    "text": "দূরত্ব-গেট: parameter-মানের 1.5 গুণ। একমাত্র এই সীমার ভেতরের বৈধ beam-ই front_warning-এ জায়গা পায়; সীমা বাইরের কাছের বাধাও এই গণনায় অদৃশ্য।"
+   },
+   {
+    "code": "self.front_warning += 1",
+    "math": "\\( N = N + 1 \\)",
+    "text": "প্রতিটা মেলা beam গণনাকে এক করে বাড়ায়; scan-শুরুতে N শূন্য হয় (L123), তাই scan-শেষে N হল ঠিক সর্বশেষ scan-এ কাছে-সামনে থাকা বৈধ beam-এর সংখ্যা — যেটাকে execute() পরে 10-এর সঙ্গে তুলবে।"
+   }
+  ],
+  "failure": [
+   "জানলার wrap পাশটা মুছে ফেললে (শুধু 30-এর নিচে রাখলে) 355°-ধাঁচের কোণগুলো — যারা আসলে সামনের সামান্য পাশে — সামনে বলে আর গোনা হয় না: এক পাশে ঘেঁষে দাঁড়ানো বাধা কাছে এসেও প্রতিটা scan-ই তাকে বাদ দেয়, front_warning ওঠে না, robot থামে না। উল্টো দিকে অর্ধ-কোণ নয়, সোজা LaserAngle-এর সঙ্গে তুলে ফেললে (abs যাচাই 60-এ) জানলা দ্বিগুণ হয়ে 120 ডিগ্রি — পাশের দেয়াল বা টেবিল-পায়াও 'সামনে' গোনা শুরু হয়, খোলা করিডরেও front_warning 10 ছাড়িয়ে robot থেমে থাকে আর buzzer বাজায়।",
+   "দূরত্ব-সীমায় 1.5 গুণটা মুছে সোজা ResponseDist (0.25) ধরলে সতর্ক-গণনা শুরু হয় অনেক দেরিতে: সীমা 0.375-এর বদলে 0.25 মিটারে নেমে আসে, পরে execute-এর 0.1 মিটার/সেকেন্ড হারে চলা robot-এর হাতে থামার সময় কুঁড়িয়ে যায়। আর শূন্য-দূরত্বের যাচাইটা মুছলে উল্টো বিপদ: প্রতিধ্বনি-না-পাওয়া beam-এর মান 0.0, আর 0.0 তো 0.375-এর ভেতরেই পড়ে — সামনে শূন্য পথ থাকলেও front_warning ভরে যায়, robot বিনা বাধায় স্থায়ীভাবে থেমে থাকে।"
+  ]
+ },
+ "robot": {
+  "correct": "আসল robot-এ এই Part-টা চলে constructor-এর শেষ ধাপে — README-যাত্রার L11-এর ros2 run M3Pro_demo follow_line দিলে আগে L52-55-এর blocking arm-অপেক্ষা পেরিয়ে, তারপর এই লাইনগুলো দ্রুত চলে যায় আর console-এ ছাপা পড়ে Init Done. আর তার নিচে self.LaserAngle: 60 আর self.ResponseDist: 0.25 — চোখের সামনেই যাচাই যে declare_param কাজ করেছে। এরপর থেকে প্রতিটা /scan1 message-এ registerScan জাগে: raw lidar-এর সামনের 60 ডিগ্রির জানলায় 0.375 মিটারের ভেতরের বৈধ beam গুনে front_warning হালনাগাদ করে — সামনে হাত বা বোতল ধরলে সংখ্যা বাড়ে, সরিয়ে নিলে পরের scan-এই আবার শূন্যে নামে। /JoyState-এ True গেলে Joy_active ওঠে আর লাইন-ফলোয়িং স্থগিত হয়, grasp_done-এ True এলে অনুমতি-পতাকা দুটো ফিরে আসে। আর Track_state জন্মায় 'identify' নিয়ে: vendor-এর Jetson-এ সেই /home/jetson/... পথে আগের ক্যালিব্রেশন থাকলে সেটাই নিঃশব্দে পড়ে নেয়, ফাইল না থাকলেই 'init'-এ নেমে mouse দিয়ে ROI আঁকতে বসে।",
+  "incorrect": "সবচেয়ে প্রচলিত ভুল প্রত্যাশা: node উঠলেই সে mouse দিয়ে ROI আঁকতে বসে অপেক্ষা করবে — বাস্তবে Track_state জন্মায় 'identify'-তে, তাই আগের ক্যালিব্রেশন-ফাইল থাকলে কোনো জিজ্ঞাসাই আসে না; পরের Part-এর 3 সেকেন্ডের অটো-আর্মিং-এর সঙ্গে মিললে robot পুরনো HSV-সীমায় চালু হয়ে যেতে পারে — মেঝেতে নতুন রঙের টেপ পাতা থাকলেও সে সেটা চিনবে না। দ্বিতীয় ভুল: এই node-এর lidar-চোখকে SLAM launch-এর merger-এর fused 360-degree /scan ভাবা — সে আসলে /scan1-এর raw একক lidar শোনে, তাই পেছনের বাধা কোনোদিন front_warning-এ ওঠে না; শুধু সামনের 60 ডিগ্রির খবরই চালানোর সিদ্ধান্তে ঢোকে। তৃতীয় ভুল: L79-এর warning = 1 বা console-এ দেখা সংখ্যাগুলোকেই আচরণ-নিয়ন্ত্রক ভাবা — warning attribute আর পড়াই হয় না, আর Kp-জাতীয় parameter পরের Part-ে দেখব কোথাও যায় না; থামা-বাজানোর একমাত্র চাবি front_warning-এর 0.375 মিটারের গণনা, 10-এর বেশি হলে থামা।"
+ },
+ "animType": null
+}

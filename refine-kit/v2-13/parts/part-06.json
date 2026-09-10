@@ -1,0 +1,58 @@
+{
+ "n": 6,
+ "id": "part-06",
+ "fname": "laser_Warning.py",
+ "enTitle": "Constructor — Subscriptions & Publishers",
+ "lang": "python",
+ "start": 17,
+ "end": 32,
+ "flags": [],
+ "explain": [
+  {
+   "a": 17,
+   "b": 19,
+   "text": "<code>class laserWarning(Node):</code> — L16-এর <code>RAD2DEG</code> constant-এর পরে L17-এর blank line দিয়ে module-এর মাথা (L1-16: comment, import, <code>print</code>, constant) শেষ, এখান থেকে ফাইলের আসল দেহ — behavior class-টা। L3-এ আনা <code>Node</code>-কে inherit করাতেই <code>create_subscription</code>, <code>create_publisher</code>, <code>declare_parameter</code> — node-হওয়ার সব যন্ত্রপাতি এই class-এর হাতে এসে যায়। <code>def __init__(self,name):</code> — constructor-এর একটাই argument: <code>name</code>, বাইরে থেকে স্পষ্ট করে দিতে হয়। এই <code>name</code>-ই পরে <code>main()</code> থেকে আসবে — <code>laserWarning(\"laser_Warnning_a1\")</code> (L136) — মানে ROS 2-এর নাম-জগতে node-টার নাম <code>laser_Warnning_a1</code> (source-এ double-n typo), অথচ Python class-এর নাম <code>laserWarning</code>; দুটো আলাদা জিনিস, একটাও অন্যটা থেকে তৈরি হয় না।"
+  },
+  {
+   "a": 20,
+   "b": 20,
+   "text": "<code>super().__init__(name)</code> — inheritance-এর সবচেয়ে জরুরি লাইন। এটা না চললে <code>Node</code>-এর নিজের constructor চলেই না, <code>self</code>-এর ভেতরে node-হওয়ার অভ্যন্তরীণ তালিকাই তৈরি হয় না — পরের লাইনে <code>self.create_subscription(...)</code> ডাকতেই <code>AttributeError</code>-জাতীয় error উঠে আসত। <code>super()</code> মানে এখানে parent class <code>Node</code>; <code>name</code> হাতবদল হতেই node-এর নাম পাকা হয়ে যায়। ক্রমটাও নিয়মমাফিক: parent-এর constructor আগে, নিজের জিনিসপত্র পরে — Python inheritance-এর প্রথা। আর মনে রাখুন, import pass-এ শুধু class-টা ও তার def-গুলো bind হয়; এই constructor-এর দেহ চলে run phase-এ, <code>main()</code> যখন instance বানায় তখন।"
+  },
+  {
+   "a": 21,
+   "b": 23,
+   "text": "<code># --- CREATING SUBSCRIBERS (Listeners) ---</code> আর <code># Listen to the 360-degree LiDAR scanner</code> — দুটোই comment, কিছু চালায় না; কিন্তু লেখকের প্রতিমানটা এখানেই: publisher একটা রেডিও স্টেশন, subscription একটা শ্রোতা — শ্রোতা নিজে কথা বলে না, message এলেই শুধু নিজের callback জাগায়। (ছোট একটা source-fidelity নোট: L21-এর blank line-টার শেষে কিছু trailing space আছে — চোখে প্রায় অদৃশ্য, চালানোয় কিছু যায় আসে না।) \"360-degree\" দাবিটা এই ফাইল নিজে সত্যি করে দেখাতে পারে না: এই node কোনো lidar চালায় না। README-র L3 launch চালালে এই folder-এরই <code>laser_driver.launch.py</code> (folder 11/12-এর সাথে byte-identical) folder 10-এর merger+filter chain জাগায় — সামনে-পেছনে দুই lidar-এর কাঁচা scan জুড়ে একটা পূর্ণ 360-degree ring বানায়, blind-spot পাকা করে — guard শুনবে সেই ফলাফল। চোখ ওই chain-এর, সিদ্ধান্ত এই ফাইলের; আর warning node-টা launch নিজে চালায় না — তাকে জাগায় README-র L5 command।"
+  },
+  {
+   "a": 24,
+   "b": 24,
+   "text": "<code>self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code> — প্রথম শ্রোতা: চোখ। চারটা argument: message-এর ধরন <code>LaserScan</code> (L5-এ আনা), topic <code>\"/scan\"</code> — merger+filter chain-এর শেষ ফলাফলের ঠিকানা, কোনো raw lidar topic নয়; callback <code>self.registerScan</code> (L54-এ সংজ্ঞাত, দেহ L124 পর্যন্ত — এই ফাইলের মগজ: সামনের ±45-degree cone-এর মধ্যে সবচেয়ে কাছের object খুঁজে 0.55 m-এর danger zone-এ বিপদ নির্ণয়, বাঁশির সিদ্ধান্ত, আর ঘুরে ওই object-টার দিকে মুখ ফেরানোর পুরো হিসাব ওখানে); আর শেষের <code>1</code> = queue depth — পুরনো message জমিয়ে না রেখে সবসময় সবচেয়ে নতুন scan-টাই কাজে লাগানো। পাহারায় এটাই চাই: কয়েক scan আগের দূরত্ব মানে অতিথি আসলে আর ওই দূরত্বে নেই।"
+  },
+  {
+   "a": 25,
+   "b": 26,
+   "text": "<code># Listen to the joystick (so you can pause the AI and drive manually)</code> আর <code>self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)</code> — দ্বিতীয় শ্রোতা: মানুষের হাত। <code>True</code> এলে <code>JoyStateCallback</code> (L50-52) শুধু একটা flag উল্টে দেয়, আর <code>registerScan</code> সেই flag পেলে প্রতিটা scan-তে সব-শূন্য <code>Twist</code> publish করে ফিরে আসে (L81-83) — AI pause, চাকা joystick-এর হাতে। সূক্ষ্ম জায়গাটা <code>Bool</code>-এর পরিচয়: এটা std_msgs-এর চেনা Bool নয়। L13-এর <code>from yahboom_M3Pro_laser.common import *</code> star-import থেকে আসা yahboom-এর নিজস্ব <code>Bool</code> — std_msgs থেকে এই ফাইলে এসেছে শুধু <code>UInt16</code> (L6, buzzer-এর message) — <code>Bool</code> নয়; L13-এর vendor comment-ও ঠিক সেই কথাই বলে দেয়। common module-টা এই folder-এ নেই, তাই <code>.data</code>-র বাইরে তার ভেতরটা অজানা — field-এর নাম আন্দাজে বানানো যাবে না। টপোলজি তবু folder 11/12-এর সাথে হুবহু এক: একই <code>/JoyState</code> শ্রোতা, depth-ও <code>1</code>। আর এই app-এর নিজস্ব টুইস্ট: L83-এর return এসে alarm block-এর (L89-95) <i>আগে</i> — মানে Joy ধরা অবস্থায় <code>/beep</code>-ও refresh হয় না, buzzer তার শেষ মানটায় latched থাকে।"
+  },
+  {
+   "a": 27,
+   "b": 29,
+   "text": "<code># --- CREATING PUBLISHERS (Radio Stations) ---</code> আর <code># Tell the wheels to move</code> — L27-এর blank line (এর শেষেও trailing space) পার করে শ্রোতার পাল্লায় উল্টো দিক: রেডিও স্টেশন। বাক্সের বাইরে যাওয়ার রাস্তা এই class-এ দুটো — চাকা আর বাঁশি। কঙ্কালটা এক নিঃশ্বাসে মনে রাখুন: দুই কান ভেতরে (<code>/scan</code>, <code>/JoyState</code>), দুই মুখ বাইরে (<code>/cmd_vel</code>, <code>/beep</code>)। folder 11-এর laser_Avoidance-ও, folder 12-এর laser_Tracker-ও — দুজনেরই wiring ছিল দুই কান-এক মুখ; guard-এ সেই চেনা শরীরে নতুন একটা মুখ যোগ হলো: পাহারাদারের গলা। সঙ্গের graph-এ চোখে পড়ার মতো পরিবর্তন এটাই — বাকি সব পথ আগের folder থেকে চেনা।"
+  },
+  {
+   "a": 30,
+   "b": 30,
+   "text": "<code>self.pub_vel = self.create_publisher(Twist,'/cmd_vel',1)</code> — প্রথম মুখ: হাত। message-এর ধরন <code>Twist</code> (L4): ভেতরে <code>linear</code> আর <code>angular</code> দুই field, প্রতিটাতে x, y, z; মেঝের robot-এ কাজে লাগে দুটোই — <code>linear.x</code> (সামনে-পেছনে, মিটার/সেকেন্ড) আর <code>angular.z</code> (নিজের কেন্দ্র ঘিরে ঘোরা, radian/সেকেন্ড)। তবে এই ফাইলের চরিত্রটা এখানেই ফুটে ওঠে: গোটা <code>registerScan</code>-এ <code>linear.x</code> কোথাও assign-ই হয় না (L123-এর comment নিজেই স্বীকার করে) — মানে <code>/cmd_vel</code>-এর সব message চলে যাবে শুধু ঘোরা নিয়ন্ত্রণ করতে; guard কখনো সামনে এগোয় না, জায়গায় ঘুরে মুখ ফেরায়। queue depth আবার <code>1</code>: পুরনো কমান্ড জমানোর দরকার নেই, শেষ সিদ্ধান্তটাই সব।"
+  },
+  {
+   "a": 31,
+   "b": 32,
+   "text": "<code># Tell the buzzer to beep!</code> আর <code>self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)</code> — দ্বিতীয় মুখ: গলা। folder 12-এর tracker-এর সাথে পার্থক্যের মূল এই এক লাইনেই: ওখানে চোখ-কান-হাত সব ছিল, গলা ছিল না; পাহারাদারের গলা লাগবেই, আর সেটা <code>/beep</code>। <code>UInt16</code> L6-এ আনা — ওই লাইনের vendor comment বলে দেয়, এটাই buzzer ON/OFF-এর message type। 16-bit unsigned integer হিসেবে মান 0 থেকে 65535 পর্যন্ত যেতে পারলেও এই ফাইল ব্যবহার করে মাত্র দুটো মান: <code>UInt16()</code>-এর default 0 = beep OFF (L95-এর else-শাখা প্রতি scan-এ এই শূন্যই পাঠায়), আর <code>b.data = 1</code> = ON (L90-92) — অর্থাৎ বাঁশির সিদ্ধান্ত সর্বদা দুই-মানের: সবচেয়ে কাছের object 0.55 m-এর danger zone-এ ঢুকলে 1, নাহলে 0। আর cone ফাঁকা হলে L73-এর return-এ দুই মুখই চুপ — <code>/beep</code> তখন শেষ মানেই latched। এই লাইন শেষ হতেই node-টার নেটওয়ার্ক-কঙ্কাল পাকা; L34 থেকে শুরু হবে parameter-ঘোষণা — গতি আর দূরত্বের সীমা নিয়ে।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "main()-এর L136-এ <code>laserWarning(\"laser_Warnning_a1\")</code> call হলে ঠিক এই constructor-টাই চলে: <code>super().__init__(name)</code> node-কে নাম দেয় — <code>ros2 node list</code>-এ <code>laser_Warnning_a1</code> দেখা যায় — তারপর দুই subscription আর <b>দুই</b> publisher রেজিস্টার হয়ে যায়; console-এ L137-এর <code>start it</code> ছাপা হলে বোঝা যায় জন্ম নিঃশব্দে সফল। README-র L3 launch আগে চালানো থাকলে merger+filter chain-এর পূর্ণ 360-degree <code>/scan</code> ring আসতে শুরু করে — প্রতিটা scan <code>registerScan</code>-কে জাগায়, joystick ধরলে <code>/JoyState</code> <code>JoyStateCallback</code>-কে জাগায়, আর সিদ্ধান্ত বেরোয় দুই পথে: <code>/cmd_vel</code>-এ <code>Twist</code> যায় চাকার motor-এ, <code>/beep</code>-এ <code>UInt16</code> যায় buzzer-এ। উদাহরণ-দৃশ্যে (illustrative) সোজা সামনে 0.48 m দূরে object হলে (Wave C) বাঁশি বাজে আর চাকা স্থির — <code>linear.x</code> কখনো সেট হয় না, এবং 0° কোণে <code>angular.z</code>-ও deadzone-এ শূন্য; 0.50 m @ -20° হলে (Wave D) বাঁশির সঙ্গে জায়গায় ডানে ঘোরা, <code>angular.z</code> ≈ -0.417 rad/s।",
+  "incorrect": "<code>super().__init__(name)</code> বাদ পড়লে পরের লাইনেই <code>AttributeError</code> — console-এ traceback, <code>ros2 node list</code>-এ <code>laser_Warnning_a1</code> নামটা আসবেই না, <code>/cmd_vel</code>-ও <code>/beep</code>-ও জন্মাবে না: চাকা স্থির, বাঁশি চির-নীরব। আরেকটা ভুল ধারণা: <code>Bool</code>-কে std_msgs-এর Bool ভেবে অন্য ধরনের message পাঠানো — তখন হয় message-ই callback পর্যন্ত পৌঁছাবে না, নয়তো L51-এর isinstance guard সেটাকে ফেরত দেবে; <code>Joy_active</code> কখনো <code>True</code> হবে না, মানুষ joystick ধরেও AI-কে থামাতে পারবে না — robot শেষ সিদ্ধান্তের ঘোরা আর বাঁশির বাজনাতেই থাকবে। এই app-এর নিজস্ব ভুল: <code>UInt16()</code> বানালেই বাঁশি বাজবে ভাবা — default মান 0 মানে beep OFF; কাছের object 0.48 m-এ danger zone-এর ভেতরে ঢুকে console-এ <code>minDist: </code>-এর পাশে 0.48 ছাপা হচ্ছে, অথচ বাঁশি চুপ — <code>b.data = 1</code> (L91) ছাড়া আওয়াজ ওঠে না, পাহারাদার চোখে দেখছে কিন্তু গলা দিয়ে সতর্কতা বেরোচ্ছে না। আর merger-এর কাঁচা topic-এ কান দিলে ring-এর অর্ধেক খালি আসবে (illustrative) — guard অপূর্ণ দুনিয়া পাহারা দেবে।"
+ },
+ "animType": "subPubGraph"
+}

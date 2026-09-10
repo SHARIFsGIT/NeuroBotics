@@ -1,0 +1,113 @@
+[
+ {
+  "n": 6,
+  "id": "part-06",
+  "fname": "laser_Tracker.py",
+  "enTitle": "Constructor — Subscriptions & Publisher",
+  "lang": "python",
+  "start": 16,
+  "end": 29,
+  "flags": [],
+  "explain": [
+   {
+    "a": 16,
+    "b": 18,
+    "text": "<code>class laserTracker(Node):</code> — L15-এর <code>RAD2DEG</code> constant-এর পরে L16 একটা blank line দিয়ে module-এর মাথা (L1-15: comment, import, print, constant) শেষ, এখান থেকে ফাইলের আসল দেহ — behavior class-টা। L3-এ আনা <code>Node</code>-কে inherit করাতেই <code>create_subscription</code>, <code>create_publisher</code>, <code>declare_parameter</code> — node-হওয়ার সব যন্ত্রপাতি এই class-এর হাতে এসে যায়। <code>def __init__(self,name):</code> — constructor-এর একটাই argument: <code>name</code>, বাইরে থেকে স্পষ্ট করে দিতে হয়। এই <code>name</code>-ই পরে <code>main()</code> থেকে আসবে — <code>laserTracker(\"laser_Tracker_a1\")</code> (L137) — মানে ROS 2-এর নাম-জগতে node-টার নাম <code>laser_Tracker_a1</code>, অথচ Python class-এর নাম <code>laserTracker</code>; দুটো আলাদা জিনিস, একটাও অন্যটা থেকে তৈরি হয় না।"
+   },
+   {
+    "a": 19,
+    "b": 19,
+    "text": "<code>super().__init__(name)</code> — inheritance-এর সবচেয়ে জরুরি লাইন। এটা না চললে <code>Node</code>-এর নিজের constructor চলেই না, <code>self</code>-এর ভেতরে node-হওয়ার অভ্যন্তরীণ তালিকাই তৈরি হয় না — পরের লাইনে <code>self.create_subscription(...)</code> ডাকতেই <code>AttributeError</code>-জাতীয় error উঠে আসত। <code>super()</code> মানে এখানে parent class <code>Node</code>; <code>name</code> হাতবদল হতেই node-এর নাম পাকা হয়ে যায়। ক্রমটাও নিয়মমাফিক: parent-এর constructor আগে, নিজের জিনিসপত্র পরে — Python inheritance-এর প্রথা। আর মনে রাখুন, import pass-এ শুধু class-টা ও তার def-গুলো bind হয়; এই constructor-এর দেহ চলে run phase-এ, <code>main()</code> যখন instance বানায় তখন।"
+   },
+   {
+    "a": 21,
+    "b": 22,
+    "text": "<code># --- CREATING SUBSCRIBERS (Listeners) ---</code> আর <code># Listen to the 360-degree LiDAR scanner</code> — দুটোই comment, কিছু চালায় না; কিন্তু লেখকের প্রতিমানটা এখানেই: publisher একটা রেডিও স্টেশন, subscription একটা শ্রোতা — শ্রোতা নিজে কথা বলে না, message এলেই শুধু নিজের callback জাগায়। \"360-degree\" দাবিটা এই ফাইল নিজে সত্যি করে দেখাতে পারে না: এই node কোনো lidar চালায় না। README-র L3 launch চালালে folder 10-এর merger+filter chain সামনে-পেছনে দুই lidar-এর কাঁচা scan জুড়ে একটা পূর্ণ 360-degree ring বানায়, blind-spot পাকা করে — tracker শুনবে সেই ফলাফল। চোখ ওই chain-এর, সিদ্ধান্ত এই ফাইলের।"
+   },
+   {
+    "a": 23,
+    "b": 23,
+    "text": "<code>self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code> — প্রথম শ্রোতা: চোখ। চারটা argument: message-এর ধরন <code>LaserScan</code> (L5-এ আনা), topic <code>\"/scan\"</code> — merger+filter chain-এর শেষ ফলাফলের ঠিকানা, কোনো raw lidar topic নয়; callback <code>self.registerScan</code> (L56-এ সংজ্ঞাত; এই ফাইলের মগজ — সামনের ±45-degree cone-এর মধ্যে সবচেয়ে কাছের object খুঁজে তাকে 0.55 m দূরত্বে রেখে অনুসরণ করার পুরো হিসাব ওখানে); আর শেষের <code>1</code> = queue depth — পুরনো message জমিয়ে না রেখে সবসময় সবচেয়ে নতুন scan-টাই কাজে লাগানো। tracking-এ এটাই চাই: কয়েক scan পুরনো দূরত্ব মানে object-টা আসলে আর ওখানেই নেই।"
+   },
+   {
+    "a": 24,
+    "b": 25,
+    "text": "<code># Listen to the joystick (so you can pause the AI and drive manually)</code> আর <code>self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)</code> — দ্বিতীয় শ্রোতা: মানুষের হাত। <code>True</code> এলে <code>JoyStateCallback</code> (L52-54) শুধু একটা flag উল্টে দেয়, আর <code>registerScan</code> সেই flag পেলে প্রতিটা scan-তে সব-শূন্য <code>Twist</code> publish করে ফিরে আসে (L86-88) — AI pause, চাকা joystick-এর হাতে। সূক্ষ্ম জায়গাটা <code>Bool</code>-এর পরিচয়: এটা std_msgs-এর চেনা Bool নয়। L12-এর <code>from yahboom_M3Pro_laser.common import *</code> star-import থেকে আসা yahboom-এর নিজস্ব <code>Bool</code> — এই ফাইলে <code>std_msgs</code> নামে কোনো import-ই নেই। আর এই উৎস folder 11-এর সাথে মেলালে ছবিটা আরও পরিষ্কার হয়: laser_Avoidance-এর L12-তেও হুবহু এই একই star-import লাইন, ওই ফাইলেও <code>std_msgs</code> নামে কোনো import নেই — দুই node-ই নিজের <code>Bool</code> আনে একই yahboom common module থেকে, কোনো ফাইলই std_msgs/Bool ব্যবহার করে না। common module-টা এই folder-এ নেই, তাই <code>.data</code>-র বাইরে তার ভেতরটা অজানা — field-এর নাম আন্দাজে বানানো যাবে না। টপোলজি তবু folder 11-এর সাথে হুবহু এক: একই <code>/JoyState</code> শ্রোতা, depth-ও <code>1</code>।"
+   },
+   {
+    "a": 27,
+    "b": 28,
+    "text": "<code># --- CREATING PUBLISHERS (Radio Stations) ---</code> আর <code># Tell the wheels to move</code> — শ্রোতার পাল্লায় এবার উল্টো দিক: রেডিও স্টেশন। এই class-এর একটাই কথা বলার মুখ — চাকার motor-কে <code>/cmd_vel</code>-এ বলা। কঙ্কালটা এক নিঃশ্বাসে মনে রাখুন: দুই কান ভেতরে (<code>/scan</code>, <code>/JoyState</code>), এক মুখ বাইরে (<code>/cmd_vel</code>)। folder 11-এর laser_Avoidance-এর সাথে wiring হুবহু এই — ফারাক কোথায়? avoidance node এই একই দুই কানের data দিয়ে বাধা এড়িয়ে পথ বানাত; tracker node একই data দিয়ে সবচেয়ে কাছের object-টাকেই ধরে পিছু নেয়। একই শরীর, উল্টো প্রবৃত্তি।"
+   },
+   {
+    "a": 29,
+    "b": 29,
+    "text": "<code>self.pub_vel = self.create_publisher(Twist,'/cmd_vel',1)</code> — মুখ। message-এর ধরন <code>Twist</code> (L4): ভেতরে <code>linear</code> আর <code>angular</code> দুই field, প্রতিটাতে x, y, z; মেঝের robot-এ কাজে লাগে দুটোই — <code>linear.x</code> (সামনে-পেছনে, মিটার/সেকেন্ড) আর <code>angular.z</code> (নিজের কেন্দ্র ঘিরে ঘোরা, radian/সেকেন্ড)। পরের Part-গুলোর dual PID ঠিক এই দুই field-এই ভরবে। queue depth আবার <code>1</code>: পুরনো কমান্ড জমানোর দরকার নেই, শেষ সিদ্ধান্তটাই সব। এই লাইন শেষ হতেই node-টা হাত-পা-চোখ সব পেয়ে যায়; L31 থেকে শুরু হবে parameter-ঘোষণা — গতি আর দূরত্বের সীমা নিয়ে।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "main()-এর L137-এ <code>laserTracker(\"laser_Tracker_a1\")</code> call হলে ঠিক এই constructor-টাই চলে: <code>super().__init__(name)</code> node-কে নাম দেয়, তারপর দুই subscription আর এক publisher রেজিস্টার হয়ে যায়। README-র L3 launch আগে চালানো থাকলে folder 10-এর merger+filter chain-এর পূর্ণ 360-degree <code>/scan</code> ring আসতে শুরু করে — প্রতিটা scan <code>registerScan</code>-কে জাগায়, joystick ধরলে <code>/JoyState</code> <code>JoyStateCallback</code>-কে জাগায়, আর সিদ্ধান্ত বেরোয় এক পথে: <code>/cmd_vel</code>-এ <code>Twist</code>, যা সোজা চাকার motor পায়। lidar এই node-এর নিজের হাতে নয় — চোখ ওপরের chain-এর, এখানে শোনা আর চালানো।",
+   "incorrect": "<code>super().__init__(name)</code> বাদ পড়লে পরের লাইনেই <code>AttributeError</code> — console-এ traceback, <code>ros2 node list</code>-এ <code>laser_Tracker_a1</code> নামটা আসবেই না, <code>/cmd_vel</code>-এ publisher জন্মাবে না, চাকা স্থির। আরেকটা ভুল ধারণা: <code>Bool</code>-কে std_msgs-এর Bool ভেবে অন্য ধরনের message পাঠানো — তখন হয় message-ই callback পর্যন্ত পৌঁছাবে না, নয়তো L53-এর isinstance guard সেটাকে ফেরত দেবে; <code>Joy_active</code> কখনো <code>True</code> হবে না, মানুষ joystick ধরেও AI-কে থামাতে পারবে না — robot শেষ সিদ্ধান্তের চাকা-গতিতেই চলতে থাকবে। আর merger-এর কাঁচা topic-এ কান দিলে ring-এর অর্ধেক খালি আসবে — tracker অপূর্ণ দুনিয়া দেখে হিসাব করবে।"
+  },
+  "animType": "subPubGraph"
+ },
+ {
+  "n": 15,
+  "id": "part-15",
+  "fname": "laser_Tracker.py",
+  "enTitle": "exit_pro & main — Brake and Shutdown",
+  "lang": "python",
+  "start": 126,
+  "end": 146,
+  "flags": [],
+  "explain": [
+   {
+    "a": 126,
+    "b": 128,
+    "text": "L125-এর <code>self.pub_vel.publish(velocity)</code> দিয়ে <code>registerScan</code>-এর দীর্ঘ কাজ শেষ; L126-এর blank line class-এর শেষ অংশটাকে আলাদা করে দেয়। <code># --- SAFETY SHUTDOWN FUNCTION ---</code> — comment নিজেই ঘোষণা করছে এবার কী আসছে: বিদায়ের যন্ত্রপাতি। <code>def exit_pro(self):</code> — <code>laserTracker</code> class-এর শেষ method; নামটা সম্ভবত \"exit procedure\"-র ছোট রূপ। Argument শুধু <code>self</code>, কোনো return নেই — এর একটাই কাজ, নিচের লাইনগুলো দিয়ে robot-কে থামানো। Import-pass-এ (module প্রথমবার পড়ানোর সময়) শুধু এই <code>def</code>-টা bind হয়, body চলে না; body চলবে শুধু তখন, যখন L144-এর <code>finally</code> থেকে একে ডাকা হবে।"
+   },
+   {
+    "a": 129,
+    "b": 130,
+    "text": "<code># When you press Ctrl+C, this runs a terminal command in the background to force the robot to stop</code> — comment-টা পুরো পরিকল্পনা বলে দিচ্ছে: Ctrl+C-র পরে terminal command-এর মাধ্যমে জোর করে থামানো। <code>cmd1 = \"ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"</code> — লক্ষ করো closing quote-এর ঠিক আগে একটা <b>trailing space</b> আছে; চোখে প্রায় অদৃশ্য, কিন্তু এটাই message type আর পরের payload-র মাঝের separator — বাদ পড়লে জোড়া লাগানো command-টা ভেঙে যেত। চার টুকরো: <code>ros2 topic pub</code> — ROS 2-র command-line publisher tool; <code>--once</code> — ঠিক একটা message দিয়েই process বেরিয়ে যাবে; <code>/cmd_vel</code> — L29-এ নিজের publisher-এর সেই একই topic, মানে চাকার motor driver-এর কান; আর <code>geometry_msgs/msg/Twist</code> — message-এর ধরন। মানে এই বাহন node-এর ভেতরের Python publisher নয় — ros2 CLI নিজেই একটা সম্পূর্ণ আলাদা publisher process হয়ে উঠবে।"
+   },
+   {
+    "a": 131,
+    "b": 132,
+    "text": "<code>cmd2 = '''\"{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}\"'''</code> — বাইরে তিনটা single quote, ভেতরে পুরো payload double quote-এর মধ্যে। Triple-quote ব্যবহারের সুবিধা: ভেতরের double quote-গুলো escape ছাড়াই বসানো যায়; আর ওই double quote-গুলো shell-কে বোঝায় braces-এর পুরো মালাটা একটাই argument। ভেতরের বিষয়বস্তু YAML: <code>linear</code> আর <code>angular</code> দুই field-group, প্রতিটাতে x, y, z তিনটা করে — মোট ছয়টা সংখ্যা, সবগুলোই <code>0.0</code>; ros2 CLI এই YAML-কে parse করে একটা সম্পূর্ণ শূন্য <code>Twist</code> message বানাবে, অর্থাৎ L90-এর <code>Twist()</code>-এর মতোই \"কোনো অংশ নড়বে না\"। L132 <code>cmd = cmd1 + cmd2</code> — দুই টুকরো জোড়া লাগালেই সম্পূর্ণ shell command প্রস্তুত: <code>ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"{linear: ...}\"</code>।"
+   },
+   {
+    "a": 133,
+    "b": 133,
+    "text": "<code>os.system(cmd)</code> — L13-এ <code>import os</code>-এর একমাত্র ব্যবহার এই লাইনেই (বাকি পুরো file-এ <code>os</code> আর কোথাও নেই)। Python এখানে একটা shell খুলে command-টা চালায়; ফলে সম্পূর্ণ আলাদা একটা process নিজেই <code>/cmd_vel</code>-এ একবার শূন্য-Twist publish করে বেরিয়ে যায়। প্রশ্ন উঠতেই পারে: L29-এর নিজের <code>pub_vel</code> দিয়ে <code>Twist()</code> পাঠালেই তো হতো? কিন্তু এই মুহূর্তটা teardown-এর মুহূর্ত — নিজের publisher আর rclpy context তখন অনিশ্চিত দশায় থাকতে পারে; <code>os.system</code>-এর brake node-এর কোনো অবস্থার উপর দাঁড়ানো নেই, node মরতে থাকলেও কাজ করে। শারীরিক অর্থে এটাই আসল ব্রেক: motor driver সর্বশেষ <code>/cmd_vel</code> command-ই ধরে রাখে, তাই শেষ scan-এর সিদ্ধান্ত Wave B-এর মতো <code>linear.x</code> ≈ +0.15 m/s হলে এই শূন্য-সংবাদ এসে চাকা থামায়। আর <code>--once</code>-এর কারণে এটা one-shot: L86-88-এর <code>Joy_active</code> brake যেখানে প্রতি scan-এ বারবার শূন্য publish করে, <code>exit_pro()</code> ঠিক একবারই।"
+   },
+   {
+    "a": 134,
+    "b": 136,
+    "text": "L134-এর blank line-এর পরে class-এর বাইরে প্রথম ও একমাত্র top-level function: <code>def main():</code> — indent নেই, তাই এটা module-এর জিনিস, class-এর নয়। <b>এই file-এর সবচেয়ে বড় কৌতূহল এখানেই</b>: গোটা file-এ কোথাও <code>main()</code>-কে call করা হয় না, আর <code>if __name__ == '__main__':</code> guard-ও নেই — L146-এ এসে source শেষ, শেষ লাইনটাও <code>main()</code>-এর body-র ভেতরেই। তবু README L5-এর command <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> কাজ করে, কারণ package-এর <code>setup.py</code>-এর console_scripts entry point এই module-কে import করে <code>main()</code>-কে callable হিসেবে ডাকে — ROS 2-র standard কাঠামো (<code>setup.py</code> এই folder-এ নেই, তাই mechanism-টা <i>inferred</i>)। Function-এর প্রথম কাজ <code>rclpy.init()</code>: global rclpy context জন্মায় — এর উপরেই পরে প্রতিটা <code>Node</code> দাঁড়াবে, আর Ctrl+C-র signal ধরার ব্যবস্থাও এখান থেকেই আসে; L146-এর <code>rclpy.shutdown()</code> এই জোড়ার দ্বিতীয় প্রান্ত।"
+   },
+   {
+    "a": 137,
+    "b": 138,
+    "text": "<code>laser_tracker = laserTracker(\"laser_Tracker_a1\")</code> — L18 থেকে L49 পর্যন্ত পুরো constructor এই এক লাইনের মধ্যে সম্পন্ন: <code>super().__init__(name)</code> নাম বসায়, <code>/scan</code> আর <code>/JoyState</code> দুই subscription (L23, L25), <code>/cmd_vel</code> publisher (L29), চারটা parameter read (L32-39), <code>Joy_active</code> flag আর দুটি <code>SinglePID</code> instance (L42-49)। Node-এর নাম <code>laser_Tracker_a1</code> — terminal-এ <code>ros2 node list</code> দিলে এই নামই দেখা যাবে; Python class-এর নাম <code>laserTracker</code> পৃথক জিনিস, একটা থেকে আরেকটা আসে না। <code>print (\"start it\")</code> — print আর বন্ধনীর মাঝে space, L14-এর <code>print (\"improt done\")</code>-এর মতোই author-এর style; Python-এ বৈধ। এই লাইনটা একটা কাজের checkpoint: console-এ \"start it\" দেখলে বুঝবে constructor নিঃশব্দে সফল, এখন folder 10-এর merger+filter chain-এর fused <code>/scan</code> এলেই follow-আচরণ শুরু হবে।"
+   },
+   {
+    "a": 139,
+    "b": 142,
+    "text": "<code>try:</code>-এর ভেতরে <code>rclpy.spin(laser_tracker)</code> — পুরো program-এর হৃদপিণ্ড এই এক লাইন। এর আগ পর্যন্ত সব ছিল প্রস্তুতি; <code>spin</code> হলো event loop: main thread এখানেই block হয়ে যায়, আর executor ভেতরে ভেতরে message-এর অপেক্ষা করে — <code>/scan</code>-এ নতুন fused ring এলে <code>registerScan</code> (L56-125), <code>/JoyState</code> এলে <code>JoyStateCallback</code> (L52-54)। অর্থাৎ tracking-এর প্রতিটা সিদ্ধান্ত আসলে এই লাইনের ভেতরেই ঘটে চলে; callback-গুলো একটার পর একটা, single-threaded নিয়মে। <code>spin</code> স্বাভাবিক পথে ফেরে না, তাই <code>try</code>-তে মোড়ানো — terminal-এ Ctrl+C চাপলে SIGINT signal আসে, rclpy-র signal handler সেটাকে <code>KeyboardInterrupt</code> exception-এ রূপ দেয়, আর exception ঠিক <code>spin</code>-এর ভেতরে ফাটে। <code>except KeyboardInterrupt:</code> সেটাকে ধরে <code>pass</code> দিয়ে চুপচাপ গিলে যায় — terminal-এ লম্বা traceback ছাপা হয় না, execution শান্তভাবে নিচে <code>finally</code>-তে নামে।"
+   },
+   {
+    "a": 143,
+    "b": 146,
+    "text": "<code>finally:</code> — গ্যারান্টি এটাই: <code>try</code> block যেভাবেই শেষ হোক (বাস্তবে এখানে একমাত্র পথটা Ctrl+C), এই block অবশ্যই চলবে। প্রথম কাজ <code>laser_tracker.exit_pro()</code> — পাশের comment <code># Force stop the wheels</code> উদ্দেশ্য বলে দিচ্ছে; L128-133-এর পুরো shell brake এই একটা call-এই চলে। এরপর <code>laser_tracker.destroy_node()</code>: <code>/cmd_vel</code> publisher, দুটো subscription, parameter — node-এর সব সরঞ্জাম cleanly ভেঙে DDS-এর দখল ছাড়ে। শেষে <code>rclpy.shutdown()</code>: L136-এর <code>rclpy.init()</code>-এ জন্মানো global context বন্ধ হয়। ক্রম বদলানো চলে না, নিয়ম LIFO: জন্মানোর সময় আগে context, পরে node; বন্ধের সময় আগে node, পরে context — nested জিনিস গোটানোর স্বাভাবিক নিয়ম, nested bracket বন্ধ করার মতোই। আর L146-ই এই file-এর শেষ লাইন — নিচে আর কিছু নেই, এমনকি trailing newline-ও নেই (তাই <code>wc -l</code> গুনে দেয় 145, সত্যি কথা splitlines-ই বলে: 146)। জন্ম (<code>init</code>), কর্ম (<code>spin</code>), বিদায় (<code>exit_pro</code>, <code>destroy_node</code>, <code>shutdown</code>): একটা tracking node-এর পূর্ণ জীবনচক্র, folder 11-এর <code>laser_Avoidance</code>-এর মতোই একই ছাঁচে সমাপ্ত।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "Terminal-এ Ctrl+C চাপলে SIGINT যায়, <code>spin</code>-এর ভেতরে <code>KeyboardInterrupt</code> ওঠে, <code>pass</code> সেটা গিলে যায়, তারপর <code>finally</code> থেকে <code>exit_pro()</code> একেবারে আলাদা shell process চালিয়ে <code>/cmd_vel</code>-এ ঠিক একবার সব-শূন্য Twist পাঠায় — শেষ scan-এর সিদ্ধান্ত Wave B-এর মতো <code>linear.x</code> ≈ +0.15 m/s সামনে ও <code>angular.z</code> ≈ +0.33 rad/s ঘোরা হলেও চাকা স্পষ্ট থামার আদেশ পেয়ে দাঁড়িয়ে যায়। এরপর <code>destroy_node()</code> publisher-subscription ছাড়ে, <code>rclpy.shutdown()</code> context বন্ধ করে; console-এ কোনো traceback ছাপা হয় না। Lidar-এর sensor-chain (README L3-এর launch-এর merger+filter) আলাদা process — সে চলতেই থাকে; বন্ধ হয় শুধু এই tracking node-টা।",
+   "incorrect": "বিপজ্জনক ভুল ধারণা: node মারলেই robot থামবে ভাবা। Terminal-এ <code>kill -9</code> মারলে <code>finally</code> চলেই না — <code>exit_pro()</code>-র শূন্য-Twist যায় না, আর base তখন শেষ <code>/cmd_vel</code> command ধরে রাখে: Wave B-এর <code>+0.15</code> m/s সামনের গতি চলতেই থাকে, robot নজরে রাখা object-এর দিকেই এগোতে থাকে যতক্ষণ না অন্য কিছু থামায়। আরেকটা ভুল: ফাইলটা সরাসরি <code>python3 laser_Tracker.py</code> দিয়ে চালানো — file-এর ভেতরে <code>main()</code> call করার কোনো লাইন নেই আর <code>__main__</code> guard-ও নেই, তাই import-time-এর <code>print (\"improt done\")</code> ছাপার পরেই সব থেমে যায়: কোনো node জন্মায় না, <code>/cmd_vel</code>-এ কিছু যায় না, চাকা একবারও নড়ে না। আর <code>rclpy.shutdown()</code>-কে <code>destroy_node()</code>-এর আগে ডাকলে context মরে যাওয়ার পর node teardown করতে গিয়ে error ছাপাবে।"
+  },
+  "animType": "safetyHalt"
+ }
+]

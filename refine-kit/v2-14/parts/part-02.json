@@ -1,0 +1,143 @@
+{
+ "n": 2,
+ "id": "part-02",
+ "fname": "gmapping.launch.py",
+ "enTitle": "Imports & Four Eager Paths",
+ "lang": "python",
+ "start": 1,
+ "end": 49,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 1,
+   "text": "<code># --- IMPORTING ROS 2 LAUNCH TOOLS ---</code> — প্রথম লাইনটাই একটা banner comment: dash দিয়ে ঘেরা section-শিরোনাম, Python এটা execute করে না, কিন্তু author-এর নকশা প্রথম ঝলকেই বোঝা যায় — এই file কয়েকটা অংশে সাজানো, আর শুরুর অংশটার কাজ launch চালানোর হাতিয়ার জোগাড়। এই file-টাই এই folder-এর orchestrator: এক command-এ মোট ৫টা program ওঠে — ৪টা IncludeLaunchDescription + ১টা সরাসরি Node (সংখ্যাগুলো canonical), আর তাদের সবার গোড়ায় এই import block। সময়টাও মনে রাখো: L2-L10-এর প্রতিটা import চলে module-load phase-এ — README L3-এর <code>ros2 launch slam_mapping gmapping.launch.py</code> দেওয়ার সাথে সাথেই, <code>generate_launch_description()</code> ডাকার আগে। একটাও import ভাঙলে পুরো SLAM stack ওঠার আগেই থেমে যায়।"
+  },
+  {
+   "a": 2,
+   "b": 2,
+   "text": "<code>from launch_ros.actions import Node</code> — launch_ros-এর Node class, অর্থাৎ ROS 2-এর ঠিক একটা program সরাসরি চালু করার action। রোচক হলো, গোটা 94-line file-এ এই Node দিয়ে চালু হয় মাত্র একটাই program — L53-এর IMU filter node; বাকি চারটা আসবে অন্য launch file include করে। আর এই একই লাইন L9-তে হুবহু ফিরে আসবে — চোখের ভ্রম নয়, verified duplicate; বিস্তারিত L9-এর ঘটনা আর L11-এর নিজের Note-এ।"
+  },
+  {
+   "a": 3,
+   "b": 4,
+   "text": "এই file-এর সবচেয়ে বড় dead weight দুটো এখানেই: L3 <code>from launch.substitutions import LaunchConfiguration</code> আর L4 <code>from launch.actions import DeclareLaunchArgument</code> — দুটোই এসে গেল, অথচ 94 line-এর কোথাও আর ব্যবহৃত হয়নি, verified। বিশেষ করে <code>LaunchConfiguration</code> হলো lazy substitution-এর হাতিয়ার — folder 10-এর শিক্ষা মনে করো, এর মান মেলে run phase-এ; এই file-এ সেই জগৎই নেই — নিচের প্রতিটা হিসাব এখনই, eagerly চলে। ক্ষতিটা performance-এ নয়, পড়ায়: এই দুই নাম দেখে পাঠক ভাবে এই launch-এ argument override করা যাবে — আসলে যায় না; gmapping.launch.py নিজে একটাও launch argument ঘোষণা করে না, সব সেটিং বসে আছে নিচের চারটা included package-এর নিজস্ব launch file-এ।"
+  },
+  {
+   "a": 5,
+   "b": 6,
+   "text": "L5 <code>import os</code> — path জোড়া দেওয়ার os.path.join আনে; এই Part-এর চারটা খোঁজের প্রত্যেকটাই শেষ হবে ঠিক ওই function দিয়ে। L6 <code>from ament_index_python.packages import get_package_share_directory</code> — এই Part-এর আসল কর্মী: এটা launch-এর কোনো magic নয়, ament-এর package index-কে জিজ্ঞেস করা একটা সাধারণ Python function call, installed package-এর share directory-র path string ফেরায়। নিচে একে ডাকা হবে চারবার — L25, L32, L39, L46 — চারটা আলাদা package-এর নাম নিয়ে। Robot-এ কোনো package install না থাকলে এখান থেকেই <code>PackageNotFoundError</code> ছোটে — কোনো node ওঠার অনেক আগে।"
+  },
+  {
+   "a": 7,
+   "b": 8,
+   "text": "L7 <code>from launch import LaunchDescription</code> — ধারক: ৫টা program-এর তালিকা এর ভেতরে বসে L66-এ return হবে, আর launch framework পরে ঠিক ওই object-টাকেই পরপর চালায়। L8 <code>from launch.launch_description_sources import PythonLaunchDescriptionSource</code> — একটা .launch.py file-এর path string-কে এমন source-এ মুড়িয়ে দেয় যাকে <code>IncludeLaunchDescription</code> চালাতে পারে; এই Part-এ বানানো চারটা path পরের Part-গুলোতে ঠিক এই দুই class-এর হাতে নামবে। আসলে এই দুটো নাম, L2-এর Node আর L10-এর IncludeLaunchDescription — এই চারটির সঙ্গে L5-এর os আর L6-এর get_package_share_directory মিলেই এই file-এর সক্রিয় দল; বাকি তিনটা — L3/L4-এর unused জোড়া আর L9-এর duplicate — শুধু সাজানো বাড়তি মাত্র।"
+  },
+  {
+   "a": 9,
+   "b": 9,
+   "text": "<code>from launch_ros.actions import Node</code> — আবার সেই লাইন, L2-এরটার হুবহু পুনরাবৃত্তি, character-অনুযায়ী। Python-এ এর মানে সরল: দ্বিতীয় import-টা module cache থেকে আবার একই object এনে একই নামে বসায় — কোনো error নেই, আচরণে এক ফোঁড়ও পরিবর্তন নেই, লাইনটা শুধু বাড়তি। এটাই এই file-এর প্রথম নথিভুক্ত quirk (FACTS §9.1), আর source নিজে পরের লাইনেই স্বীকার করে নেবে — আমরা ব্যাখ্যা করি, কখনো ঠিক করে দেখাই না।"
+  },
+  {
+   "a": 10,
+   "b": 10,
+   "text": "<code>from launch.actions import IncludeLaunchDescription</code> — এই orchestrator-এর প্রাণ। অন্য একটা launch file-কে নিজের ভেতরে child action হিসেবে চালানোর রাস্তা এটাই: চারটা আলাদা package-এর চারটা launch file এক command-এ জোড়া লাগে। Folder 13-এর laser_driver.launch.py-ও একই কৌশলে merger আর filter জুড়েছিল — সেখানে include ছিল দুইটা, এখানে চারটা (L69, L74, L82, L90)। এই Part-এ যে চারটা path variable বানানো হচ্ছে, তাদের একমাত্র ভোক্তা পরে এই class-ই হবে।"
+  },
+  {
+   "a": 11,
+   "b": 11,
+   "text": "<code># (Note: Some imports are duplicated here, which is harmless, just a bit messy)</code> — source-এর নিজের স্বীকারোক্তি, English-এ, বন্ধনীর ভেতর। যাচাই করলে সত্য, আবার আংশিক: duplicate আসলে একটাই — L2/L9-এর Node; L3-L4-এর দুটো unused, duplicate নয়। আঁচড় যে একটা template launch file থেকে এটা লেখা হয়েছিল আর বাড়তি অংশ আংশিকভাবে কাটা পড়েছে। মন্তব্যটা error ঢাকার চেষ্টা নয়, পাঠকের জন্য সৎ সতর্কবাণী — এই layer-ও file-টাকে অবিকল এই অবস্থাতেই পড়ে, কোনো লাইন সরানো হয়নি।"
+  },
+  {
+   "a": 12,
+   "b": 13,
+   "text": "দুটো সত্যিকারের ফাঁকা লাইন — PEP 8-এর প্রথা মেনে module-স্তরের import block আর নিচের function-এর মাঝে বিভাজন। Execute হয় কিছুই না, কিন্তু এই দুই লাইন পেরোলেই launch-এর চুক্তি-function — একমাত্র সেটাই এই file-এর entry point, ros2 launch framework যাকে খুঁজে ডাকবে।"
+  },
+  {
+   "a": 14,
+   "b": 14,
+   "text": "<code>def generate_launch_description():</code> — নামটাই চুক্তি। README L3-এর launch command চালালে framework এই file-কে import করে ঠিক এই নামের function-টাকে একবার ডাকে; launch file-এ কোনো main() বা spin loop নেই, তাই নাম বদলালেই launch ভেঙে পড়ে। Function-এর ভেতরের প্রতিটা লাইন চলে construction phase-এ — run phase শুরুর আগে, একবার, উপর থেকে নিচে। Folder 10-এ LaunchConfiguration substitution ছিল lazy — মান মিলত run phase-এ; এই file-এর ভেতরের সব হিসাব উল্টো, eager। শেষে function-টা একটা <code>LaunchDescription</code> ফেরাবে (L66-93), চালানোর ভার তখন framework-এর।"
+  },
+  {
+   "a": 15,
+   "b": 16,
+   "text": "Comment জোড়াটাও স্বীকারোক্তি: <code># These lists are created but not actually used in this file.</code> — তারপর <code># They are just left over from a template the programmer used.</code> — author আগেই জানিয়ে দিচ্ছেন নিচের তিনটা list কাজে লাগবে না, template-এর পরিত্যক্ত জিনিস। ছোট্ট নোট: L15-এর শেষে একটা space আছে — দৃশ্যমান নয় কিন্তু source-এ সত্যি (এই file-এ এমন trailing-space লাইন একাধিক, quirk হিসেবে অবিকল সংরক্ষিত)। Comment হিসেবে দুটোই execute হয় না, কিন্তু পাঠকের প্রত্যাশা মেরে দেয়: এরপর যা আসে তা কাজের কোড নয়।"
+  },
+  {
+   "a": 17,
+   "b": 19,
+   "text": "<code>declared_arguments = []</code>, <code>declared_env_vars = []</code>, <code>declared_parameters = []</code> — তিনটা খালি list, জন্মাল আর গোটা file-এ আর একবারও পড়া হলো না: verified dead code, আর source নিজেই তা ঘোষণা করে রেখেছে। এর অর্থ শুধু সৌন্দর্যের নয় — এই launch নিজে কোনো argument, env var declaration বা parameter declaration বহন করে না; অর্থাৎ এই file-কে কোনো <code>:=</code> override দিয়ে বাঁকানোর রাস্তা নেই। তুলনা এই folder-ই slam_view.launch.py-র সাথে: সেখানে DeclareLaunchArgument সত্যিই কাজে লাগে (rviz_config argument) — আর এখানে L4-এর ওই import-টাই অব্যবহৃত পড়ে রইল।"
+  },
+  {
+   "a": 20,
+   "b": 22,
+   "text": "L20 আর L22 দেখতে ফাঁকা লাইন, কিন্তু প্রত্যেকটার ভেতরে ঠিক চারটা করে space বসে আছে — trailing-whitespace quirk, যা এই file-এ মোট ১১টা লাইনে ছড়ানো (এই Part-এর মধ্যে L15, L20, L22, L36, L43); Python-এর কাছে নিরর্থক, কিন্তু quoting-এ আমরা অবিকল রেখেছি। মাঝের L21 দ্বিতীয় অংশের নামফলক: <code># --- FINDING ALL THE PIECES ---</code> — ঘোষণা যে এবার program-গুলোর ঠিকানা খোঁজা হবে। গঠনের ছাঁচ পরিচিত: folder 13-এর laser_driver-ও banner comment দিয়ে section সাজাত; পার্থক্য শুধু স্কেলে — ওখানে দুইটা path, এখানে চারটা।"
+  },
+  {
+   "a": 23,
+   "b": 23,
+   "text": "<code># 1. Laser Merger path</code> — সংখ্যা-দেওয়া চারটা নামফলকের প্রথমটা। Laser merger মানে <code>ira_laser_tools</code> package-এর <code>merge_multi.launch.py</code> — চেনা পুরনো মুখ: folder 10-এ লাইন ধরে পড়া merger, তারপর folder 11, 12, 13 — প্রতিটা lidar app-এর driver একই launch file include করেছিল; folder 14-এ সেই একই টুল এখন SLAM stack-এর প্রথম স্তর। কাজও সেটাই: সামনে-পেছনের দুই lidar-এর আলাদা raw scan জুড়ে একটা পূর্ণ 360-degree <code>/scan</code> বানানো — পরে gmapping-এর চোখ হবে ঠিক এই fused stream-টাই।"
+  },
+  {
+   "a": 24,
+   "b": 25,
+   "text": "<code>laser_merge_launch_file = os.path.join(</code> — assignment খুলছে; bracket L28 পর্যন্ত খোলা থাকবে, তাই সব argument একসঙ্গে মূল্যায়ন হবে। প্রথম argument <code>get_package_share_directory('ira_laser_tools')</code> — ament index-কে জিজ্ঞেস করা সেই সাধারণ function call, চলে এখনই, construction phase-এ, installed share directory-র path string ফেরিয়ে দিয়ে (illustrative: install/ira_laser_tools/share/ira_laser_tools — ros2 pkg prefix যা দেখায়)। Robot-এ এই package না থাকলে ঠিক এখানেই <code>PackageNotFoundError</code> — ৫টা program-এর একটাও তখনো শুরু হয়নি; launch মরে সবার আগে, safe early failure।"
+  },
+  {
+   "a": 26,
+   "b": 28,
+   "text": "পরের দুই segment <code>'launch'</code> আর <code>'merge_multi.launch.py'</code> — L28-এ bracket বন্ধ হয়ে প্রথম খোঁজ সম্পূর্ণ। os.path.join মাঝে ঠিক separator বসিয়ে দেয়, তাই কোন OS-এ চলুক path ঠিক থাকে — string জোড়া দেওয়ার ভুলের ঝুঁকি এড়ানো। ফল একটা absolute path, জমা <code>laser_merge_launch_file</code>-এ। অবস্থাটা তালিকা করো: এটা নিছক একটা string — কোনো lidar ঘুরছে না, merger চালু হয়নি, robot অচল। Merger-এর আসল উত্থান হবে পরের পরের Part-এ L69-71-এর <code>IncludeLaunchDescription</code> থেকে — এই Part কেবল ঠিকানা লিখে রাখে।"
+  },
+  {
+   "a": 29,
+   "b": 30,
+   "text": "L29 সত্যিই ফাঁকা, L30 দ্বিতীয় নামফলক: <code># 2. Laser Filter path</code>। Laser filter মানে <code>yahboom_laser_filter</code> package-এর laser_filter_node.launch.py — কাজ: merger-এর জোড়া-লাগানো stream থেকে robot-এর নিজের শরীরের দাগ মোছা; chassis বা arm-এর গা ঘেঁষে যে ভুয়া কাছের reading ওঠে, তা সরানো। Folder 10-13-এর প্রতিটা pipeline-এ এই জুটি একই ক্রমে দাঁড়িয়েছিল — আগে merger, পরে filter — কারণ filter ধুয়ে দেয় merge করা stream-টাকেই। SLAM-এ এটা বিলাসিতা নয়: map-এ robot-এর নিজের শরীরের ছায়া এঁকে ফেললে মানচিত্রই নষ্ট হয়ে যেত।"
+  },
+  {
+   "a": 31,
+   "b": 32,
+   "text": "আদল হুবহু প্রথম ব্লকের: <code>laser_filter_launch_file = os.path.join(</code> — নামে শুধু merge-এর জায়গায় filter — আর <code>get_package_share_directory('yahboom_laser_filter')</code> — এবার অন্য একটা package। ira_laser_tools community package, এটা Yahboom-এর নিজস্ব; খোঁজটাও চলে এখনই, eagerly — অর্থাৎ এই লাইনে এসে দ্বিতীয়টাও install-থাকা যাচাই হয়ে গেল, কোনো node ওঠার আগেই। চারটা খোঁজ মানে চারটা স্বতন্ত্র existence-পরীক্ষা: যেকোনো একটা ফেল করলে পুরো launch থামবে, আংশিক শুরু বলে কিছু হবে না।"
+  },
+  {
+   "a": 33,
+   "b": 35,
+   "text": "<code>'launch'</code>, <code>'laser_filter_node.launch.py'</code> — L35-এ bracket বন্ধ, দ্বিতীয় absolute path তৈরি, জমা <code>laser_filter_launch_file</code>-এ। হাতে এখন দুইটা ঠিকানা, কিন্তু এখনো একটাও program চালু নয় — চারটার মধ্যে দুইটার হিসাব মাত্র শেষ। এই নিয়ম-মানা পুনরাবৃত্তিই এই file-এর পড়ার সুবিধা: প্রথম ব্লকটা বুঝলে বাকি তিনটা নিজে নিজেই খোলে, শুধু নাম আর ভূমিকা বদলায়।"
+  },
+  {
+   "a": 36,
+   "b": 37,
+   "text": "L36 আবার সেই চার-space-ওয়ালা 'ফাঁকা' লাইন — একই trailing-whitespace quirk-এর পরিবার; L37 তৃতীয় নামফলক <code># 3. EKF (Extended Kalman Filter) path</code>, বন্ধনীতেই পূর্ণরূপ: Extended Kalman Filter। ভূমিকা এবার একেবারে অন্য ধাতুর — এটা lidar নয়, চালার হিসাব: <code>ekf_bringup</code> package-এর ekf.launch.py IMU আর চাকার odometry মিলিয়ে বলে দেবে robot ঠিক কতদূর এগোল আর কতটা ঘুরল — source-এর নিজের ভাষায় পরে L81-এ: ঠিক কতদূর চালানো হলো তার হিসাব। আর SLAM-এর চুক্তিটা এখানেই পাকা হয়: gmapping-এর দুই খাবার — scan আর odometry; merger প্রথমজনের যোগান, EKF দ্বিতীয়জনের।"
+  },
+  {
+   "a": 38,
+   "b": 39,
+   "text": "<code>ekf_odom_launch_file = os.path.join(</code> আর <code>get_package_share_directory('ekf_bringup')</code> — তৃতীয় খোঁজ, তৃতীয় স্বতন্ত্র package, সেই একই eager নিয়মে: ament index-এ এখনই খোঁজা হচ্ছে। ক্রমটা লক্ষ করো — খোঁজগুলো লেখা ক্রমেই চলে, তাই কোনো package না মিললে error-ও আসবে সেই ক্রমে: ira_laser_tools আগে (L25), slam_gmapping সবার শেষে (L46) — আর সব ক্ষেত্রেই error-টা যেকোনো program শুরুর আগে, construction phase-এই।"
+  },
+  {
+   "a": 40,
+   "b": 42,
+   "text": "<code>'launch'</code>, <code>'ekf.launch.py'</code> — L42-এ bracket বন্ধ, তৃতীয় path সম্পূর্ণ, জমা <code>ekf_odom_launch_file</code>-এ। অবস্থা: তিনটা string-এ তিনটা ঠিকানা — merger, filter, EKF — অথচ launch হওয়া বলতে এখনো কিছু হয়নি; robot-এ কোনো lidar ঘোরেনি, কোনো filter ধোয়নি, EKF বসেনি। বাকি একটা খোঁজ — আর সেটাই এই পুরো stack-এর নায়ক।"
+  },
+  {
+   "a": 43,
+   "b": 44,
+   "text": "L43 সেই একই চার-space-এর 'ফাঁকা' লাইন; L44 শেষ নামফলক: <code># 4. Gmapping (The actual SLAM AI!) path</code> — author-এর বিস্ময়চিহ্নটা অহেতুক নয়: এই stack-এর আসল উদ্দেশ্য এই চতুর্থ program-টাই। <code>slam_gmapping</code> package-এর slam_gmapping.launch.py হলো SLAM-এর মগজ — আগের তিনটা স্তর (আর পাঁচ নম্বর IMU) কেবল এর খাবার তৈরি করে: পরিষ্কার করা merged scan + EKF-এর filtered odometry মিলিয়ে সে frame-এর পর frame-এ আন্দাজ করে robot বারান্দায় না ঘরে আছে, তারপর ধীরে ধীরে পরিবেশের 2D মানচিত্র আঁকে — প্রায় হুবহু এই কথাগুলোই source নিজে L87-89-এ লিখে রেখেছে।"
+  },
+  {
+   "a": 45,
+   "b": 46,
+   "text": "<code>gmapping_launch_file = os.path.join(</code> আর <code>get_package_share_directory('slam_gmapping')</code> — চতুর্থ ও শেষ খোঁজ, এটাও এখনই চলে। slam_gmapping install না থাকলে <code>PackageNotFoundError</code> এই লাইনেই — আর তখন মনে রাখতে হবে, আগের তিনটা খোঁজ পাস করা মাত্র: কোনো program-ই শুরু হয়নি, তাই gmapping-এর মৃত্যুও সবার আগে। এভাবেই চারটা খোঁজ মিলে একটা নীরব pre-flight পরীক্ষার মতো কাজ করে — package-এর হাওয়া সামলায় আগে, কাজ ধরে পরে।"
+  },
+  {
+   "a": 47,
+   "b": 49,
+   "text": "<code>'launch'</code>, <code>'slam_gmapping.launch.py'</code> — L49-এ bracket বন্ধ হয়ে চারটা eager path-এর যাত্রা শেষ, শেষ ঠিকানাটি জমা <code>gmapping_launch_file</code>-এ। L49 পেরোলে function-এর হাতে দাঁড়িয়ে আছে: তিনটা মৃত খালি list, চারটা খাঁটি path string, আর একটাও চালু program। পঞ্চম program-এর ছাঁচ আলাদা — IMU filter (L51-62) কোনো path খোঁজে না, সরাসরি <code>Node</code> হয়ে ওঠে; L2/L9-এর সেই duplicate import কাজে লাগবে ঠিক ওখানেই — সেটাই পরের Part। তারপর L66-93-এর LaunchDescription এই চারটা string-কে একে একে চালু করবে — এই Part ছিল সেই উত্থানের আগের ঠিকানা-সংগ্রহ।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "বাস্তব robot-এ README-র যাত্রা মনে রাখো: L1-এর vendor environment তোলার পর L3-এর <code>ros2 launch slam_mapping gmapping.launch.py</code> দিলে এই Part-টা সবার আগে চলে। প্রথমে module-load: L2-L10-এর ন'টা import-লাইন (একটা duplicate সহ) নিঃশব্দে পাস, তারপর <code>generate_launch_description()</code> একবার ডাকা হয় — তিনটা খালি list তৈরি হয়ে ভুলে যাওয়া হয়, আর ament index-এ চারটা খোঁজ লেখা ক্রমে ছোটে: ira_laser_tools, yahboom_laser_filter, ekf_bringup, slam_gmapping। ঠিকঠাক build করা robot-এ চারটাই মিলিয়ে যায় মিলিসেকেন্ডে, আর এই পর্যায়ে বাইরে কিছুই দেখা যায় না — কোনো lidar ঘোরে না, চাকা স্থির, map-এর কোনো রেখা আঁকা শুরু হয় না; এই লাইনগুলোর একমাত্র কাজ চারটা package-এর ঠিকানা যাচাই করে চারটা string হাতে রাখা। সন্দেহ হলে ros2 pkg prefix ira_laser_tools চালিয়ে এই একই share directory নিজেই দেখতে পারো। এরপরই execution নামবে পঞ্চম program-এর (IMU node) দিকে আর L66-এর return তালিকার দিকে — আসল সূচনা সেখানে।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: এই লাইনগুলোই merger, filter, EKF আর gmapping চালু করে ফেলেছে ভাবা। আসলে L49 পর্যন্ত তৈরি হয়েছে শুধু চারটা path string — কোনো program শুরু হয়নি, তাই robot নড়ে না, lidar ঘোরে না, পর্দার map-এ কিছু আসে না; চালু হয় শুধু return করা LaunchDescription run হওয়ার পরে। দ্বিতীয় ভুল: কোনো একটা package বাদ পড়লে বাকিগুলো অন্তত উঠে যাবে এমন ধারণা — আসলে <code>PackageNotFoundError</code> ওঠে এই construction phase-এই, ৫টা program-এর একটাও শুরুর আগে; terminal-এ শুধু traceback দেখা যায়, আংশিক শুরু বলে কিছু ঘটে না — robot পুরোপুরি চুপ। তৃতীয় ভুল: L2/L9-এর duplicate import বা L17-19-এর মৃত list-কে কোনো error বা robot-এর অস্বাভাবিক আচরণের কারণ ভাবা — দুটোই সম্পূর্ণ নিরীহ, source-এর নিজের Note L11 তাই বলে; আর এই launch-কে কোনো argument override দিয়ে ঠেসা দেওয়ারও রাস্তা নেই, কারণ একটাও argument ঘোষিত হয়নি।"
+ },
+ "animType": "chain14"
+}

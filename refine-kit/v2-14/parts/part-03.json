@@ -1,0 +1,118 @@
+{
+ "n": 3,
+ "id": "part-03",
+ "fname": "gmapping.launch.py",
+ "enTitle": "IMU Remap & the Five-Program Launch",
+ "lang": "python",
+ "start": 51,
+ "end": 94,
+ "flags": [],
+ "explain": [
+  {
+   "a": 51,
+   "b": 52,
+   "text": "<code># 5. IMU Filter Node</code> — নম্বর-ধারাটা চেনা: Part 02-তে চারটা path-খোঁজা ব্লকের মাথায় ছিল 1 থেকে 4 নম্বর, এই পঞ্চম নম্বর দিয়ে সেই গণনা এগোল — কিন্তু চেহারায় আসল বদল। আগের চারটার ফল ছিল নিছক string, অন্য কারো কারো launch file-এর ঠিকানা; পঞ্চমটার জন্য কোনো ঠিকানা খোঁজা হচ্ছে না। কারণ L52-তেই লেখা: <code># Instead of a launch file, we start this one directly.</code> — এই program-টার নিজের কোনো launch file নেই, তাই সরাসরি এখানেই Node আকারে লিখে দেওয়া হচ্ছে। গোটা file-এ এভাবে সরাসরি লেখা program এটাই একটি — আর কাজে নামবে সেই <code>Node</code> class, যেটা L2-এ import হয়েছিল, আর L9-এ আবার একবার (source-এর নিজের স্বীকারোক্তি L11: <code>which is harmless, just a bit messy</code>); duplicate-টা কোনো ক্ষতি করে না, শুধু বাহুল্য।"
+  },
+  {
+   "a": 53,
+   "b": 55,
+   "text": "<code>imu_filter_madgwick_node = Node(</code> — assignment-এর ডানে এবার string নয়, constructor call। ভেতরে দুটো keyword argument: L54 <code>package='imu_filter_madgwick'</code> — কোন ROS 2 package-এর ভেতর থেকে, আর L55 <code>executable='imu_filter_madgwick_node'</code> — সেই package-এর কোন executable। নাম-তিনটা প্রায় একই সুতায় বাঁধা: variable, executable, আর একটু পরে L61-এর node-নাম — সবই imu_filter_madgwick শব্দটাকে ঘিরে। command-line-এর ভাষায় এর মানে মোটামুটি একটা সরাসরি <code>ros2 run</code>-এর মতোই — package থেকে executable তুলে চালানো। কিন্তু construction phase-এর সীমা মনে রাখো: এই লাইনে তৈরি হচ্ছে একটা Node object — মানে 'এই program চালাও' নির্দেশের একটা বানানো প্যাকেট — process এখনো জন্মায়নি; জন্মাবে run phase-এ, যখন framework নিচের তালিকা থেকে একে কার্যে নামাবে।"
+  },
+  {
+   "a": 56,
+   "b": 57,
+   "text": "L56-59 টানা চার লাইনের একটা comment-ব্লক — execute হবে না কিছুই, কিন্তু এই Part-এর সবচেয়ে দরকারি ব্যাখ্যাটা author নিজেই এখানে লিখে রেখেছেন। শুরু L56: <code># Remapping is a superpower in ROS 2!</code> — remapping-কে ডাকা হচ্ছে superpower; এই লাইনের শেষে source-এ একটা অদৃশ্য trailing space আছে (FACTS §9-এর তালিকাভুক্ত trailing-whitespace লাইনদের একটি এটাও) — নিরীহ দাগ, যেমন আছে তেমনই থাকবে। তারপর সমস্যার প্রথম পক্ষ L57: <code># The IMU node publishes its data on a topic called '/imu'.</code> — এই madgwick node নিজের data ছাড়ে <code>/imu</code> নামের topic-এ।"
+  },
+  {
+   "a": 58,
+   "b": 59,
+   "text": "দ্বিতীয় পক্ষ L58: <code># But the robot's brain expects the data on a topic called '/imu/data_raw'.</code> — নাম-মিলনের সমস্যা: যেখানে খাবার পৌঁছাচ্ছে, ক্রেতা সেখানে খোঁজে না; নিচের তালিকার entry 4-এর EKF অপেক্ষা করছে <code>/imu/data_raw</code> নামে। L59-এ source নিজেই সমাধানের রূপক দেয়: <code># This line acts like a mail forwarder, redirecting the letters automatically.</code> — mail forwarder-এর মতো: চিঠির ভেতরের কিছুই ছোঁয়া হবে না, বদলাবে শুধু খামের উপরের নাম। IMU-র মানের একটা bit-ও বদলাবে না — বদলাবে কেবল সেই মান কোন নামের topic-এ দেখা দেবে; সেই কাজের এক লাইনের বাস্তবায়ন ঠিক পরের লাইনে।"
+  },
+  {
+   "a": 60,
+   "b": 60,
+   "text": "<code>remappings=[('/imu','/imu/data_raw')],</code> — ওপরের চার লাইনের comment-এর কার্যকর রূপ এই এক লাইন। গঠন সরল: <code>remappings</code> হলো Node-এর একটা optional argument, মান একটা list, ভেতরে (from, to) জোড়া — এখানে from হলো <code>/imu</code>, to হলো <code>/imu/data_raw</code>। ROS 2-এর নিয়মে এই node চালু হওয়ার পর সে যেখানে যেখানে <code>/imu</code> নামটা ব্যবহার করত, সব জায়গায় সেই নাম <code>/imu/data_raw</code> হয়ে যাবে — অর্থাৎ যে স্রোত <code>/imu</code>-তে বেরোত, সেই স্রোতই এখন <code>/imu/data_raw</code> নামে প্রকাশ পাবে; নাম-বদল-টা স্বয়ংক্রিয়, মাঝে আলাদা কোনো data-রুটার বসাতে হয় না। খেয়াল করো tuple-এর ভেতরে কমার পরে space নেই — source যেমন, উদ্ধৃতিও তেমন। এই ছোট্ট নাম-বদলই তালিকার entry 3-কে entry 4-এর সঙ্গে জুড়ে দেয়: madgwick-এর IMU-স্রোত যাবে <code>/imu/data_raw</code>-তে, আর EKF ঠিক সেখান থেকেই খাবে।"
+  },
+  {
+   "a": 61,
+   "b": 62,
+   "text": "<code>name='imu_filter_madgwick_node',</code> — চালু হলে ROS 2-এর graph-এ node-টা এই নামেই পরিচিত হবে; executable-এর নামের সঙ্গে হুবহু এক রাখা, ভিন্ন নামের কোনো প্রয়োজন ছিল না। L62-এর <code>)</code> দিয়ে L53 থেকে চলা <code>Node(</code> call-টা বন্ধ; তৈরি object জমা রইল <code>imu_filter_madgwick_node</code> variable-এ — এখনো একটা বিবরণ মাত্র, চলমান কিছু নয়। এই মুহূর্তে function-এর হাতে হিসাবটা দাঁড়াল এমন: চারটা path-string (Part 02 থেকে) + একটা Node object = পাঁচটা program-এর পুরো উপকরণ, একটাও এখনো চালু নয়। বাকি শুধু তালিকা বানিয়ে framework-এর হাতে দেওয়া।"
+  },
+  {
+   "a": 63,
+   "b": 65,
+   "text": "L63 একটা সত্যিকারের blank line — এর আগে পর্যন্ত ছিল উপকরণ-গোছানো, এবার শুরু ফলাফল। L64 banner: <code># --- THE FINAL LIST ---</code>, আর L65-এ author নিজেই সারাংশ লিখে দিলেন: <code># Hand the list of all 5 programs back to ROS 2 to start them all at once.</code> — পাঁচটা program-এর তালিকা ROS 2-কে ফিরিয়ে দিয়ে সবগুলো একসঙ্গে চালু করানো। পাঁচটা কারা: merger, laser filter, imu node, EKF, gmapping — চারটা <code>IncludeLaunchDescription</code> + একটা সরাসরি <code>Node</code>, 4+1 ভাগ। README L3-এর <code>ros2 launch slam_mapping gmapping.launch.py</code> command-টা চালালে framework ঠিক এই তালিকাটাই হাতে পায়।"
+  },
+  {
+   "a": 66,
+   "b": 67,
+   "text": "<code>return LaunchDescription([</code> — <code>def generate_launch_description():</code> (L14) থেকে শুরু function-টার একমাত্র return; class এসেছে L7-এর import থেকে। এই লাইনেই <code>ros2 launch</code>-এর সঙ্গে চুক্তি পূর্ণ হয়: framework function-টাকে একবার ডাকে, এই object-টা ফেরত পেয়ে তবেই run phase শুরু করে। বড় bracket এখানে খোলা থাকল, list-এর শেষ <code>])</code> নামবে L94-এ — মাঝের ২৭টা লাইন সব এই list-এর উপাদান আর তাদের নামফলক। L67 দেখতে ফাঁকা, ভেতরে লুকিয়ে চারটা space (trailing-whitespace দলেরই সদস্য) — Python-এর কাছে list-এর ভেতরের ফাঁকা লাইন অর্থহীন, তাই ক্ষতি শূন্য; source যেমন, তেমনই সংরক্ষিত।"
+  },
+  {
+   "a": 68,
+   "b": 68,
+   "text": "<code># 1. Start the Laser Merger (Stitch the 360 radar together)</code> — তালিকার প্রথম entry-র নামফলক; নম্বর-গুণ নতুন করে 1 থেকে শুরু (ওপরের path-নম্বরিংয়ের সঙ্গে গুলিয়ে ফেলো না)। বর্ণনাও স্পষ্ট: দুই lidar-এর scan সেলাই করে এক 360-degree ring — <code>ira_laser_tools</code> package-এর এই <code>merge_multi.launch.py</code> merger-ই folder 10 থেকে 13 পর্যন্ত প্রতিটা lidar app-এ কাজ করেছে, এখানেও সে-ই; Part 02-এর L24-28-এ খোঁজা হয়ে যাওয়া ঠিকানাটাই এখন কাজে নামবে। ফল হবে fused <code>/scan</code> — যে topic-টা পরে gmapping-এর প্রধান চোখ।"
+  },
+  {
+   "a": 69,
+   "b": 71,
+   "text": "প্রথম entry-র দেহ: <code>IncludeLaunchDescription(</code> (class L10 থেকে) জড়িয়ে ধরেছে <code>PythonLaunchDescriptionSource(laser_merge_launch_file)</code> (class L8 থেকে)। দুটোর ভাগাভাগি স্পষ্ট: source বলে 'এই path-এর launch file পড়া যাক', Include বলে 'সেই file-টাকে চালাও' — মানে nested launch: merger-এর নিজের launch file-এর নিজের <code>generate_launch_description</code> তখন আলাদা আরেকবার চলবে। Part 02-এ eager হয়ে জমা থাকা path-string প্রথমবার সত্যি অর্থে খরচ হলো এই লাইনেই — ওখানে ছিল ঠিকানা লেখা, এখানে সেই ঠিকানায় program নামানো। তবে সতর্ক হও: এই লাইনেও কিছু চালু হয় না — list-এর সব entry প্রথমে কেবল সংগৃহীত হয়, framework পুরো return-object পাওয়ার পরে একে একে execute করে।"
+  },
+  {
+   "a": 72,
+   "b": 73,
+   "text": "L72 blank, তারপর দ্বিতীয় নামফলক: <code># 2. Start the Laser Filter (Remove the robot's own body from the radar)</code> — merger-এর জোড়া দেওয়া ring থেকে robot-এর নিজের শরীরে লাগা ভুয়া কাছের রিডিং ছেঁটে ফেলা। merger তারপর filter — এই দুই স্তরের পরিচিত pipeline folder 10-এ প্রথম দেখা, তারপর 11, 12, 13-এ বারবার ফিরেছে; এখানে তফাত শুধু এই যে এ দুটো আর চেইনের শেষ কথা নয় — এবার এরা SLAM-এর খাবার তৈরির প্রথম দুই ধাপ মাত্র।"
+  },
+  {
+   "a": 74,
+   "b": 76,
+   "text": "দ্বিতীয় entry, ছাঁচে প্রথমটার হুবহু অনুবর্তন — শুধু ভেতরের variable বদলে <code>PythonLaunchDescriptionSource(laser_filter_launch_file)</code>, Part 02-এর L31-35 থেকে আসা ঠিকানা। এই পুনরাবৃত্তিই পাঁচ-entry তালিকার ছন্দ: include-গুলোর মধ্যে তিনটাই এই একই দুই-লাইনের গড়নে গড়া হবে; ছাঁচ ভাঙবে একটাই entry — সে আসছে মাত্র দুই লাইন পরে, তৃতীয় স্থানে।"
+  },
+  {
+   "a": 77,
+   "b": 78,
+   "text": "L77 আবার সেই অদৃশ্য space-ওয়ালা লাইন — এবার আটটা space; এরপর তৃতীয় নামফলক: <code># 3. Start the IMU Filter (Clean up the gyroscope/accelerometer data)</code> — কাজের বর্ণনা IMU-র দুই উপাদানকে নাম করেছে: gyroscope (ঘূর্ণন-বেগ) আর accelerometer (ত্বরণ)। madgwick নামটা এসেছে filter-এর algorithm-এর প্রণেতার নাম ঘেঁষে; এটা vendor package, তার ভেতরের গণিত এই folder-এর কোথাও নেই — ভেতরের বিবরণ illustrative: কাঁচা gyro-আর-accel রিডিং থেকে কম্পন-জাত গোলমাল ঝেড়ে বিশ্বাসযোগ্য মান বানানো। আমাদের জন্য যা পাকা সত্য: এই entry-ই সেই একটা program, যাকে L53-62-তে সরাসরি Node বানিয়ে রাখা হয়েছিল।"
+  },
+  {
+   "a": 79,
+   "b": 79,
+   "text": "<code>imu_filter_madgwick_node,</code> — তালিকার তৃতীয় entry, আর গোটা তালিকার একমাত্র গঠন-বৈচিত্র্য এই এক লাইনেই: কোনো <code>IncludeLaunchDescription</code> নেই, কোনো <code>PythonLaunchDescriptionSource</code> নেই — শুধু variable-এর নাম, শেষে একটা কমা। L53-এ বানানো Node object-টাই এখানে সরাসরি list-এর উপাদান; Python-এর চোখে অন্যগুলোর সমান মর্যাদায়। চালুর সময় framework এর অর্থ করবে সরাসরি: 'এই package থেকে এই executable নিজেই চালাও' — কোনো মাঝের launch file-এর দরজা ছাড়াই। চার include + এক সরাসরি Node = পাঁচ program; আর L60-এর remap-টাও সঙ্গে চলে আসবে, কারণ সেটা Node object-এর ভেতরেই বাঁধা।"
+  },
+  {
+   "a": 80,
+   "b": 81,
+   "text": "L80 আরেকটা আট-space-এর ফাঁকা লাইন, তারপর চতুর্থ নামফলক: <code># 4. Start the EKF (Calculate exactly how far the robot has driven)</code> — EKF মানে Extended Kalman Filter; <code>ekf_bringup</code> package-এর launch file-এর ঠিকানা Part 02-এর L38-42-তে জমা ছিল। বর্ণনাটা একেবারে মূল কথায় এসে দাঁড়ায়: robot ঠিক কতদূর গেল। কিন্তু EKF একা মাপে না — সে মেশায় দুই স্রোত: চাকার odometry, আর এই Part-এর শুরুতে remap হয়ে যাওয়া IMU-স্রোত <code>/imu/data_raw</code>। মেশানোর ফল বেরোয় নতুন এক topic-এ, <code>/odometry/filtered</code> — নামেই বোঝা যায়, ছেঁকে নেওয়া (filtered) দূরত্ব-স্রোত।"
+  },
+  {
+   "a": 82,
+   "b": 84,
+   "text": "চতুর্থ entry, আকৃতিতে আগের দুটোরই প্রতিলিপি — <code>IncludeLaunchDescription(</code> দিয়ে জড়ানো <code>PythonLaunchDescriptionSource(ekf_odom_launch_file)</code>, Part 02-এর L38-42-এর সেই ঠিকানা। এই পর্যন্ত এলে নেটওয়ার্ক-ছবিটা প্রায় পূর্ণ: তালিকার entry 3 থেকে entry 4-তে সরাসরি data-র শিরা চলে গেল — madgwick node-এর স্রোত নাম-বদল হয়ে <code>/imu/data_raw</code>-তে, EKF সেটাকে চাকার odometry-র সঙ্গে গুলে <code>/odometry/filtered</code> বানায়। এই মিশ্র-স্রোতটাই হবে পরের entry-র দ্বিতীয় খাবার; প্রথম খাবার তো আছেই — entry 1-2-এর ধোয়া <code>/scan</code>।"
+  },
+  {
+   "a": 85,
+   "b": 86,
+   "text": "L85 তালিকার শেষ trailing-space লাইন (আটটা space), তারপর পঞ্চম নামফলক: <code># 5. Start Gmapping SLAM!</code> — বিস্ময়চিহ্নটা যথার্থ: যে কাজের জন্য folder-এর নাম, এই launch file-এর নাম, README L3-এর পুরো command-এর মূল শব্দ — সবই gmapping। প্রথম চার entry কিন্তু ছিল এই পঞ্চমটারই প্রস্তুতি-পর্ব: radar জোড়া, সেই scan ধোয়া, IMU সাফ করা, চাকা-আর-IMU মিলিয়ে দূরত্ব-হিসাব — এবার সব উপকরণ হাতে নেবে মূল AI।"
+  },
+  {
+   "a": 87,
+   "b": 89,
+   "text": "তিন লাইনের comment — গোটা file-এর সবচেয়ে জরুরি বাক্যগুলো মূল code-এ নয়, এখানেই: L87 <code># This AI listens to the cleaned radar data AND the EKF distance data.</code> — AND শব্দটা author নিজে বড় হাতের করেছেন, কারণ gmapping-এর ভোজনের শর্তই দুই স্রোত একসঙ্গে: ধোয়া <code>/scan</code> আর <code>/odometry/filtered</code>; একটাও বন্ধ থাকলে map আঁকা আগায় না। L88 <code># It compares them frame-by-frame to guess if the robot is in a hallway or a room,</code> — frame থেকে frame-এ scan-এর নকশা মিলিয়ে অনুমান: দেয়ালের সারি নাকি ঘরের চারপাশ। L89 <code># and slowly draws a 2D map of the environment.</code> — ধীরে ধীরে 2D map আঁকা; slowly শব্দটাও সঠিক, কারণ map তৈরি হয় robot-এর চলার সঙ্গে সঙ্গে ধাপে ধাপে, এক ঝলকায় নয়।"
+  },
+  {
+   "a": 90,
+   "b": 92,
+   "text": "পঞ্চম ও শেষ entry: <code>IncludeLaunchDescription(</code> ভেতরে <code>PythonLaunchDescriptionSource(gmapping_launch_file)</code> — Part 02-এর L45-49-এ খোঁজা <code>slam_gmapping</code> package-এর নিজস্ব <code>slam_gmapping.launch.py</code>। এখানে একটা চমকপ্রদ সত্য খুলে যায়: এই file-এ SLAM-এর আসল node-এর একটা লাইনও নেই — gmapping নিজে চলে ওই অন্য launch file-এর ভেতরে; আমাদের file শুধু তার খাবার-সরবরাহের পাঁচ স্তর সাজিয়ে তাকে ডেকেছে। README-র যাত্রাক্রমে এরপরের ধাপগুলোও এই launch-এর বাইরে: map দেখতে L5-এর <code>ros2 launch slam_mapping slam_view.launch.py</code> (RViz), robot চালাতে L7-এর <code>ros2 run yahboomcar_ctrl yahboom_keyboard</code> বা L11-এর <code>ros2 run M3Pro_demo follow_line</code>, আর আঁকা map save করতে L15-এর <code>ros2 launch slam_mapping save_map.launch.py</code>।"
+  },
+  {
+   "a": 93,
+   "b": 94,
+   "text": "L93 শেষ blank line, তারপর <code>])</code> — এক লাইনে দুই বন্ধ: বড়টা L66-এ খোলা list-এর, ছোটটা <code>LaunchDescription</code> call-এর। চূড়ান্ত হিসাব গুনে রাখি: L69-71 merger, L74-76 filter, L79 imu node, L82-84 EKF, L90-92 gmapping — ঠিক পাঁচটা entry, একটাও কম-বেশি নয়, ক্রমটাও এই; এদের মধ্যে চারটা include, একটা সরাসরি Node। return সম্পন্ন হতেই <code>generate_launch_description</code>-এর দায়িত্ব শেষ — function আর কিছু করে না; দড়ি চলে যায় framework-এর হাতে, সে পাঁচটাকে একে একে চালু করে দেবে। একটা কথা অবশ্য মনে রাখতে হবে: সব package পাওয়া গেল কি না সেই যাচাই আসলে অনেক আগেই সেরে এসেছে — Part 02-এর চারটা eager path-খোঁজায়; কোনো package না মিললে এই সুন্দর তালিকা লেখার আগেই launch মারা যেত, একটা program-ও চালু হওয়ার আগে।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "বাস্তব robot-এ README L3-এর <code>ros2 launch slam_mapping gmapping.launch.py</code> দিলে এই Part চলে যায় এক নিমেষে: madgwick Node-এর বিবরণ তৈরি হয়, তারপর framework পাঁচ-entry তালিকাটা পেয়ে সবগুলো চালু করে দেয়। সামনে-পেছনের দুই lidar জুড়ে 360-degree <code>/scan</code> তৈরি হয় আর filter তা থেকে robot-এর নিজের শরীরের দাগ ছেঁটে দেয়; imu_filter_madgwick_node সরাসরি উঠে তার IMU-স্রোত <code>/imu/data_raw</code> নামে ছাড়ে — L60-এর remap চালু হওয়ার পর স্বয়ংক্রিয়ভাবেই কাজ করে; EKF সেই স্রোত চাকার odometry-র সঙ্গে মিশিয়ে <code>/odometry/filtered</code> বানায়; আর gmapping দুই স্রোত পেয়ে ধীরে ধীরে 2D map আঁকতে শুরু করে। কিন্তু map নিজে থেকে বাড়ে না — বাড়ে robot চললে: চালাতে হয় README L7-এর keyboard বা L11-এর follow_line, map দেখতে L5-এর slam_view, save করতে L15-এর save_map — চারটাই আলাদা command। আর এই পর্বে robot-এর চাকা নড়ে না: তালিকার পাঁচটা program-এর কেউই চালনার হুকুম পাঠায় না, সবাই sensor-আর-হিসাবের কাজে ব্যস্ত।",
+  "incorrect": "প্রথম ও সবচেয়ে প্রচলিত ভুল প্রত্যাশা: এই launch দিলেই robot নিজে ঘুরে ঘুরে map বানিয়ে ফেলবে। বাস্তবে gmapping শুধু শোনে আর আঁকে — চালানোর হুকুমের কথা এই file-এর কোথাও নেই, তাই robot দাঁড়িয়ে থাকে আর map-এ জমে শুধু চারপাশের এক টুকরো; এগোতে হলে README L7-এর keyboard বা L11-এর follow_line লাগবেই। দ্বিতীয় ভুল: তালিকার ক্রমকে চালু-হওয়ার সিঁড়ি ভাবা — মনে করা যে merger সম্পূর্ণ শেষ হয়ে তবেই gmapping-এর পালা; বাস্তবে পাঁচটাই প্রায় একসঙ্গে ওঠে, তাই শুরুর কয়েক সেকেন্ডে <code>/scan</code> বা IMU-স্রোত না পেলে gmapping ভেঙে পড়ে না, চুপচাপ অপেক্ষায় থাকে। তৃতীয় ভুল: L60-এর remap-টা সরিয়ে দিলেও সব চলবে ভাবা — remap বাদ গেলে madgwick-এর স্রোত <code>/imu</code> নামেই থেকে যায়, EKF তার <code>/imu/data_raw</code> খালি দেখে; দূরত্ব-হিসাব তখন শুধু চাকার odometry-র উপর দাঁড়ায় (illustrative), আর চাকা পিছললে দূরত্ব এলোমেলো হয়ে map-এর দেয়ালগুলো ক্রমশ ভুল জায়গায় আঁকা হতে থাকে। চতুর্থ ভুল: এই launch-ই map save করে দেবে ভাবা — save করে আলাদা README L15-এর save_map; এই file-এর কাজ কেবল আঁকা।"
+ },
+ "animType": "ekf14"
+}

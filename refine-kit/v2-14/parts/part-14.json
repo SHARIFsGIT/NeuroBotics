@@ -1,0 +1,153 @@
+{
+ "n": 14,
+ "id": "part-14",
+ "fname": "follow_line.py",
+ "enTitle": "Helpers, Reset & Main Shutdown",
+ "lang": "python",
+ "start": 382,
+ "end": 485,
+ "flags": [],
+ "explain": [
+  {
+   "a": 382,
+   "b": 383,
+   "text": "<code>\tdef pubVel(self,vx,vy):</code> — class-এর শেষ প্রান্তের প্রথম helper: নামই কাজ বলে দেয়, velocity publish। পুরো file-এ এর ঠিক দুটো call-site — process-এর Remove ধাপে <code>self.pubVel(0.0, 0.0)</code> (L354, সম্পূর্ণ থামানো) আর remove_obstacle-এর শেষ লাইনে L395। অর্থাৎ লাইন-ফলো চালানোর execute() এই helper ছুঁয়েও দেখে না — সে নিজের Twist নিজে বানায় (L259); pubVel কার্যত AprilTag-Remove মোডের নিজস্ব গাড়ি। ভেতরে <code>\t\tvel = Twist()</code> — constructor সব field শূন্য দিয়ে একটা খালি message জন্ম দেয়; পরের দুই লাইন তার মধ্যে মাত্র দুটো মান বসাবে।"
+  },
+  {
+   "a": 384,
+   "b": 385,
+   "text": "<code>\t\tvel.linear.x = vx</code> আর <code>\t\tvel.linear.y = vy</code> — দুটো আলাদা অক্ষ। linear.x সামনে-পেছনে, কিন্তু আসল খবর linear.y: পাশে যাওয়া, অর্থাৎ strafe। সাধারণ differential চাকার robot পাশে চলতেই পারে না; M3Pro-র base mecanum, তাই পারে — এই folder-েরই keyboard teleop (§4) তার প্রমাণ, সেখানে a/d চাপায় ঠিক linear.y-ই চলে। মজার তথ্য: execute() পুরো ফাইলে কখনো linear.y সেট করে না — লাইন-ফলো মোড পাশে যায় না, শুধু সোজা হেলে হেলে চলে; pubVel-ই একমাত্র জায়গা যেখানে linear.y সত্যিই ব্যবহার পায়।"
+  },
+  {
+   "a": 386,
+   "b": 388,
+   "text": "L386 ফাঁকা; L387-এ <code>\t\tself.pub_cmdVel.publish(vel)</code> — বানানো message ছুটল /cmd_vel topic-এ (publisher-এর জন্ম L34-এ, queue depth 1)। base driver এই একটা command-ই পায়, তাই Remove মোডের প্রতিটা নড়াচড়া এই সরু নল দিয়েই যায়। L388 সম্পূর্ণ লাইনটা আটটা space — tab নয়; file-টার আঙুলের ছাপ, Python একে শূন্য লাইন ভাবে, কোনো কাজে কোনো পার্থক্য নেই — source-এ যেমন, তেমনই রেখে দেওয়া।"
+  },
+  {
+   "a": 389,
+   "b": 390,
+   "text": "<code>\tdef remove_obstacle(self,point_x, point_y):</code> — Remove মোডের স্টিয়ারিং-হৃদয়। caller একজনই: process-এর L352 <code>self.remove_obstacle(center_x, center_y)</code> — AprilTag-র কেন্দ্র ছবিতে কোথায়। L390-এর এক লাইনে তিনটা কাজ জড়িয়ে আছে, আর লাইনটা নিজেই দেখে নিই: <code>\t\t[y, x] = self.Remove_PID_controller.update([(point_x - 320) / 10.0, (point_y - 400) / 10.0])</code>। এক, ডাকটা — Remove_PID_controller, PID_init (L226-230) বানিয়ে রাখা দুই-চ্যানেল controller; তার লাভ tuple থেকে আসে <code>\t\tself.RemovePID = (40, 0, 15.0)</code>, scale 1000 দিয়ে ভাগ হয়ে দুই চ্যানেলেই Kp 0.04, Ki 0, Kd 0.015। দুই, input দুটো error — <code>(point_x - 320) / 10.0</code> আর <code>(point_y - 400) / 10.0</code>: tag-কেন্দ্র ছবির লক্ষ্য-বিন্দু (320,400) থেকে কতদূরে, পিক্সেল-দূরত্ব 10 দিয়ে ভাগ করা। তিন, list-এর সামনের নাম-জোড়া [y, x] — destructuring। update() follow_common-এর vendor simplePID, ভেতরের হিসাব illustrative; এই file-এ যা দেখা যায়: update() দুই-উপাদানের list ফেরায়, চ্যানেল 0-এর output পড়ে variable y-তে, চ্যানেল 1-এরটা x-এ। নাম দুটো উল্টে বসানো — এই file-এর সবচেয়ে আলোচিত quirk (FACTS §9.9), source-এ যেমন আছে তেমনই পড়ব।"
+  },
+  {
+   "a": 391,
+   "b": 392,
+   "text": "এবার বাঁধন: <code>\t\tif x >= 0.10: x = 0.10 #0.10</code> আর <code>\t\telif x <= -0.10: x = -0.10</code> — PID-এর output যা-ই হোক, x-কে +0.10 আর -0.10 m/s-এর ভেতরে রাখা হলো। one-line if-আকারে এই দুই লাইনে x-অক্ষের দুটো সীমা-পরীক্ষা সেরে ফেলা (চার পূর্ণ হয় পরের দুই লাইনের y-জোড়া মিলিয়ে) — tag যতই দূরে হোক, এই অক্ষে robot এর বেশি বেগ নেবে না। শেষের ইনলাইন <code>#0.10</code> comment-টা পুরনো টিউনিং-এর দাগ — মানটা কোডের সঙ্গে মিলে আছে, source তেমনই রেখেছে।"
+  },
+  {
+   "a": 393,
+   "b": 394,
+   "text": "হুবহু সেই একই বাঁধন y-এর জন্য: >= 0.10 হলে 0.10, <= -0.10 হলে -0.10। দুই অক্ষেই সর্বোচ্চ বেগ তাই 0.10 m/s — Remove মোড নিচু-গতির সাবধানি চালনা, execute()-এর লাইন-ফলো গতির (0.1 hardcoded) সমান ঊর্ধ্বসীমা কিন্তু দুই অক্ষেই, তাও strafe-সহ।"
+  },
+  {
+   "a": 395,
+   "b": 396,
+   "text": "L395 <code>self.pubVel(x, y)</code> — আর এখানেই swap-এর ফল চাকায় নামে: pubVel-এর চুক্তি (vx, vy) অনুযায়ী linear.x পায় x-এর মান, অর্থাৎ চ্যানেল 1-এর output — যেটা y-error মানে (point_y-400) চ্যানেল থেকে এসেছে; আর linear.y পায় y, মানে চ্যানেল 0-র output — x-error চ্যানেলের ফল। সাজিয়ে বলি: ছবিতে ডানে-বাঁয়ে অফসেট (x-error) চালায় linear.y-কে, robot পাশে স্লাইড করে; উপরে-নিচে অফসেট (y-error, কাছে-দূরের কাজের কাছাকাছি) চালায় linear.x-কে, সামনে-পেছনে। ইচ্ছাকৃত অক্ষ-ম্যাপিং নাকি দুর্ঘটনা — source কিছু বলে না, আমরাও দাবি করব না; শুধু নথিভুক্ত করি কোনটা কোথায় যায়, as-is। L395-এর শেষে আটটা space ঝুলে আছে (quote করিনি), আর L396 পুরো লাইনটাই দুটো tab — whitespace-texture, বদলানো হয়নি।"
+  },
+  {
+   "a": 397,
+   "b": 402,
+   "text": "<code>\tdef JoyStateCallback(self,msg):</code> — JoyStateCallback-এর দ্বিতীয় সংজ্ঞা। সূক্ষ্ম তফাত ধরো: L118-এ প্রথমটার সই-ছিল <code>self, msg</code> (কমার পরে space), এখানে <code>self,msg</code> — space নেই; কিন্তু body-র দুই কার্যকর লাইন হুবহু এক: isinstance-পাহারা আর <code>self.Joy_active = msg.data</code>। Python class body-তে একই নামের পরের definition আগেরটাকে ঢেকে দেয় — টিকে থাকে দ্বিতীয়টাই; প্রথমটা কেবল পড়ার সময় বিভ্রান্তি। constructor-এর L38/L40-এর duplicate /JoyState subscription-এর সঙ্গে মিলিয়ে একই template-edit দাগের জোড়া জাতক — দুটোই harmless, দুটোই source-এ বাস্তব। কাজে কিছু বদলায় না: /JoyState-এ Bool এলে Joy_active সেট হয়, execute() সেই পতাকা দেখে থামে-চলে। L400-এ <code>\t\t#self.pub_cmdVel.publish(Twist())</code> — বন্ধ করে রাখা এক লাইনের publish, মানে joystick-এসে থামানোর পরে স্পষ্ট zero-command পাঠানোর ভাবনাটা লেখক বাদ দিয়েছিলেন; L401-402 দুটো ফাঁকা লাইন class-এর শেষপ্রান্ত জুড়ে দাঁড়িয়ে।"
+  },
+  {
+   "a": 403,
+   "b": 405,
+   "text": "<code>\tdef Reset(self):</code> — রিসেট-এর সাত ধাপের তালিকা শুরু। L404 <code>\t\tself.PID_init()</code> — FollowLinePID (50, 0, 10) আর RemovePID (40, 0, 15.0) tuple দিয়ে দুটো controller নতুন করে জন্মানো; controller-এর ভেতরে জমে-থাকা অবস্থা (vendor simplePID-এর history, illustrative) মুছে শূন্য থেকে শুরু। L405 <code>\t\tself.Track_state = 'init'</code> — state machine-কে প্রথম সিঁড়িতে ফেরত টানা: পরের synced frame-এ process-এর 'init' ধাপ নামবে, namedWindow আর mouse callback লেগে ব্যবহারকারীকে নতুন ROI আঁকতে বাধ্য করবে। ডাক আসে cv window-তে 'r' চাপা থেকে — L300 <code>elif action == ord('r') or action == 114: self.Reset()</code>।"
+  },
+  {
+   "a": 406,
+   "b": 411,
+   "text": "বাকি ধাপগুলোর পালা। <code>\t\tself.hsv_range = ()</code> — মেমরিতে থাকা HSV calibration খালি করা; কিন্তু খেয়াল করো, ডিস্কের hsv_text ফাইল মুছে না — রিসেটের পরে 'i' চেপে identify-এ গেলে L317 সেই ফাইল থেকে read_HSV করে পুরনো মান আবার ফিরিয়ে আনতে পারে। <code>\t\tself.Joy_active =False</code> (সমান-চিহ্নের আগে space আছে, পরে নেই — L74-এর দুই দিকে space-ওয়ালা <code>self.Joy_active = False</code> রূপের ছন্দ এখানে ভাঙা, source-এর নিজস্ব আঙুলের ছাপ) — pause-অবস্থা ছেড়ে মুক্ত। Mouse_XY (0,0), তারপর <code>self.pub_cmdVel.publish(Twist())</code> — সঙ্গে সঙ্গে একটা শূন্য Twist: রিসেট মানেই চলমান চাকা থামানো। শেষে L410 <code>\t\tprint(\"Reset succes!!!\")</code> — \"success\" নয়, \"succes\" — source-এর typo, ঠিক না করে যেমন আছে তেমন উদ্ধৃত; console-এ রিসেট হলে ঠিক এই বানানটাই দেখা যাবে। L411 ফাঁকা।"
+  },
+  {
+   "a": 412,
+   "b": 413,
+   "text": "<code>\tdef get_param(self):</code> — নামের প্রতিশ্রুতি: parameter আবার পড়া। কিন্তু এই file-এর সবচেয়ে নীরব তথ্য — এই method-কে কোথাও একবারও call করা হয়নি; পুরো শরীরটা লেখা হয়ে কেউ ডাকল না। declare_param (L73) constructor-এ একবার declare-পড়া করেই থেমে গেছে; বাইরে থেকে ros2 param set করে কেউ মান বদলালে ধরার জায়গা এটাই হতো — বাস্তবে বাদ পড়া সংযোগ। L413 <code>\t\t#hsv</code> — নিচের ছয় লাইনের নামফলক, এরপর PID-র নিজের ফলক, তারপর বাকিগুলোর।"
+  },
+  {
+   "a": 414,
+   "b": 419,
+   "text": "ছয়টা HSV read-back, হুবহু declare_param-এর ক্রমে: Hmin, Smin, Vmin, Hmax, Smax, Vmax — প্রতিটাই <code>self.get_parameter('Hmin').get_parameter_value().integer_value</code>-ধাঁচে বস্তু থেকে খোঁচা দিয়ে বের করা পূর্ণসংখ্যা। declare_parameter-র default ছাড়া বাইরে থেকে মান বদলালে সেটা এখানে ধরা পড়ত। একটা বাস্তব পথ আসলেই আছে: process-এর dyn_update ধাপে ROI আঁকা হলে L332 <code>self.set_parameters(all_new_parameters)</code> নতুন HSV ছয়টাই node-এর parameter-এ লিখে দেয় — get_param ডাকা হতো তবেই সেই লেখা মান ফিরে পেত। ডাক নেই, তাই লেখা পড়ার কেউ নেই।"
+  },
+  {
+   "a": 420,
+   "b": 424,
+   "text": "L420 <code>\t\t#kpi</code> — source-এর নিজের লেবেল, as-is। পড়ার ক্রমে সূক্ষ্ম বাঁক: আগে Kd (L421), তারপর Ki, সবশেষে Kp — যেমন <code>self.Kp = self.get_parameter('Kp').get_parameter_value().integer_value</code>; তিনটাই পড়া হয়, ক্রম নতুন কিছু বদলায় না। তারপর আসে এই ব্লকের মূল লাইন — L424 <code>\t\tself.FollowLinePID = (self.Kp,self.Ki,self.Kd)</code> (কমার পরে space নেই, source-এ তাই): parameter থেকে পড়া তিন মান দিয়ে FollowLinePID tuple নতুন করে গাঁথা। এই এক লাইনই বাইরের parameter আর controller-এর মাঝের সেতু হতো। declare_param-এ Kp-র default 60; অথচ controller চলে L91-এর <code>self.FollowLinePID = (50, 0, 10)</code> থেকে। সেতু কেউ পার হয়নি বলে parameter-এ 60 লেখা থাকে, চালে 50 — declared মান আর effective মান আলাদা (FACTS §9.6), এই file-এর বড় lesson-গুলোর একটা।"
+  },
+  {
+   "a": 425,
+   "b": 430,
+   "text": "বাকি পাঁচটা read-back: scale (1000), LaserAngle (60), linear, ResponseDist, refresh — L425-এর একাকী <code>\t\t#</code> comment-টা এই দলের বিভাজক। এদের মধ্যে linear-এর নাটকটা মনে করো: declare_param-এর ডাক constructor-এর L73-এই পড়ে — L213-এ <code>self.declare_parameter(\"linear\",0.18)</code> ঘোষিত হয়ে L214 তখন self.linear-এ 0.18 বসায়; কিন্তু ডাক সারা হবার পরেই constructor-এর L93 চলে <code>self.linear = 0.2</code> — শেষ লেখাই জেতে, attribute-এর সর্বশেষ মান তাই 0.2, ros parameter-এ লেখা থাকে 0.18। আর দুটো মানের কোনোটাই চাকায় পৌঁছায় না: execute()-র drive-গতি L269-এ <code>twist.linear.x = 0.1</code> হার্ডকোডেড। parameter-টা ঘোষিত, পড়াও হয়, drive-এ কখনো খরচ হয় না। get_param-এর এই পুরো শরীরটা তাই কার্যত নিদ্রিত ম্যাপ — পথ আছে, পথিক নেই; বাকি দুই মৃতপ্রায় জিনিসের সঙ্গে মিলিয়ে দাঁড়ায়: TargetJoint6_pub কখনো publish হয় না, warning পতাকাটা কেউ পড়ে না।"
+  },
+  {
+   "a": 431,
+   "b": 433,
+   "text": "L431 ফাঁকা, L432 পুরো লাইনে দুটো tab, তারপর L433 <code>def main():</code> — class LineDetect-এর বাইরে প্রথম function, কলাম শূন্য থেকে শুরু। খেয়াল রাখো: file-টা L485-এই শেষ — কোথাও if __name__ == '__main__': guard নেই। তাহলে main কে ডাকে? ros2 run README L11-এর <code>ros2 run M3Pro_demo follow_line</code> চালালে package-এর setup.py-তে লেখা entry point সরাসরি এই main()-কেই জাগায় (সেই config-file এই folder-এ নেই — সংযোগটা illustrative)। মানে নামটা মাত্র চার অক্ষরের এই function-টাই পুরো node-এর দরজা।"
+  },
+  {
+   "a": 434,
+   "b": 437,
+   "text": "তিন লাইনের comment-ব্যানার: <code>\t#  BEGINNER STARTUP SCREEN</code> — নিচের পুরো অংশের নামফলক, আর তার নিচে লেখকের নিজের স্বীকারোক্তি: \"Only display messages are added here; robot logic is unchanged.\" — শুধু দেখানোর message যোগ করা হয়েছে, robot-এর লজিক অপরিবর্তিত। তিরাক্ষর সত্য: আগামী পঁচিশ লাইন সব print, কোনো computing নেই; Python comment হিসেবে এই তিনটাও execute হয় না — পাঠকের মনে প্রত্যাশা বাঁধার কাজ ছাড়া।"
+  },
+  {
+   "a": 438,
+   "b": 443,
+   "text": "দৃশ্যপট খোলা: ফাঁকা <code>print()</code>, তারপর <code>\tprint(\"=\" * 64)</code> — string-কে 64 বার গুণ করে 64-অক্ষের বর্ডার, তারপর শিরোনাম <code>\tprint(\"        M3Pro ROBOT - LINE FOLLOW + APRILTAG\")</code> (আট স্পেসের ইনডেন্ট সহ), আরেকটা বর্ডার, \"Starting ROS 2 node...\", ফাঁকা। খেয়াল করো ক্রমটা: এই মুহূর্ত পর্যন্ত rclpy.init-ও হয়নি — ROS 2-এর একটাও ডাক না দিয়েই পুরো মঞ্চ সাজানো হয়ে গেল; banner ব্যর্থ হলেও node-এর ক্ষতি নেই, কারণ এখানে ব্যর্থ হবার কিছুই নেই।"
+  },
+  {
+   "a": 444,
+   "b": 449,
+   "text": "\"What this program does:\" তালিকা [1] থেকে [4]: লাইন শনাক্ত করে ফলো, AprilTag শনাক্ত, laser scanner দিয়ে obstacle-নিরাপত্তা, AprilTag পেলে robot arm নিয়ন্ত্রণ। প্রতিটা দাবিরই আসল যন্ত্র আগের Part-গুলোতে হাতে পড়েছে: [1] HSV mask আর circle-centroid থেকে execute()-র PID স্টিয়ারিং; [3] registerScan-এর 60-degree cone-এ 0.375 m-ভেতরের beam-গণনা আর front_warning 10 ছাড়ালে Twist() থামানো + buzzer; [4] Remove মোড, compute_joint5, আর joint5-এর double publish। banner-টা তাই পুরনো সত্যের নতুন করে ঘোষণা, নতুন ক্ষমতার নয়।"
+  },
+  {
+   "a": 450,
+   "b": 454,
+   "text": "\"Keyboard controls:\" — <code>\tprint(\"    SPACE  -> Start / tracking mode\")</code> দিয়ে শুরু, তারপর I (HSV identify/load), R (Reset), Q (Quit)। এই চারটা অক্ষরের আসল ঠিকানা process-এর শুরুতে: action 32 মানে SPACE হলে 'tracking', i/105 হলে 'identify', r/114 হলে <code>self.Reset()</code>, q/113 হলে self.cancel()। আর action আসে L166 <code>action = cv2.waitKey(1)</code> থেকে — মানে key টাপতে হবে cv-র 'frame' window-এ ফোকাস দিয়ে; এই terminal-এ টাইপ করলে কিছুই হবে না। banner এই জরুরি শর্তটা বলে না — নতুন ব্যবহারকারীর প্রথম ধরা খাওয়ার জায়গা ঠিক এখানেই।"
+  },
+  {
+   "a": 455,
+   "b": 459,
+   "text": "\"Important:\" বিভাগের দুই নির্দেশ — শুরু করার আগে robot-এর চারপাশ ফাঁকা রাখো, আর \"The robot will stop when an obstacle is detected.\" দ্বিতীয় বাক্যটা সত্য, শর্তসাপেক্ষে: থামানোর ট্রিগার front_warning > 10, অর্থাৎ /scan1-এর সামনের cone-এ 0.375 m-এর ভেতরে 11 বা তার বেশি non-zero beam। lidar driver না উঠলে registerScan একবারও চলে না, front_warning শূন্যেই থাকে — বাধা-থামার প্রতিশ্রুতিটা তখন কাগজে-কাগজেই। তারপর <code>\tprint(\"-\" * 64)</code> — ড্যাশের 64-অক্ষ রেখা দিয়ে startup screen-এর পর্দা নামল।"
+  },
+  {
+   "a": 460,
+   "b": 462,
+   "text": "এবার আসল শুরু। L461 <code>\trclpy.init()</code> — ROS 2 runtime জাগলো, এরপর থেকেই node তৈরি করা বৈধ। L462 <code>\tlinedetect = LineDetect(\"follow_line\")</code> — এক লাইন, কিন্তু ভেতরে গোটা constructor: সব publisher-subscriber, declare_param, PID_init, আর সবচেয়ে জরুরি — L52-এর blocking arm wait: <code>while not self.pub_SixTargetAngle.get_subscription_count():</code> চলতে থাকে, প্রতি 0.1 সেকেন্ডে একবার <code>self.pubSixArm(self.init_joints)</code> home-pose পাঠাতে পাঠাতে। arm-এর driver (README L9-এর camera_arm_kin launch থেকে আসা সেই node) arm6_joints subscribe না করা পর্যন্ত পুরো main এই লাইনেই দাঁড়িয়ে থাকে — spin শুরু হয় না, নিচের [OK] লাইনগুলোও ছাপা হয় না। এই এক লাইনই বলে দেয় কেন README-তে follow_line-এর আগে camera_arm_kin launch উঠতে হয়।"
+  },
+  {
+   "a": 463,
+   "b": 466,
+   "text": "constructor ফিরে এসেছে — মানে arm wait পেরোনো হয়েছে, \"Init Done.\" আর LaserAngle 60, ResponseDist 0.25-এর ছাপাও (L111-114) ইতিমধ্যে console-এ নেমেছে। তার গায়ে চারটা [OK]: node শুরু follow_line নামে, camera/depth প্রসেসিং তৈরি, লাইন-ফলো ব্যবস্থা রেডি, AprilTag শনাক্তকরণ রেডি। এগুলো নতুন কোনো পরীক্ষার ফল নয় — constructor বেঁচে ফেরাই তাদের একমাত্র প্রমাণ; banner-এর রীতি মনে রেখো: দেখানোর message, লজিক অপরিবর্তিত।"
+  },
+  {
+   "a": 467,
+   "b": 470,
+   "text": "সমাপ্তি-মঞ্চ: ফাঁকা print, \"  >>> System is RUNNING. <<<\", আরেকটা \"=\" * 64 বর্ডার, শেষ ফাঁকা। শব্দটা সাবধানে পড়ো — RUNNING মানে এই না যে চাকা ঘুরছে; মানে node তৈরি হয়েছে, callback-দের বসার ব্যবস্থা প্রস্তুত। চলা শুরু হবে ঠিক পরের লাইনে, spin-এর হাত ধরে। এই মুহূর্তে robot এখনো স্থির — camera আসতে হলে sync-এর প্রথম জোড়ার জন্য অপেক্ষা, আর 3-সেকেন্ডের arming-ঘড়িও (L168) তখনই টিকটিক শুরু করবে।"
+  },
+  {
+   "a": 471,
+   "b": 474,
+   "text": "হৃৎস্পন্দনের বাক্স: <code>\ttry:</code>, ভেতরে <code>\t\trclpy.spin(linedetect)</code>, তারপর <code>\texcept KeyboardInterrupt:</code> আর <code>\t\tpass</code>। spin-ই node-কে বাঁচিয়ে রাখে — synchronized camera+depth callback, /scan1, /JoyState, grasp_done: সব সারিতে আসা message ঘুরিয়ে ঘুরিয়ে সংশ্লিষ্ট callback-এ পৌঁছে দেয়, আর নিজে অসীম অপেক্ষায় থাকে। terminal-এ Ctrl+C দিলে rclpy spin-এর ভেতর থেকে KeyboardInterrupt ছুড়ে দেয়; except সেটাকে pass দিয়ে শান্তভাবে গিলে ফেলে — ফলে নিয়ন্ত্রণ finally-তে পৌঁছাবেই, স্বাভাবিক শেষ হোক বা ব্যবহারকারীর থামানো।"
+  },
+  {
+   "a": 475,
+   "b": 479,
+   "text": "<code>\tfinally:</code> — স্বাভাবিক সমাপ্তি বা Ctrl+C, দুই পথেই চলবে; এটাই বাক্সের তলা। ভেতরে আগে ছাপা-বার্তা: ফাঁকা print, \"=\" * 64, \"  Stopping robot safely...\", তারপর \"  [OK] Zero velocity command sent\"। সূক্ষ্ম ক্রম-রস ধরো — ছাপা হলো আগে, আসল zero-command যাবে অনেকটা পরে, L483-এ; banner-এর \"দেখাও আগে, করো পরে\" রীতি বিদায়বেলাতেও অটুট। আরও খেয়াল করো: constructor-এর L462 যেহেতু try-এর বাইরে, arm wait-এ আটকে থাকা অবস্থায় Ctrl+C করলে exception সরাসরি main-এর বাইরে ঝাঁপ দেয় — এই finally তখন চলেই না।"
+  },
+  {
+   "a": 480,
+   "b": 482,
+   "text": "বিদায়-বার্তার বাকি অংশ: \"  [OK] ROS 2 node stopped\", \"  Goodbye!\", আর শেষ \"=\" * 64 বর্ডার। এখনো পর্যন্ত node সত্যিই বন্ধ হয়নি — ছাপাগুলো প্রতিশ্রুতির মতো আগে নেমেছে; ঘোষিত তিনটা কাজের প্রতিশ্রুতির দুটোই এখনো বাকি, আর সেগুলো নিচের তিন লাইনে, লেখার ক্রমেই।"
+  },
+  {
+   "a": 483,
+   "b": 485,
+   "text": "তিনটা আসল বিদায়-কাজ। প্রথমে <code>\t\tlinedetect.pub_cmdVel.publish(Twist())</code> — /cmd_vel-এ একটা শূন্য Twist, চাকার দিকে শেষ কথা: থামো। তারপর <code>\t\tlinedetect.destroy_node()</code> — node-এর সব publisher-subscriber ভেঙে ROS 2 graph থেকে নামানো; শেষে <code>\t\trclpy.shutdown()</code> — runtime বন্ধ। দুটো সূক্ষ্ম বিষয় বহন করে যাই: zero-command এখানে মাত্র একবার যায়, আর যেহেতু প্রতি tracking frame-এ নতুন thread-এ execute() ওড়ে (L336), Ctrl+C-র মুহূর্তে কোনো thread মাঝ-পথে থাকলে তার publish আর পৌঁছাবে না — node তখন মৃত; অর্থাৎ থামানোর নিরাপত্তা কার্যত এই এক লাইনের উপরেই দাঁড়িয়ে, আর file-টা ঠিক এখানেই, L485-এ, শেষ — নিচে আর কোনো লাইন নেই।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "আসল robot-এ README L11-এর <code>ros2 run M3Pro_demo follow_line</code> চালালে প্রথমেই console-এ startup screen নামে — বর্ডার, তালিকা, নির্দেশ; এই পর্বে কোনো চাকা নড়ে না। তারপর rclpy.init, তারপর constructor — README L9-এর camera_arm_kin launch আগে থেকে উঠালে তার arm driver arm6_joints-এ subscribe করে রাখে, blocking wait সঙ্গে সঙ্গে পেরিয়ে যায় (home-pose একবার arm-এ যায়), \"Init Done.\" আর চারটা [OK] আর \"System is RUNNING\" ছাপা হয়। spin-এ বসে node camera+depth-এর sync-কৃত জোড়া, /scan1, /JoyState সামলাতে থাকে; 3 সেকেন্ড পরে নিজে থেকেই tracking ধরে, red line HSV mask-এ ধরা পড়ে, execute() প্রতি frame-এ thread হয়ে চালায়। AprilTag সামনে পড়লে Remove মোড: remove_obstacle tag-কেন্দ্রকে (320,400)-এ আনতে দুই অক্ষে 0.10 m/s-সীমার ভেতরে চালায় — x-error-এর output যায় linear.y-তে (পাশে স্লাইড), y-error-এরটা linear.x-এ (সামনে-পেছনে)। cv window-তে 'r' চাপলে Reset: PID নতুন, থামা Twist, \"Reset succes!!!\" ছাপা। Ctrl+C দিলে spin থেকে KeyboardInterrupt, finally-তে একটা শূন্য Twist যায় /cmd_vel-এ, node ভেঙে পরিষ্কার বিদায়।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: parameter বদাললেই আচরণ বদলাবে — ros2 param দিয়ে Kp 60 থেকে অন্য কিছু করলেও কিছু হবে না, কারণ পড়ার একমাত্র দরজা get_param-কে এই file-এ কেউ ডাকেই না; controller চলে স্থির (50, 0, 10) থেকে, linear-ও ঘোষিত 0.18 নয় বরং hardcoded 0.1-এ চলে। দ্বিতীয় ভুল: [OK] আর RUNNING দেখামাত্রই সব প্রস্তুত ভাবা — camera_arm_kin launch না মারলে ওই লাইনগুলো আসেই না; node banner-এর পরেই চুপচাপ arm-wait-এ আটকে থাকে, 0.1 সেকেন্ড পরপর খালি home-pose পাঠাতে থাকে, আর ওই অবস্থায় Ctrl+C করলে exception try-এর বাইরে পড়ে বলে finally-ও চলে না — শূন্য Twist যায় না, বাইরে থেকে থামাতে হয়। তৃতীয় ভুল: Remove মোডে robot ঘুরে ঘুরে tag-এর মুখ নেবে ভাবা — pubVel কখনো angular.z ছুঁয়ে দেখে না, এ মোডে robot এক ডিগ্রিও ঘোরে না; শুধু সামনে-পেছনে আর পাশে স্লাইড করে, আর destructuring-swap-এর দরুন linear.x-এ যায় y-error চ্যানেলের output — যাকে সরল ভাবে 'x-ই সোজা চালায়' ধরলে দিক আঁচড়ে যাবে।"
+ },
+ "animType": null
+}

@@ -1,0 +1,103 @@
+[
+ {
+  "n": 6,
+  "id": "part-06",
+  "fname": "laser_Avoidance.py",
+  "enTitle": "Subscriptions & Publisher",
+  "lang": "python",
+  "start": 17,
+  "end": 30,
+  "flags": [],
+  "explain": [
+   {
+    "a": 17,
+    "b": 18,
+    "text": "<code>class laserAvoid(Node):</code> — এই folder-এর প্রাণ: একটা চালু robot-behavior class। L3-এ আনা <code>Node</code>-কে inherit করায় নিচের সব প্রস্তুত যন্ত্রপাতি — <code>create_subscription</code>, <code>create_publisher</code>, <code>declare_parameter</code> — এই class-এর হাতে এসে যায়। <code>def __init__(self,name):</code> — constructor-এর একটাই argument: <code>name</code>। মজার তথ্য: এই <code>name</code>-ই পরে <code>main()</code> থেকে আসবে (<code>laserAvoid(\"laser_Avoidance_a1\")</code>, L179), মানে ROS 2-এর নাম-জগতে node-এর নাম <code>laser_Avoidance_a1</code>, কিন্তু Python class-এর নাম <code>laserAvoid</code> — দুটো আলাদা জিনিস, একটাও অন্যটা থেকে আসে না। folder 08-এ robot-এর নাম URDF-এ ছিল; এখানে নামটা constructor call-এর ভেতর দিয়ে বয়ে আনা হয়।"
+   },
+   {
+    "a": 19,
+    "b": 19,
+    "text": "<code>super().__init__(name)</code> — inheritance-এর সবচেয়ে জরুরি লাইন। এটা না চালালে <code>Node</code>-এর নিজের constructor কখনোই চলে না, তাই <code>self</code>-এর ভেতরে node-হওয়ার অভ্যন্তরীণ তালিকাই তৈরি হয় না — পরের লাইনে <code>self.create_subscription(...)</code> ডাকতেই <code>AttributeError</code> বা <code>NotInitialized</code>-জাতীয় error উঠে আসত। <code>super()</code> মানে \"আমার parent class\", এখানে <code>Node</code>; আর <code>name</code> হাতবদল করে দেওয়া মানে node-এর নাম এখানেই পাকা হয়ে যায়। ক্রমও নিয়মমাফিক: parent-এর constructor সবার আগে, তার পরে নিজের জিনিসপত্র — Python-এর inheritance-এ এটাই প্রথাগত নিয়ম।"
+   },
+   {
+    "a": 21,
+    "b": 22,
+    "text": "<code># --- CREATING SUBSCRIBERS (Listeners) ---</code> আর <code># Listen to the 360-degree LiDAR scanner</code> — দুটোই comment, কিছুই চলে না; কিন্তু লেখকের নিজের শব্দচয়ন বোঝা দরকার: <b>Listeners</b>। প্রতিমানটা এই — publisher একটা রেডিও স্টেশন, subscription একটা শ্রোতা; শ্রোতা নিজে কিছু বলে না, শোনে আর শুনেই স্পর্শে জেগে ওঠে (callback চালায়)। এই ফাইলে দুই শ্রোতা: একটা চোখের জন্য (<code>/scan</code>), একটা মানুষের হাতের জন্য (<code>/JoyState</code>)। \"360-degree\" কথাটা এই মুহূর্তে প্রায় সত্যি — নিচে দেখা যাবে এই stream-টা আসলে folder 10-এর merger+filter chain-এর ফল, যেখানে সামনে-পেছনে দুই lidar জুড়ে পূর্ণ বৃত্ত তৈরি হয়েছিল।"
+   },
+   {
+    "a": 23,
+    "b": 23,
+    "text": "<code>self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code> — প্রথম শ্রোতা। চারটা argument: message-এর ধরন <code>LaserScan</code> (L4), topic-এর নাম <code>\"/scan\"</code>, কোন callback জাগবে — <code>self.registerScan</code> (L53-এ সংজ্ঞাত, এই ফাইলের মগজ), আর শেষের <code>1</code> = queue depth: পুরনো message জমিয়ে না রেখে সবসময় সবচেয়ে নতুনটাই ধরা হালকা আচরণ। <code>/scan</code> নামটাই সূত্রপাত-বিন্দু: এই ফাইল নিজে কোনো lidar চালায় না — folder 10-এর <code>laserscan_multi_merger</code> আর <code>laser_filter_node</code> মিলে বানানো একীভূত stream-টাই এখানে খাওয়া হয়। সেজন্যই এই ফাইলটা folder 10-এর ঠিক পরের গল্প: চোখ ওখানে, সিদ্ধান্ত এখানে।"
+   },
+   {
+    "a": 24,
+    "b": 25,
+    "text": "<code># Listen to the joystick (so you can pause the AI and drive manually)</code> আর <code>self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)</code> — দ্বিতীয় শ্রোতা: মানুষ। message ধরন <code>Bool</code> (L5-এ <code>std_msgs.msg</code> থেকে) — মাত্র সত্যি/মিথ্যা একটা বিট: joystick ধরা হয়েছে কি না। <code>True</code> এলে <code>JoyStateCallback</code> (L49) শুধু একটা flag উল্টে দেয়, আর <code>registerScan</code>-এর শুরুতেই সেই flag চেক করে <b>zero Twist</b> publish করে ফিরে আসে — মানে AI-এর পুরো decision tree এক বিটের কাছে হার মানে। খেয়াল করুন সাবস্ক্রিপশন-ক্রম: চোখ আগে (L23), হাত পরে — চলার ক্রমে কোনো ভূমিকা নেই, দুটোই ঠিক একইভাবে কাজ করত, ক্রমটা লেখকের পাঠের-সুবিধার পছন্দ।"
+   },
+   {
+    "a": 27,
+    "b": 28,
+    "text": "<code># --- CREATING PUBLISHERS (Radio Stations) ---</code> আর <code># Tell the wheels to move</code> — আবার comment, আবার সেই প্রতিমান উল্টো দিক থেকে: শ্রোতার পাল্লায় এবার <b>রেডিও স্টেশন</b>। এই class-এর একটাই কথা বলার মুখ: চাকার motor driver-কে বলা <code>/cmd_vel</code>। প্রতিমানটা মনে রাখলে পুরো ফাইলের কঙ্কাল পরিষ্কার: <b>দুই কান ভেতরে, এক মুখ বাইরে</b> — <code>/scan</code> আর <code>/JoyState</code> শুনে, ঠিক একটা <code>Twist</code> বলে <code>/cmd_vel</code>-এ পাঠানো। folder 10-এ আমরা এই বাহনটা শুধু নামে চিনতাম; সেই একই <code>Twist</code>-ই এখানে decision tree-র প্রতিটা branch-এ ভরা হয় (L103 থেকে L163 পর্যন্ত বারবার)।"
+   },
+   {
+    "a": 29,
+    "b": 29,
+    "text": "<code>self.pub_vel = self.create_publisher(Twist,'/cmd_vel',1)</code> — মুখ। message ধরন <code>Twist</code> (L4): ভেতরে <code>linear</code> আর <code>angular</code> দুই field, প্রতিটাতে x, y, z; মেঝেতে চলা robot-এর আসলে দুইটাই লাগে — <code>linear.x</code> (সামনে-পেছনে মিটার/সেকেন্ডে) আর <code>angular.z</code> (নিজের কেন্দ্র ঘিরে ঘোরা, radian/সেকেন্ডে)। queue depth আবার <code>1</code>: পুরনো কমান্ড জমানোর দরকার নেই, সবচেয়ে শেষ সিদ্ধান্তটাই সব। constructor-এর এই শেষ লাইন পর্যন্ত এলে node-টা হাত-পা-চোখ সব পেয়ে যায়; L31 থেকে শুরু হবে parameter-ঘোষণা — গতি আর সতর্কতার সীমা।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "laserAvoid class inherits Node and super().__init__(name) runs first; node registers two subscriptions (/scan for fused vision, /JoyState for human override) and one publisher (/cmd_vel for wheels). spin-এর পরে প্রতিটা আসা message নিজ নিজ callback-এ যায়, আর প্রতিটা callback-এর একটাই বাহির-পথ: pub_vel।",
+   "incorrect": "super().__init__(name) বাদ দিলে বা শ্রোতা-মুখ বানানোর আগে publisher ডাকলে node-টা কখনো পুরো হয় না — create_subscription একটাই error হয়ে বসে থাকবে। আরেকটা সাধারণ ভুল: merger-এর কাঁচা topic-এ কান দেওয়া — তখন পেছনের অর্ধেক খালি আসে; এই node-এর চোখ হতে হবে folder 10-এর chain-এর শেষ ফল /scan-ই।"
+  },
+  "animType": "subPubGraph"
+ },
+ {
+  "n": 15,
+  "id": "part-15",
+  "fname": "laser_Avoidance.py",
+  "enTitle": "main — Spin & Shutdown",
+  "lang": "python",
+  "start": 176,
+  "end": 187,
+  "flags": [],
+  "explain": [
+   {
+    "a": 176,
+    "b": 177,
+    "text": "<code>def main():</code> — পুরো file-এর entry point। লক্ষ করো, এই file নিজে কোথাও <code>main()</code>-কে call করে না — L187-এ এসেই source শেষ; call করে ROS 2-র executable mechanism: README-র L5 command <code>ros2 run yahboom_M3Pro_laser laser_Avoidance</code> চালালে ওই executable এই <code>main()</code>-কে খুঁজে run করে, package-এর entry point এমনটাই করে (setup.py এই folder-এ source হিসেবে নেই — standard কাঠামো)। ভেতরে প্রথম কাজ <code>rclpy.init()</code> — এটা ছাড়া একটাও <code>Node</code> বানানো যায় না। এটা global rclpy context তৈরি করে, যার উপর পরের সবকিছু দাঁড়ায়; Ctrl+C-র signal ধরার ব্যবস্থাও এখান থেকেই আসে। L187-এর <code>rclpy.shutdown()</code> এই context-কেই বন্ধ করবে — init আর shutdown একই জোড়ার দুই প্রান্ত।"
+   },
+   {
+    "a": 178,
+    "b": 179,
+    "text": "<code>laser_avoid = laserAvoid(\"laser_Avoidance_a1\")</code> — L17-এর class-এর instance জন্মাল, মানে L18 থেকে L47 পর্যন্ত পুরো constructor এই এক line-এর মধ্যেই সম্পন্ন হয়ে যায়: <code>super().__init__(name)</code> নাম বসায়, <code>/scan</code> আর <code>/JoyState</code> subscription (L23, L25), <code>/cmd_vel</code> publisher (L29), চারটা parameter read — সব। নাম-string <code>\"laser_Avoidance_a1\"</code> terminal-এ <code>ros2 node list</code> দিলে দেখা যাবে। <code>print (\"start it\")</code> — print আর বন্ধনীর মাঝে space, L14-এর <code>print (\"improt done\")</code>-এর মতোই author-এর style; Python-এ বৈধ। এই line-টা একটা কাজের checkpoint: এটা দেখলে বুঝবে constructor ঠিকঠাক শেষ, এখন <code>/scan</code>-এ folder 10-এর merger+filter chain-এর fused data এলেই সিদ্ধান্ত নেওয়া শুরু হবে।"
+   },
+   {
+    "a": 180,
+    "b": 181,
+    "text": "<code>try:</code>-এর ভেতরে <code>rclpy.spin(laser_avoid)</code> — এই একটা line-ই পুরো program-এর হৃদপিণ্ড। এর আগ পর্যন্ত আমরা শুধু structure বানিয়েছিলাম; <code>spin</code> হলো event loop: main thread এখানে চিরকালের জন্য block হয়ে যায়, আর executor ভেতরে ভেতরে message এলে callback ছোড়ে — <code>/scan</code>-এ নতুন scan এলে <code>registerScan</code>, <code>/JoyState</code> এলে <code>JoyStateCallback</code>। অর্থাৎ L94-165-এর দশ-branch-এর decision tree আসলে এই দুই line-এর ভেতরেই ঘটে চলে। <code>spin</code> স্বাভাবিক পথে ফেরে না, তাই একে <code>try</code>-তে মুড়িয়ে রাখা হয়েছে যাতে Ctrl+C-র মতো interrupt ধরা পড়ে। Executor single-threaded — তাই callback-এর ভেতরের <code>sleep(0.2)</code> পুরো loop-কে সাময়িক থামিয়ে দেয়।"
+   },
+   {
+    "a": 182,
+    "b": 183,
+    "text": "<code>except KeyboardInterrupt: pass</code> — terminal-এ Ctrl+C চাপলে SIGINT signal আসে, rclpy-র signal handler সেটাকে <code>KeyboardInterrupt</code> exception-এ রূপ দেয়, আর সেই exception ঠিক <code>spin</code>-এর ভেতরে ফেটে ওঠে। এই <code>except</code> সেটাকে ধরে <code>pass</code> দিয়ে চুপচাপ সামলে নেয় — terminal-এ লম্বা traceback ছাপা হয় না, execution শান্তভাবে নিচে নামে। সূক্ষ্ম একটা পয়েন্ট: এই <code>except</code> না থাকলেও <code>finally</code> তো চলতই — unhandled exception-এর ক্ষেত্রেও <code>finally</code> block চালু হয়। তাহলে <code>except</code> কী কাজ করল? exception-কে handled বানাল: নচেৎ process শেষে nonzero exit code ফিরত, আর কোনো script সেটাকে বড় বিপদ ভেবে ভুল ব্যবস্থা নিতে পারত। আর <code>pass</code> মানে শরীর খালি — করার কিছু নেই, শুধু গিলে যাওয়া।"
+   },
+   {
+    "a": 184,
+    "b": 185,
+    "text": "<code>finally:</code> — গ্যারান্টি এটাই: <code>try</code> block যেভাবেই শেষ হোক (এখানে বাস্তবে একমাত্র পথটা হলো Ctrl+C), এই block অবশ্যই চলবে। প্রথম কাজ <code>laser_avoid.exit_pro()</code>, L168-173: shell-এ <code>ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist</code> command চালিয়ে সব-শূন্য একটা Twist একবার publish করে। প্রশ্ন হতে পারে — node-এর নিজের <code>pub_vel</code> দিয়ে পাঠালেই তো হয়? কিন্তু teardown-এর মুহূর্তে নিজের publisher আর context অনিশ্চিত অবস্থায় থাকতে পারে; <code>os.system</code> একেবারে আলাদা process চালায়, node-এর কোনো অবস্থার উপর দাঁড়ানো নেই। শারীরিক অর্থে এটাই ব্রেক: শেষ branch যদি <code>+0.2</code> m/s সামনে যাওয়ার command দিয়ে থাকে, চাকা সেটা ধরে রাখত — zero Twist এসে থামায়।"
+   },
+   {
+    "a": 186,
+    "b": 187,
+    "text": "<code>laser_avoid.destroy_node()</code> তারপর <code>rclpy.shutdown()</code> — ক্রম এখানে বদলানো চলে না। <code>destroy_node()</code> আগে: node-এর <code>/cmd_vel</code> publisher, দুটো subscription, parameter — সব cleanly ভেঙে মুক্ত করে, DDS-এর দখল ছাড়ে। এরপর <code>rclpy.shutdown()</code>: L177-এর <code>rclpy.init()</code>-এ জন্মানো global context বন্ধ করে। উল্টো করলে বিপদ — context আগে মরলে node-এর teardown নিজের মেঝেটাই হারায়। সাজানোটা LIFO: জন্মানোর সময় আগে context, পরে node; বন্ধের সময় আগে node, পরে context — nested জিনিস গোটানোর স্বাভাবিক নিয়ম, nested bracket বন্ধ করার মতোই। এই line-এ এসে 187-line-এর file-এর জীবন শেষ — জন্ম (init), কর্ম (spin), বিদায় (shutdown): একটা behavior node-এর পূর্ণ চক্র।"
+   }
+  ],
+  "math": null,
+  "robot": {
+   "correct": "Real robot-এ Ctrl+C চাপলে SIGINT যায়, <code>spin</code>-এর ভেতরে <code>KeyboardInterrupt</code> ওঠে, আর <code>finally</code>-র ভেতরে <code>exit_pro()</code> shell থেকে সব-শূন্য Twist একবার publish করে — চাকা থামার স্পষ্ট আদেশ পায়, তাই শেষ branch যদি <code>+0.2</code> m/s সামনে যাওয়ার command দিয়ে থাকে তবু robot দাঁড়িয়ে যায়। এরপর <code>destroy_node()</code> publisher-subscription ছাড়ে, <code>rclpy.shutdown()</code> context বন্ধ করে — পরিষ্কার, নিরাপদ শেষ।",
+   "incorrect": "বিপজ্জনক ভুল ধারণা: node কিল করলেই robot থামবে ভাবা। <code>kill -9</code> মারলে <code>finally</code> চলেই না — <code>exit_pro()</code>-র zero Twist যায় না, base তখন শেষ <code>/cmd_vel</code> command ধরে রাখে: branch 1-এর মতো সামনে <code>+0.2</code> m/s চলতেই থাকে যতক্ষণ না অন্য কিছু থামায়। আরেকটা ভুল: <code>rclpy.shutdown()</code> আগে ডেকে <code>destroy_node()</code> পরে করা — context মরে যাওয়ার পর node teardown করতে গিয়ে error।"
+  },
+  "animType": "safetyHalt"
+ }
+]

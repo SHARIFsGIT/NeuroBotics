@@ -1,0 +1,158 @@
+{
+ "n": 4,
+ "id": "part-04",
+ "fname": "slam_view.launch.py",
+ "enTitle": "RViz — Watching the Map Grow",
+ "lang": "python",
+ "start": 1,
+ "end": 59,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 3,
+   "text": "L1-এর banner <code># --- IMPORTING ROS 2 LAUNCH TOOLS ---</code> দিয়ে import-পর্ব শুরু, কিন্তু এই file-এর সবচেয়ে সৎ মুহূর্ত তার ঠিক পরের দুই লাইনে। Author নিজেই মন্তব্য করে রেখেছেন — এখানে অনেক tool import করা হয়েছে যেগুলো আসলে কোথাও ব্যবহৃত হয়নি, উদাহরণ হিসেবে <code>IfCondition</code> আর <code>ExecuteProcess</code>-এর নাম ধরেই — আর সঙ্গে সঙ্গে ব্যাখ্যাও: <code>That's normal when copying from templates!</code> অর্থাৎ এই dead import-গুলো কারো লুকানো বাগ নয়; template থেকে কপি করার স্বাভাবিক উপজাত, আর source নিজেই তা স্বীকার করে সরাসরি পাঠকের চোখের সামনে লিখে রেখেছে — quirk হিসেবে এটাই যাবে, কোনো প্রকার সংশোধন ছাড়াই। একই ঘরানার কাটা দাগ এই folder-এরই সহোদর gmapping.launch.py-তেও আছে (Part 02-তে দেখবে — ওখানে <code>Node</code> import-ই দুইবার এসেছে)। মনে রাখো, <code>#</code> দিয়ে শুরু লাইন Python execute করে না — নিচের লাইনগুলোই আসল import।"
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "text": "<code>from launch_ros.actions import Node</code> — এই file-এর আসল কাজের ঘোড়া। L41-এর <code>rviz_node</code> ঠিক এই <code>Node</code> class দিয়েই তৈরি হবে: ROS 2-এ একটা আলাদা program তুলে দেওয়ার নির্মাণ-খণ্ড। Part 03-এর IMU filter node (gmapping.launch.py-র একমাত্র সরাসরি Node) একই class থেকে তৈরি — গঠন এক, জগৎ আলাদা। পরের লাইন <code>from launch.actions import IncludeLaunchDescription</code> — অন্য launch file-কে নিজের ভেতরে chain করার tool; কিন্তু এই 59 লাইনের file-এ তার একবারও ডাক পড়ে না, বরং একই নাম L8-এ আবার import হবে — মৃত নামটার দুই কপি।"
+  },
+  {
+   "a": 6,
+   "b": 7,
+   "text": "<code>from ament_index_python.packages import get_package_share_directory</code> — installed package-এর share directory খোঁজার ament function। কাজে লাগবে L31-এ, <code>slam_mapping</code> package-টার path বের করতে; folder 13-এর laser_driver.launch.py-ও একই function দিয়েই নিজের দুই package-এর ঠিকানা মিলিয়েছিল — এই file তারই উত্তরাধিকার বহন করছে। <code>from launch import LaunchDescription</code> — action-তালিকার ধারক container; L56-এর return ঠিক এটাই ফেরাবে। এই দুই নাম এই file-এর ভিত্তি।"
+  },
+  {
+   "a": 8,
+   "b": 8,
+   "text": "এক লাইনে তিনটি নাম, তিন রকম ভাগ্য। <code>from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess</code> — এর মধ্যে <code>DeclareLaunchArgument</code> ব্যবহৃত হবে: L37-এ এটা দিয়েই <code>rviz_config</code>-কে launch-এর চেনা চলক বানানো হবে। বাকি দুটো — <code>IncludeLaunchDescription</code> (L5 থেকে আসা নামের দ্বিতীয় কপি) আর <code>ExecuteProcess</code> — এই file-এ আর কোথাও নেই; L2-এর স্বীকারোক্তির প্রথম ঠিকানা এই লাইনটাই।"
+  },
+  {
+   "a": 9,
+   "b": 9,
+   "text": "<code>from launch.conditions import IfCondition, UnlessCondition</code> — শর্তসাপেক্ষ launch-এর দুই gate: কোনো action চালানো হবে নাকি বাদ যাবে, তা launch configuration-এর মানের উপর টানার যন্ত্র। কিন্তু এই file-এ কোনো <code>condition=</code> argument-ই লেখা নেই — প্রশ্নই উঠে না, তাই দুটোই অবকাশে বসে থাকে। Source নিজেই তাদের পরিবারের নাম L3-এ ধরে রেখেছে; ব্যাখ্যার ভার ওই comment-ই বইছে।"
+  },
+  {
+   "a": 10,
+   "b": 10,
+   "text": "<code>from launch.substitutions import LaunchConfiguration</code> — import-তালিকার সবচেয়ে কর্মঠ নাম। L24-এর <code>use_sim_time</code> আর L30-এর <code>rviz_config</code>, দুটি চলকই এই class-এর instance। এটা মান জমায় না, বরং নাম ধরে রাখে একটা placeholder — folder 10-এর শিক্ষা মনে করো: substitution অলস, আসল মান মেলে run phase-এ, যখন কেউ তাকে ব্যবহার করে। এখানে দুটোরই inline default দেওয়া হয়েছে, তাই বাইরে থেকে কিছু না বসালে default-ই খাটবে।"
+  },
+  {
+   "a": 11,
+   "b": 11,
+   "text": "<code>from launch_ros.actions import Node, SetRemap</code> — এই লাইনে দুটো জিনিস চিনতে পারো। প্রথমত, <code>Node</code> আবার import হলো — L4-এ এসেছিল আগেই; Python-এ একই নাম দুইবার import করলে ক্ষতি নেই, শেষ import নামটি আবার বসিয়ে দেয়, আর বসেও আগের মানেরই প্রতিচ্ছবি হয়। gmapping.launch.py-র L2/L9-এর duplicate <code>Node</code> import-এর ঠিক এই দাগটাই এখানে L4/L11 — একই template-ঘরানার কাটা, একই folder-এ দুই file-এ। দ্বিতীয়ত, <code>SetRemap</code> (topic-নাম বদলানোর tool) কখনোই ব্যবহৃত হয়নি — এই file কোনো remap চায় না, তাই চাহিদাও নেই।"
+  },
+  {
+   "a": 12,
+   "b": 13,
+   "text": "দুই লাইনে দুটোই অব্যবহৃত, আর দুটো মিলেই বলে দেয় এই file-টা কোথা থেকে এসেছে সম্ভবত। <code>from launch_ros.substitutions import FindPackageShare</code> — package-এর share path-কে substitution হিসেবে ধরার আধুনিক রূপ; কিন্তু এই file-এ path মেলার কাজটা করেছে L6-এর সরাসরি function call, তাই <code>FindPackageShare</code>-এর দরকার পড়েনি। <code>from launch.launch_description_sources import PythonLaunchDescriptionSource</code> — অন্য launch file-কে include করার সময় source wrapper হিসেবে লাগে; gmapping.launch.py ঠিক এই জোড়াই চারবার খাটিয়েছে (Part 03-এর চারটে IncludeLaunchDescription)। slam_view কোনো sub-launch চেন করে না — তাই জোড়াটার দুই সদস্যই এখানে ছুটির দিন কাটাচ্ছে।"
+  },
+  {
+   "a": 14,
+   "b": 15,
+   "text": "<code>from launch.actions import Shutdown</code> — launch-এর বন্ধ-করার আচরণ নিয়ন্ত্রণ করতে লাগে; এখানে লাগেনি — import-তালিকার এটাই শেষ মৃত নাম। তারপর <code>import os</code> — বেঁচে থাকা নামদের একজন: L30-এর <code>os.path.join</code> ঠিক এই module থেকেই আসবে। হিসেব করলে দাঁড়ায়: নাম এসেছে অনেক, কাজে লাগবে মাত্র ছয়টি — <code>Node</code>, <code>DeclareLaunchArgument</code>, <code>get_package_share_directory</code>, <code>LaunchDescription</code>, <code>LaunchConfiguration</code>, <code>os</code> — আর এই ছয়টিই নিচের বাকি 44 লাইনের পুরো ভার বইবে।"
+  },
+  {
+   "a": 16,
+   "b": 17,
+   "text": "L16 ফাঁকা separator, তারপর <code>def generate_launch_description():</code> — <code>ros2 launch</code>-এর সঙ্গে চুক্তিনামা। README L5-এর <code>ros2 launch slam_mapping slam_view.launch.py</code> চালালে framework এই file-টাকে import করে ঠিক এই নামের function-টিকে একবার ডাকে — কোনো <code>main()</code> নেই, কোনো spin loop নেই; নাম বদলালে launch-ই চলবে না। folder-এর প্রতিটি launch file — gmapping, slam_view, camera_arm_kin, আর শেষের save_map — একই চুক্তির ভিতরে দাঁড়িয়ে।"
+  },
+  {
+   "a": 18,
+   "b": 20,
+   "text": "তিন লাইনের কেউই execute হয় এমন কিছু নয়: L18 আর L20 শুধু চারটে করে space-এ ভরা ফাঁকা লাইন (source-এর নিজস্ব অভ্যাস — এই file-এর ফাঁকা লাইনগুলোর বেশিরভাগই space বহন করে), মাঝের L19 banner <code># --- SETTING UP VARIABLES ---</code>। ঘোষণা স্পষ্ট: এরপর দুটি চলক তৈরি হবে — <code>use_sim_time</code> আর <code>rviz_config</code> — আর দুটোই হবে <code>LaunchConfiguration</code>। ভাবনাটা সহজ: launch-এর বাইরে থেকে বদলানো যায় এমন দুটি সূচক রেখে দেওয়া, যাদের নিজস্ব default-ও আছে।"
+  },
+  {
+   "a": 21,
+   "b": 23,
+   "text": "তিন লাইনের comment-ই L24-এর এক লাইনের কোডের ভাবানুবাদ। বিষয় দুই রকম ঘড়ি: দেয়ালের ঘড়ির real-world time, আর simulator-এর ছাপানো <code>simulation time</code> — ভার্চুয়াল জগতে সময় যে ফেকা ঘড়ি থেকে আসে। Comment নিজেই রায় লিখে দিয়েছে: <code>We are on a real robot, so 'false'</code> — এই robot কোনো video game-এর ভেতরে নেই, তাই সিমুলেশন-ঘড়ি নয়, বাস্তব ঘড়িই খাটাতে হবে। এই একটি সিদ্ধান্তের ব্যাখ্যাই পরের লাইনের default-এর ভিত্তি।"
+  },
+  {
+   "a": 24,
+   "b": 24,
+   "text": "<code>use_sim_time = LaunchConfiguration('use_sim_time', default='false')</code> — প্রথম চলকের জন্ম। দুই জায়গায় একই শব্দ, অর্থ দুই রকম: ভেতরের string-টি launch-জগতের চলকের নাম, আর <code>use_sim_time</code> Python চলকটি ধরে রাখছে সেই নামের substitution-বস্তু। খেয়াল করো default হিসেবে বসেছে string <code>'false'</code> — boolean নয়, তার নাম লেখা। Substitution অলস, তাই এই মুহূর্তে কিছুই মেলেনি; মান ধরা পড়বে L50-এ, rviz2-এর command line-এ পৌঁছানোর সময়। বাইরে থেকে এই নামে অন্য মান বসানো থাকলে default হার মেনে সেটাই যেত।"
+  },
+  {
+   "a": 25,
+   "b": 27,
+   "text": "আবার ফাঁকা লাইন (L25, চার space), তারপর দ্বিতীয় চলকের নামফলক <code># 2. rviz_config:</code> আর পরিচয়-comment: <code>slam_rviz.rviz</code> নামের একটা settings file-এর path খুঁজতে হবে, আর সে থাকবে <code>slam_mapping</code> package-এর ভেতরে। প্রথম চলক ছিল সময়ের প্রশ্ন; এই দ্বিতীয়টা দৃশ্যের প্রশ্ন — খোলা RViz জানালাটা আদৌ কী কী দেখাবে তার নিয়ন্ত্রণ।"
+  },
+  {
+   "a": 28,
+   "b": 29,
+   "text": "L28-29-এর comment ওই settings file-টার গুরুত্ব বোঝায়: RViz-এর ভেতরে অগণিত button আর setting — কোন display খোলা থাকবে, কোন topic কোন রঙে আসবে, ক্যামেরা কোথায় তাক করবে — সব হাতে সাজাতে গেলে সময় ও ধৈর্য দুই-ই লাগে। এই file সবটা আগেই সাজিয়ে রাখে, যাতে জানালা খুলতেই তা <code>pre-configures all of them</code> হয়ে SLAM mapping দেখার জন্য প্রস্তুত বসে থাকে (source-এর নিজের কথা)। একটা সীমা মনে রাখো: <code>slam_rviz.rviz</code> file-টি এই folder-এর source-এর ভেতরে নেই — আমরা শুধু তার ঠিকানা দেখছি, ভেতরের সাজসজ্জার বিবরণ এখানে অজানা।"
+  },
+  {
+   "a": 30,
+   "b": 31,
+   "text": "<code>rviz_config = LaunchConfiguration('rviz_config', default=os.path.join(</code> — দ্বিতীয় চলকের জন্ম, bracket L34 পর্যন্ত খোলা। এখানে একটা সূক্ষ্ম তফাত আছে: substitution-টি অলস হলেও তার default-এর হিসাব অলস নয় — <code>get_package_share_directory('slam_mapping')</code> একটা সাধারণ Python function call, আর সে চলে এখনই, description তৈরির সময়েই: ament-এর package index থেকে installed share directory-র path string টেনে আনে (illustrative: install ট্রির share folder — <code>ros2 pkg prefix</code> যা দেখায়)। <code>slam_mapping</code> না মিললে এখনই error ওঠে — RViz বা অন্য কিছু শুরু হওয়ার অনেক আগেই, folder 13-এর laser_driver-এর eager path lookup-এর হুবহু একই কায়দায়।"
+  },
+  {
+   "a": 32,
+   "b": 34,
+   "text": "বাকি দুটি argument <code>'rviz'</code> আর <code>'slam_rviz.rviz'</code>, শেষে দুই স্তরের bracket বন্ধ। <code>os.path.join</code> মাঝে ঠিক separator বসিয়ে পূর্ণ path বানায় — slam_mapping-এর share directory, তার ভেতরে <code>rviz</code> folder, তার ভেতরে config file; অর্থাৎ কাঙ্ক্ষিত ঠিকানা <code>slam_mapping/rviz/slam_rviz.rviz</code>। ফলে চলকটির হাতে এখন একটা LaunchConfiguration — নাম <code>rviz_config</code>, আর কেউ বাইরে থেকে অন্য মান না বসালে default হিসেবে খাটবে এই নির্দিষ্ট path। এই মুহূর্তে কিছু খোলেনি — এটা নিছক হাতে লেখা একটা ঠিকানা।"
+  },
+  {
+   "a": 35,
+   "b": 36,
+   "text": "L35 চার-space-এর ফাঁকা লাইন, তারপর L36-এর comment পরের কাজের ঘোষণা: <code>Declare that 'rviz_config' is a variable that ROS 2 should know about.</code> অর্থাৎ চলক তৈরি হয়ে গেছে, এবার তাকে launch-জগতের নাগালে আনা — যেন <code>ros2 launch</code>-এর command line থেকে কেউ তার মান জিজ্ঞেস করতে বা বদলাতে পারে।"
+  },
+  {
+   "a": 37,
+   "b": 37,
+   "text": "<code>rviz_config_arg = DeclareLaunchArgument('rviz_config', default_value=rviz_config)</code> — <code>rviz_config</code> নামটিকে আনুষ্ঠানিক launch argument হিসেবে ঘোষণা করা হলো। ফল: launch চালানোর সময় <code>rviz_config:=</code> দিয়ে অন্য একটা path বসালে সেই মানই খাটবে; না লিখলে খাটবে <code>default_value</code> — আর সেই default আবার আগের চলকটি, যার শেষে দাঁড়িয়ে আছে L30-34-এর slam_rviz.rviz পথটাই। লক্ষ করো এখানে দুই স্তরের default এক চেইনে বাঁধা — এক ধাপ বাদ দিলেও শেষ পথটা একই। এই action-বস্তু এখন হাতে রাখা হলো; নামবে L57-এ, তালিকার একদম শুরুতে।"
+  },
+  {
+   "a": 38,
+   "b": 40,
+   "text": "L38 একেবারে ফাঁকা — একটাও character নেই; আগের ফাঁকা লাইনগুলো যেখানে চারটে করে space বহন করত, এটা তার ব্যতিক্রম। L39-এ banner <code># --- THE RVIZ NODE ---</code>, আর L40 এক নিঃশ্বাসে পুরো পরিকল্পনা: RViz program-টা চালু করা। প্রস্তুতি-পর্ব শেষ — এই file যা চালাতে এসেছে তা এখন থেকে L52 পর্যন্ত লেখা হবে: মাত্র একটি program।"
+  },
+  {
+   "a": 41,
+   "b": 43,
+   "text": "<code>rviz_node = Node(</code> — bracket L52 পর্যন্ত খোলা; ভেতরে চারটি keyword argument, প্রতিটির পাশে এক করে ছোট comment। <code>package='rviz2',</code> — ROS 2-কে বলছে কোন package-এ খুঁজতে হবে; <code>executable='rviz2',</code> — সেই package-এর কোন চালনাযোগ্য নাম। এই দুই নাম মিলেই ঠিক হয়ে গেল কী উঠবে: RViz-এর নিজের package থেকে RViz-এর নিজের executable। Part 03-এর IMU node-ও একই দুই লাইনে দাঁড়িয়ে ছিল — ওইটা imu_filter_madgwick জগতের, এটা rviz2 জগতের; গঠন এক, জগৎ আলাদা।"
+  },
+  {
+   "a": 44,
+   "b": 45,
+   "text": "<code>name='rviz2',</code> — ROS 2 নেটওয়ার্কে node-টি এই নামে দেখা যাবে; অর্থাৎ <code>ros2 node list</code> চালালে ভিড়ের মধ্যে rviz2 নামটি মেলে যাবে। <code>output='screen',</code> — RViz-এর log আর error সরাসরি সেই terminal-এই ছাপা হবে যেখান থেকে launch চালানো হয়েছে; জানালার পেছনে কী ঘটছে, তার সরাসরি সম্প্রেষণ। আর একটা ক্ষুদ্র চশমা-খুলে-দেখা তথ্য: L42-44-এর comment-গুলো এক কলামে সারি বেঁধে আছে, কিন্তু L45-এর comment তাদের থেকে ঠিক এক space পেছনে বসে — কারো ক্ষতি নেই, প্রায় চোখেই পড়ে না, তবু source-এর নিজস্ব আঁকিবুঁকি হিসেবে যথাযথ সংরক্ষিত।"
+  },
+  {
+   "a": 46,
+   "b": 48,
+   "text": "L46 আট-space-এর ফাঁকা লাইন — Node-এর পরিচয়-দল আর argument-দলের মাঝের সাঁকো। L47-এর comment বলছে এবার কিছু startup argument দেওয়া হবে, আর কথাটা সঠিক: এগুলো RViz-এর নিজস্ব command line flag — terminal-এ সরাসরি <code>rviz2</code> চালালে যেসব পতাকা তার সঙ্গে লাগানো যায়, তারই পরিবার। L48-এ <code>arguments=[</code> দিয়ে list খুলল; list-এর প্রতিটি উপাদান পরে এক এক করে rviz2 program-টির command line-এ শব্দ হয়ে বসবে।"
+  },
+  {
+   "a": 49,
+   "b": 50,
+   "text": "প্রথম জোড়া <code>'-d', rviz_config,</code> — <code>-d</code> হলো RViz-এর নিজস্ব flag, মানে এই: শুরু হতে হতে এই config file-টা নিজে থেকেই খুলে নাও, ব্যবহারকারীকে হাতে সাজাতে হবে না — source-এর comment-ই বলছে <code>\"Load this configuration file automatically\"</code>। দ্বিতীয় উপাদান <code>use_sim_time</code> — list-এর শেষ সদস্য, তাই তার পরে কোনো comma নেই; L24 থেকে আসা সেই চলকই। Run phase-এ তার default মিলে <code>false</code> শব্দটি হয়ে এটি rviz2-এর command line-এর শেষে যুক্ত হবে — source comment-এর ভাষায়, real-world time ব্যবহার করতে বলা; FACTS-এর নিজের ভাষায়: শেষ argument-টি use_sim_time-কে ভেতরে পাঠিয়ে দেয়।"
+  },
+  {
+   "a": 51,
+   "b": 52,
+   "text": "<code>]</code> দিয়ে argument-list বন্ধ, <code>)</code> দিয়ে <code>Node(...)</code> call সম্পূর্ণ। এই মুহূর্তে <code>rviz_node</code> একটা বর্ণনা-বস্তু মাত্র — কোনো জানালা খোলেনি, কোনো process জন্মায়নি। তৈরি হলো একখানা নকশা: rviz2 নামের একটি node, screen-এ output, আর command line-এ তিনটি শব্দ — <code>-d</code>, config-এর পথ, আর <code>false</code>। নকশাটা কার হাতে জমা পড়বে, সেটাই file-এর শেষ চার লাইনের কাজ।"
+  },
+  {
+   "a": 53,
+   "b": 55,
+   "text": "শেষ পর্বের ঘোষণা: L53 আবার সেই চার-space-এর ফাঁকা লাইন, L54-এ banner <code># --- THE FINAL LIST ---</code>, আর L55-এর comment সরাসরি বলে দেয় কী হবে — তালিকাটা ROS 2-এর হাতে ফিরিয়ে দেওয়া, যাতে সে-ই program-টা চালু করে। এ পর্যন্ত হিসেব: দুটি চলক, একটি argument-ঘোষণা, একটি node-নকশা — বাকি শুধু জমা দেওয়া।"
+  },
+  {
+   "a": 56,
+   "b": 58,
+   "text": "<code>return LaunchDescription([</code> — এই file-এর একমাত্র return, ভেতরে ঠিক দুটি entry, ক্রম মেনে: আগে <code>rviz_config_arg,</code> (comment: Load the variable), পরে <code>rviz_node,</code> (comment: Start RViz!)। ক্রমটা অলংকার নয় — ঘোষণাটি তালিকায় আগে বসায়, যাতে <code>rviz_config</code> নামটি launch-এর চলক-জগতে নথিভুক্ত হয়ে থাকে, তারপরে node-এর argument-এ চলকটি খোঁজা হয়। তুলনা করো সহোদর gmapping.launch.py-র সঙ্গে: ওর তালিকায় পাঁচটি entry, চারটে include আর একটা সরাসরি node (Part 03); এখানে মাত্র দুইটি — gmapping-এর 94 লাইনের বিপরীতে এই 59 লাইনের file অনেক ছোট, কাজও তার মতোই একটাই: দর্শকের জানালা খোলা।"
+  },
+  {
+   "a": 59,
+   "b": 59,
+   "text": "<code>])</code> — এক লাইনে দুই বন্ধনী: তালিকা বন্ধ, LaunchDescription বন্ধ। <code>generate_launch_description()</code>-এর কাজ শেষ — function বর্ণনাটি ফিরিয়ে দিল, framework সেটি ধরে run phase-এ নামবে: আগে argument-ঘোষণা, তারপর rviz2 তুলে দেওয়া, <code>-d</code> পতাকায় slam_rviz.rviz-এর প্রস্তুত জানালা খোলা। ভাবনার কথা একটাই: 59 লাইনের এই পুরো file robot-কে এক পাও নড়ায় না, একটা lidar-বিমও পড়ে না — এ শুধু দর্শকের চশমা। ম্যাপ আঁকবে README L3-এর gmapping stack (Part 02-03), robot চালাবে README-র পরের command-গুলো, আর তালিকায় জমা দেওয়া এই জানালাটি শুধু দেখবে — চালানোর সঙ্গে সঙ্গে ম্যাপটা বাড়তে থাকবে।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "বাস্তব robot-এ README-র ক্রম মেনে চালাও: আগে L3-এর <code>ros2 launch slam_mapping gmapping.launch.py</code> দিয়ে SLAM stack (Part 02-03-এর পাঁচ program), তারপর L5-এর <code>ros2 launch slam_mapping slam_view.launch.py</code>। এই file-টি চালু হলে <code>use_sim_time</code>-এর default <code>'false'</code> থেকে সবকিছু বাস্তব দেয়াল-ঘড়িতে চলে, rviz2 process ওঠে <code>rviz2</code> নাম নিয়ে, আর <code>-d</code> flag slam_mapping-এর <code>rviz</code> folder-এর <code>slam_rviz.rviz</code> config-টি নিজে থেকেই খুলে দেয় — SLAM দেখার জন্য প্রস্তুত জানালা, হাতে সাজাতে হয় না। <code>output='screen'</code> থাকায় RViz-এর message এই terminal-এই দেখা যায়। জানালায় ম্যাপ বাড়তে দেখতে হলে robot-কে চালাতে হবে — README L7-এর keyboard বা L11-এর follow_line দিয়ে ঘোরাও; gmapping-এর আঁকা ম্যাপ সেখানে ক্রমে ক্রমে ভরে উঠবে। RViz নিজে কোনো command পাঠায় না, তাই জানালা বন্ধ করলেও SLAM চালুই থাকে — এটা নিছক দর্শক।",
+  "incorrect": "দুইটা প্রত্যাশা এখানে ধারাবাহিকভাবে ভুল হয়। প্রথমত: অনেকে ভাবে এই launch-টাই ম্যাপ বানায়, তাই gmapping.launch.py বাদ দিয়ে শুধর slam_view চালালেই কাজ হবে — আসলে এই file robot না নাড়িয়ে বা lidar না পড়ে কেবল একটা জানালা খোলে; SLAM stack না চললে জানালায় দেখার মতো নতুন ম্যাপই জন্মায় না, আর robot স্থির থাকলে stack চললেও ম্যাপ বাড়ে না — ম্যাপ শুধু চলার সঙ্গে সঙ্গে বাড়ে। দ্বিতীয়ত: <code>use_sim_time</code> নাম দেখে ভাবা এই file simulation-এর জন্য, বা default <code>'false'</code>-কে বদলে true করলে কিছু একটা ভালো হবে — উল্টো: <code>'false'</code> মানেই বাস্তব robot-এর দেয়াল-ঘড়ি, আর true করলে rviz2 সিমুলেশন-ঘড়ির খোঁজে বসে থাকবে (illustrative) — যেখান থেকে সময় আসার কথা তার কোনো সরবরাহ এই বাস্তব জোড়ায় নেই। আরেকটা পুরনো ভুল: source folder-এ কোথাও <code>slam_rviz.rviz</code> এডিট করলেই জানালার সাজ বদলাবে ভাওয়া — launch আসলে install করা share directory-র কপিটাই খোলে, তাই rebuild না করে বদল চোখে পড়ে না।"
+ },
+ "animType": "rviz14"
+}

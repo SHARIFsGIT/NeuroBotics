@@ -1,0 +1,195 @@
+/* ==================================================================
+   SURGICAL REFINEMENT LAYER — appended (UI-UX & animation refinement)
+   Does not override any existing rule except where explicitly noted;
+   all original bytes above this block are untouched.
+
+   INTENTIONAL LAYER ARCHITECTURE (documented z-index scale)
+   ---------------------------------------------------------
+     --z-ground  0   page ground, card backgrounds
+     --z-scene  10   base SVG scene inside .anim-stage / .exec-robot
+     --z-objects 20  moving SVG marks (updated in place by the engine)
+     --z-labels 30   SVG text labels — halo-stroked so they can never
+                     become unreadable under moving objects
+     --z-panel  40   overlay panels (formula bar, debug chips)
+     --z-head   50   section headers, captions
+     --z-debug  60   live debug readouts
+     --z-ctrl   70   control bars (always clickable, never covered)
+     --z-nav    80   sidebar / menu
+     --z-focus  90   focus outlines (never overlapped)
+   HTML layers take these values; inside a single <svg> stacking is by
+   paint order, and readability of labels is guaranteed by the
+   paint-order halo rule below rather than by z-index.
+   ================================================================== */
+:root{
+  --z-ground:0; --z-scene:10; --z-objects:20; --z-labels:30;
+  --z-panel:40; --z-head:50; --z-debug:60; --z-ctrl:70; --z-nav:80; --z-focus:90;
+}
+
+/* ---- Fix: hero intro paragraph uses the full available hero width ---- */
+.intro-desc{max-width:none}
+
+/* ---- Fix: SVG text labels stay readable over moving objects.
+        Halo = stage-ground-coloured stroke painted UNDER the fill. ---- */
+.anim-stage svg text,
+.exec-robot svg text{
+  paint-order:stroke; stroke:#0b0e13; stroke-width:3px;
+  stroke-linejoin:round; stroke-linecap:round;
+  pointer-events:none; user-select:none;
+}
+.anim-stage, .exec-robot{position:relative; z-index:var(--z-scene)}
+.anim-controls{position:relative; z-index:var(--z-ctrl)}
+.anim-caption{position:relative; z-index:var(--z-head)}
+.anim-formula{position:relative; z-index:var(--z-panel)}
+.anim-state{z-index:var(--z-debug)}
+
+/* ---- Fix: icon control buttons (professional inline SVG, no text) ---- */
+.anim-controls{gap:8px}
+.ac-btn.ic{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:38px; height:32px; padding:0; border-radius:8px;
+}
+.ac-btn.ic svg{width:16px; height:16px; display:block; fill:currentColor}
+.ac-btn.ic svg *{vector-effect:non-scaling-stroke}
+.ac-btn:focus-visible{
+  outline:2px solid var(--anim); outline-offset:2px; z-index:var(--z-focus);
+}
+.ac-btn.ic[disabled]{opacity:.35; cursor:not-allowed}
+.anim-controls .ac-sep{
+  width:1px; height:20px; background:var(--border3); margin:0 3px; flex:0 0 auto;
+}
+.anim-controls .ac-step{
+  font-family:var(--ff-mono); font-size:11px; color:var(--anim);
+  letter-spacing:.08em; padding:6px 10px; border:1px solid rgba(210,168,255,.28);
+  border-radius:7px; background:var(--anim-dim); white-space:nowrap;
+}
+
+/* ---- NEW: Complete Execution — Code → Debug → Robot section ---- */
+.exec-sec{margin-top:56px}
+.exec-sec .sec-head .exec-sub{
+  font-family:var(--ff-mono); font-size:11px; color:var(--faint);
+  letter-spacing:.06em; margin-left:auto; padding-right:18px; white-space:nowrap;
+}
+.exec-note{
+  font-family:var(--ff-bn); font-size:14.5px; line-height:1.8; color:var(--muted);
+  padding:14px 22px; border-bottom:1px solid var(--border); background:var(--card);
+}
+.exec-note code{
+  font-family:var(--ff-mono); font-size:.86em; color:#9ecbff;
+  background:rgba(110,168,254,.10); border:1px solid rgba(110,168,254,.16);
+  border-radius:5px; padding:1px 6px;
+}
+.exec-frame{
+  display:grid; gap:14px; padding:16px 18px;
+  grid-template-columns:minmax(0,1.3fr) minmax(230px,.62fr) minmax(280px,.88fr);
+}
+.exec-col{min-width:0; display:flex; flex-direction:column; gap:14px}
+.exec-panel{
+  background:var(--code-bg); border:1px solid var(--border2); border-radius:12px;
+  overflow:hidden; display:flex; flex-direction:column; min-height:0;
+  box-shadow:0 10px 28px rgba(0,0,0,.35);
+}
+/* scroll affordance: right-edge fade says "more code this way" without
+   covering anything interactive (head stays above it via z-index) */
+.exec-col.code-col .exec-panel{position:relative}
+.exec-col.code-col .exec-panel::after{
+  content:""; position:absolute; top:0; right:0; bottom:0; width:26px;
+  z-index:1; pointer-events:none;
+  background:linear-gradient(90deg, rgba(13,17,23,0), #0d1117 92%);
+}
+.exec-panel-head{
+  position:relative; z-index:2;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--code-head); border-bottom:1px solid #20262e; padding:9px 14px;
+}
+.exec-panel-head .ep-title{
+  font-family:var(--ff-title); font-size:13px; font-weight:600; color:#c9d1d9;
+  letter-spacing:.01em;
+}
+.exec-panel-head .ep-chip{
+  font-family:var(--ff-mono); font-size:10px; letter-spacing:.05em;
+  border-radius:999px; padding:2.5px 9px; white-space:nowrap;
+}
+.ep-chip.live{color:var(--anim); background:var(--anim-dim); border:1px solid rgba(210,168,255,.3)}
+.ep-chip.concept{color:var(--rb); background:var(--rb-dim); border:1px solid rgba(255,180,84,.3)}
+.ep-chip.src{color:var(--ex); background:var(--ex-dim); border:1px solid rgba(79,195,247,.3)}
+.exec-code{
+  position:relative; overflow:auto; flex:1; min-height:0;
+  max-height:560px; margin:0; padding:10px 0 28px;
+  font-family:var(--ff-mono); font-size:12.3px; line-height:1.6; color:#dbe4ee;
+  background:var(--code-bg); tab-size:4;
+  scrollbar-width:thin; scrollbar-color:#30363d #0d1117;
+}
+.exec-code .exl{
+  display:block; white-space:pre; min-height:1.6em;
+  padding:0 12px 0 0; border-left:3px solid transparent;
+  transition:background .25s, border-color .25s;
+}
+/* line-number gutter stays pinned when long lines scroll horizontally */
+.exec-code .eln{
+  position:sticky; left:0;
+  display:inline-block; width:3.4em; padding-right:10px;
+  text-align:right; color:#3d4f63; user-select:none;
+  background:var(--code-bg);
+}
+.exec-code .exl.cur{
+  background:rgba(210,168,255,.14); border-left-color:var(--anim);
+}
+.exec-code .exl.cur .eln{color:var(--anim); background:#241d38}
+.exec-dbg-body{
+  padding:10px 14px 14px; overflow:auto; max-height:560px; flex:1; min-height:0;
+  font-family:var(--ff-mono); font-size:12px;
+  scrollbar-width:thin; scrollbar-color:#30363d #0d1117;
+}
+.dbg-row{
+  display:flex; align-items:baseline; gap:10px; padding:5.5px 8px;
+  border-bottom:1px dashed #1c2530; animation:dbgIn .3s ease;
+}
+.dbg-row:last-child{border-bottom:none}
+.dbg-k{color:var(--muted); white-space:nowrap; flex:0 0 auto}
+.dbg-v{color:#9ecbff; text-align:right; flex:1; overflow-wrap:anywhere;
+  padding-right:2px}
+.dbg-v.n{color:#7ee787}
+.dbg-v.err{color:var(--bad)}
+.dbg-ill{
+  flex:0 0 auto; font-size:9.5px; letter-spacing:.05em; color:var(--rb);
+  border:1px solid rgba(255,180,84,.35); border-radius:5px; padding:1px 5px;
+}
+.dbg-empty{color:var(--faint); font-family:var(--ff-bn); font-size:13px; padding:12px 8px}
+@keyframes dbgIn{from{opacity:0; transform:translateX(-4px)}to{opacity:1}}
+.exec-robot{
+  background:
+    radial-gradient(500px 200px at 50% 0%,rgba(210,168,255,.05),transparent 70%),
+    #0b0e13;
+  padding:10px; overflow:auto;
+}
+.exec-robot svg{width:100%; height:auto; display:block}
+.exec-rob-fade{animation:robFade .4s ease}
+@keyframes robFade{from{opacity:0; transform:translateY(4px)}to{opacity:1}}
+.exec-complete{
+  display:none; margin:0 18px 14px; padding:13px 18px; border-radius:11px;
+  border:1px solid rgba(63,185,80,.4); background:rgba(63,185,80,.08);
+  font-family:var(--ff-mono); font-size:12.5px; letter-spacing:.04em; color:#7ee787;
+}
+.exec-complete.show{display:block; animation:robFade .4s ease}
+.exec-complete .bn{font-family:var(--ff-bn); font-size:14px; color:#c9d1d9;
+  letter-spacing:0; margin-top:5px; line-height:1.75}
+
+/* responsive: panels stack Code ↓ Debug ↓ Robot on narrow screens */
+@media (max-width:1240px){
+  .exec-frame{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .exec-col.code-col{grid-column:1 / -1}
+}
+@media (max-width:960px){
+  .exec-frame{grid-template-columns:minmax(0,1fr); padding:12px}
+  .exec-code{max-height:420px}
+  .exec-dbg-body{max-height:300px}
+}
+@media (max-width:560px){
+  .exec-sec .sec-head .exec-sub{display:none}
+  .exec-frame{padding:10px}
+  .anim-controls{padding:11px 14px}
+}
+@media (prefers-reduced-motion:reduce){
+  .exec-rob-fade, .dbg-row{animation:none}
+  .exec-code .exl{transition:none}
+}

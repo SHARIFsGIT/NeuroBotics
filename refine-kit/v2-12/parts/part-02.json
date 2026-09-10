@@ -1,0 +1,33 @@
+{
+ "n": 2,
+ "id": "part-02",
+ "fname": "laser_driver.launch.py",
+ "enTitle": "Driver Launch — Imports",
+ "lang": "python",
+ "start": 1,
+ "end": 7,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 2,
+   "text": "<code>import os</code> — Python-এর standard library-র file ও path টুল, author-এর comment বলছে <code>(System file operations)</code>। কাজ একটাই: L12 আর L20-এ <code>os.path.join</code> দিয়ে folder 10-এর <code>merge_multi.launch.py</code> ও <code>laser_filter_node.launch.py</code>-এর path জোড়া দেওয়া। <code>from ament_index_python.packages import get_package_share_directory</code> এনেছে সেই ROS 2 function যেটাকে package-এর নাম দিলে — L13-এ <code>ira_laser_tools</code>, L21-এ <code>yahboom_laser_filter</code> — সে ওই package-এর install হওয়া share directory-র পথ ফিরিয়ে দেয়। এটা plain function call: <code>generate_launch_description()</code> চলার সময়েই, মানে construction time-এ, পথ মিলে যায় — folder 10-এর <code>LaunchConfiguration</code> substitution-এর lazy আচরণের ঠিক উল্টো; এজন্যই package install না থাকলে launch পড়ার মুহূর্তেই error আসে। শুরুতেই একটা কথা দিয়ে রাখি: গোটা driver file-টা আগের app folder 11-এর <code>laser_driver.launch.py</code>-এর সঙ্গে byte-identical — এই ছয়টা import থেকে শেষ bracket পর্যন্ত এক বাইট তফাতও নেই, কারণ দুই app-ই চায় একই sensor chain।"
+  },
+  {
+   "a": 3,
+   "b": 5,
+   "text": "<code>from launch import LaunchDescription</code> — প্রধান container; L28-এ <code>return LaunchDescription</code> দিয়ে যে list-টা launch framework-এর হাতে ফিরে যায় সেটাই এই class-এর object, তাই এই import ছাড়া পুরো file-টাই অর্থহীন। <code>from launch.actions import IncludeLaunchDescription</code> এই file-এর আসল অস্ত্র: একটা launch file-এর ভেতরে আরেকটা launch file চালানোর action, নামেরই মানে Include — L32 আর L38-এ একটা করে বসেছে। এই একটা tool-ই এখানকার পুরো design: নিজে কোনো node না চালিয়ে folder 10-এর merger ও filter launch-কে chain করা। <code>from launch.launch_description_sources import PythonLaunchDescriptionSource</code> বাইরের path string-টাকে wrap করে framework-কে জানায় যে ওই file-টা Python launch file — ROS 2-এ XML বা YAML launch source-ও আছে, কিন্তু এখানে দুটোই Python। এই তিনটি মিলেই launch-chaining pattern: container, include action, আর Python source declaration।"
+  },
+  {
+   "a": 6,
+   "b": 7,
+   "text": "<code>from launch_ros.actions import Node</code> — ছয়টা import-এর শেষটা, আর author-এর নিজের comment-ই স্বীকার করছে <code>imported just in case it's needed later</code>; সত্যিই গোটা file-এ <code>Node</code> আর কোথাও ব্যবহার হয়নি — L28-42-এর list-এ শুধু দুটো <code>IncludeLaunchDescription</code>, কোনো <code>Node</code> action নেই। এটা একটা দামি পাঠ — import দেখেই মনে করা যাবে না জিনিসটা কাজে লাগছে; Python নামটাকে module scope-এ bind করে চুপচাপ বসে থাকে, কোনো warning বা error নেই, তাই dead import সহজে চোখে পড়ে না। এই app-এর জন্য তার মানেও স্পষ্ট: এই launch file শুধু sensor chain ওঠায়, tracking node-টা চালু করে না — README-র L5 command <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> সেটাকে আলাদাভাবে তোলে, আর সেই node fused <code>/scan</code> থেকে সামনের সবচেয়ে কাছের object খুঁজে 0.55 m দূরত্বে ফলো করে (আগের app folder 11-এ একই chain-এর উপর ছিল <code>laser_Avoidance</code> — বাধা এড়িয়ে চলা; driver দুই app-এই এক, শুধু ভোক্তা আলাদা)। পার্থক্যটা আরেকটু ধরো: folder 10-এর <code>merge_multi.launch.py</code> একইভাবে <code>Node</code> import করে সরাসরি node চালু করেছিল, কিন্তু এই file সব কাজ অন্য দুই launch file-কে দিয়ে করায়। শেষ সূক্ষ্ম পয়েন্ট: <code>launch</code> আর <code>launch_ros</code> দুটো আলাদা package — <code>Node</code> পাওয়া যায় শুধু দ্বিতীয়টায়, তাই ভবিষ্যতে সত্যিই কোনো node যোগ করতে হলে এই লাইনটাই আগে থেকে প্রস্তুত ছিল। L7 একটা blank line — ছয়টা import-এর block-কে L8-এর <code>def generate_launch_description():</code> থেকে আলাদা দেখানোর separator, নিজে কিছুই execute করে না।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "এই file তুললেই <code>get_package_share_directory</code> construction time-এ robot-এর install tree থেকে <code>ira_laser_tools</code> ও <code>yahboom_laser_filter</code>-এর share directory খুঁজে দেয়, তাই merger ও filter-এর launch file-এর path আগেই ঠিক হয়। এরপর দুটো IncludeLaunchDescription chain হয়ে folder 10-এর পুরো fusion pipeline ওঠে — front আর back lidar মিলে 360-degree fused <code>/scan</code> তৈরি হয়, blind spot-এর ভুয়া রিডিংও কাটা পড়ে। এই stage-এ robot-এর চাকা একদম স্থির থাকে: import-গুলো কোনো <code>/cmd_vel</code> message পাঠায় না, শুধু <code>laser_Tracker</code> node-এর খাবার তৈরি হয় — সেই node পরে এই fused scan থেকে সামনের সবচেয়ে কাছের object ধরে 0.55 m দূরত্বে ফলো করে।",
+  "incorrect": "ভুল পড়া: L6-এর <code>Node</code> import দেখে ধরে নেওয়া যে এই launch file নিজে tracking node-টাও চালু করে। Robot-এ এই ধারণা বিপদজনক: মনে করা হবে robot নিজে নিজে সামনের object ফলো করছে, অথচ <code>/cmd_vel</code> publish করার node চালুই হয়নি — <code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> আলাদাভাবে না চালালে merger-filter উঠুক, <code>/scan</code> প্রস্তুত হোক, lidar ঘুরতে থাকুক, robot চুপচাপ দাঁড়িয়ে থাকবে — চাকায় কোনো command যাবে না। আর unused ভেবে এই import মুছলে কিছু ভাঙে না, কিন্তু author-এর just-in-case দরজাটা বন্ধ হয়।"
+ },
+ "animType": null
+}

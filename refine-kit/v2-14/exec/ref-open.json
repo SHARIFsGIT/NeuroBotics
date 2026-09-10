@@ -1,0 +1,122 @@
+[
+ {
+  "file": "README.md",
+  "ln": 1,
+  "lns": [
+   1
+  ],
+  "kind": "exec",
+  "cap": "Runbook-এর প্রথম কমান্ড L1: <code>sh start_agent.sh</code> — <code>sh</code> মানে shell দিয়ে script চালানো; README-র তিন কমান্ডের এটাই প্রথমটা, laser-এর কাজ শুরুর আগের সেট-আপ ধাপ (script-এর ভেতরটা এই folder-এর বাইরে, illustrative)।",
+  "op": "run start_agent.sh script",
+  "dbg": [
+   [
+    "command",
+    "sh start_agent.sh"
+   ],
+   [
+    "shell",
+    "sh reads and runs the script line by line"
+   ],
+   [
+    "scope",
+    "script body outside this folder (illustrative)"
+   ]
+  ],
+  "fx": "sh start_agent.sh   · terminal, illustrative",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">bringup</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"57\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>sh start_agent.sh</text><text x=\"26\" y=\"65\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">agent bringup (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">base + front/rear lidar drivers up</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">raw scan topics flowing</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">bringup live</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"238\" y=\"60\" width=\"70\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#238636\" stroke-width=\"1\"/><text x=\"273\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">front lidar</text><rect x=\"330\" y=\"60\" width=\"70\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#9e6a03\" stroke-width=\"1\"/><text x=\"365\" y=\"70.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">rear lidar</text><line x1=\"273.0\" y1=\"77.0\" x2=\"300.0\" y2=\"108.0\" stroke=\"#7ee787\" stroke-width=\"1.2\"/><line x1=\"365.0\" y1=\"77.0\" x2=\"340.0\" y2=\"108.0\" stroke=\"#e3b341\" stroke-width=\"1.2\"/><rect x=\"268\" y=\"108\" width=\"104\" height=\"17\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#30363d\" stroke-width=\"1\"/><text x=\"320\" y=\"118.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#8b949e\">raw scan topics</text><text x=\"320\" y=\"140\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">(names from vendor drivers - illustrative)</text><text x=\"320\" y=\"220\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">agent bringup done - fusion chain next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">প্রথম command: vendor bringup।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">folder 10-এর README-ও এখান থেকেই শুরু।</text><text x=\"16\" y=\"284\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">নামগুলো illustrative।</text>"
+ },
+ {
+  "file": "README.md",
+  "ln": 2,
+  "lns": [
+   2
+  ],
+  "kind": "struct",
+  "cap": "L2 পুরোপুরি ফাঁকা — কোনো character নেই। Runbook-এর প্রথম আর দ্বিতীয় কমান্ডের মাঝের এই ফাঁকটা shell-এর syntax-এর দাবি নয়, চোখের জন্য; Python-এর indent-এর মতো এর কোনো শাস্তিও নেই, না মানলেও চলতো।",
+  "op": "skip blank runbook line",
+  "dbg": [
+   [
+    "line",
+    "L2 — zero characters, truly empty"
+   ],
+   [
+    "role",
+    "visual gap between command 1 and command 2"
+   ],
+   [
+    "cost",
+    "none — shell ignores blank lines"
+   ]
+  ],
+  "fx": "L2 = \"\"   · blank separator between commands"
+ },
+ {
+  "file": "README.md",
+  "ln": 3,
+  "lns": [
+   3
+  ],
+  "kind": "event",
+  "cap": "README-র L3: <code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code> — <code>ros2 launch</code> হলো launch-file runner; এখানে package <code>yahboom_M3Pro_laser</code>, আর এই folder-এর একমাত্র launch file <code>laser_driver.launch.py</code>।",
+  "op": "run ros2 launch command",
+  "dbg": [
+   [
+    "command",
+    "ros2 launch yahboom_M3Pro_laser laser_driver.launch.py"
+   ],
+   [
+    "action",
+    "ament index lookup -> load file -> call generate_launch_description()"
+   ]
+  ],
+  "fx": "$ ros2 launch yahboom_M3Pro_laser laser_driver.launch.py   · terminal, illustrative",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">launch</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"57\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>sh start_agent.sh</text><text x=\"26\" y=\"65\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">agent bringup (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">base + front/rear lidar drivers up</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">raw scan topics flowing</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">ament index: package found</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">launch file loaded</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#30363d\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">package found</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"240\" y=\"66\" width=\"160\" height=\"58\" rx=\"5\" fill=\"#161b22\" stroke=\"#30363d\"/><text x=\"320\" y=\"80\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#4fc3f7\">ament index lookup</text><text x=\"320\" y=\"92\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">yahboom_M3Pro_laser</text><text x=\"320\" y=\"104\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">share/ launch/ laser_driver.launch.py</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">launch file loaded - constructor next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">দ্বিতীয় command: driver launch।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">এক command-এ পুরো fusion chain।</text>"
+ },
+ {
+  "file": "README.md",
+  "ln": 4,
+  "lns": [
+   4
+  ],
+  "kind": "struct",
+  "cap": "L4 সম্পূর্ণ ফাঁকা — README runbook-এর মাঝের নিঃশব্দ বিভাজক। এই blank line না থাকলে Markdown-এর চোখে L3 আর L5 একই paragraph-এর দুই বাক্য হয়ে যেত, <code>ros2 launch</code> আর <code>ros2 run</code> command একসাথে এক block-এ জুড়ে যেত। আলাদা রাখাটাই এই line-এর একমাত্র কাজ।",
+  "op": "separate runbook commands",
+  "dbg": [
+   [
+    "content",
+    "empty line - zero characters"
+   ],
+   [
+    "role",
+    "separator between L3 and L5 commands"
+   ],
+   [
+    "if removed",
+    "markdown merges the two commands into one block"
+   ]
+  ],
+  "fx": "(blank line L4)   # keeps L3 launch command apart from L5 run command"
+ },
+ {
+  "file": "README.md",
+  "ln": 5,
+  "lns": [
+   5
+  ],
+  "kind": "exec",
+  "cap": "README-র L5: <code>ros2 run yahboom_M3Pro_laser laser_Avoidance</code> — <code>ros2 run</code> সরাসরি executable ওঠায়, launch file ছাড়াই; প্রথম token-টা package, দ্বিতীয়টা executable-এর নাম। এই process-টাই এই folder-এর behavior node।",
+  "op": "run laser_Avoidance executable",
+  "dbg": [
+   [
+    "command",
+    "ros2 run yahboom_M3Pro_laser laser_Avoidance"
+   ],
+   [
+    "no launch file",
+    "direct executable from install/<pkg>/lib/"
+   ]
+  ],
+  "fx": "$ ros2 run yahboom_M3Pro_laser laser_Avoidance   · terminal, illustrative",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">run node</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">ament index: package found</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">launch file loaded</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">generate_launch_description() called</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">constructor: L1 to L42</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/ira_laser_tools</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/yahboom_laser_filter</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">executable direct - no launch file</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">process up</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"240\" y=\"66\" width=\"160\" height=\"72\" rx=\"5\" fill=\"#161b22\" stroke=\"#1f6feb\"/><text x=\"320\" y=\"80\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#4fc3f7\">ros2 run - no launch file</text><text x=\"320\" y=\"92\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">executable: laser_Avoidance</text><text x=\"320\" y=\"104\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">from install/yahboom_M3Pro_laser/lib/</text><rect x=\"262\" y=\"114\" width=\"116\" height=\"15\" rx=\"3.5\" fill=\"#161b22\" stroke=\"#1f6feb\" stroke-width=\"1\"/><text x=\"320\" y=\"123.7\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">python process starts</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">import pass first - module top-down</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">তৃতীয় command: behavior node।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">ros2 run = সরাসরি executable।</text>"
+ }
+]

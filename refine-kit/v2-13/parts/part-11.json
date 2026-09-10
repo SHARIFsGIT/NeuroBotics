@@ -1,0 +1,84 @@
+{
+ "n": 11,
+ "id": "part-11",
+ "fname": "laser_Warning.py",
+ "enTitle": "Closest Beam, Empty Guard & Joy Gate",
+ "lang": "python",
+ "start": 71,
+ "end": 85,
+ "flags": [],
+ "explain": [
+  {
+   "a": 71,
+   "b": 73,
+   "text": "Loop শেষে দুটি parallel list-এ cone-এর (L68-এর strict শর্ত পাস করা) সব valid beam জমা থাকে। L72-এর comment বলে <code># If nothing is in front of us, do nothing and wait</code>, আর L73 সেটাই কোডে করে: <code>if len(minDistList) == 0: return</code> — bare <code>return</code>, কোনো value ছাড়া। মানে খালি list-এ <code>min()</code> ডাকার আগেই callback থেমে যায়, আর এই পথে <b>কোনো</b> publish হয় না — <code>/cmd_vel</code>-এ নতুন কিছু না গেলে wheel গুলো শেষ command-ই মেনে চলে, আর <code>/beep</code>-এ কিছু না লেখালে buzzer-টি তার শেষ value-তে latch হয়ে থাকে। আগের scan-এ alarm যদি beep ON করে থাকে, তবে সামনে এখন কিছু না থাকা সত্ত্বেও buzzer বাজতেই থাকে — empty-guard-এর পাশেই এই buzzer-stays-on trap-টি লুকানো।"
+  },
+  {
+   "a": 75,
+   "b": 76,
+   "text": "L76 <code>minDist = min(minDistList)</code> — cone-এর ভেতরের সব valid distance থেকে সংক্ষিপ্তটি বেছে আনে। এটিই পরের block-গুলোর ইনপুট: alarm-এর শর্ত <code>minDist &lt;= self.ResponseDist</code> (L89) থেকে steering chain পর্যন্ত সব এই একটি সংখ্যার উপরে দাঁড়ানো। L68-এর <code>!=0.0</code> শর্তের কারণে vendor-এর no-return 0.0 গুলো list-এ ঢোকেইনি; <code>inf</code> কিন্তু ঢোকে — finite কোনো beam থাকলে <code>min()</code> কখনো <code>inf</code> বাছে না, ছোট finite টিই জেতে; আর সব qualifying beam-ই <code>inf</code> হলে <code>minDist = inf</code> হয়, তখন L89-এ <code>inf &lt;= 0.55</code> False হয়ে else branch-ই beep OFF করে।"
+  },
+  {
+   "a": 77,
+   "b": 78,
+   "text": "L78 <code>minDistID = minDistIDList[minDistList.index(minDist)]</code> — সবচেয়ে কাছের object-টি কোন angle-এ বসে আছে সেটি বের করে: <code>index()</code> আগে খুঁজে দেয় ছোট distance-টি list-এর কোন position-এ, তারপর parallel list minDistIDList থেকে ঠিক সেই position-এর degree সংখ্যাটি তোলা হয়। এটি আসলে হাতে-লেখা একটি argmin। Tie-এ (একই distance দুটি beam-এ) <code>index()</code> FIRST occurrence ফেরত দেয় — list-টি angle-এর ascending ক্রমে সাজানো (beam-এর ক্রম -44.0 থেকে +44.0 ডিগ্রি, illustrative), তাই জেতে tied দলের সবচেয়ে negative angle-ওয়ালা beam-টি, অর্থাৎ cone-এর একেবারে ডান-দিকের qualifying beam।"
+  },
+  {
+   "a": 80,
+   "b": 81,
+   "text": "L80-এর comment <code># If a human is driving, stop the AI and do nothing</code> আর L81-এর শর্ত <code>if self.Joy_active :</code> (colon-এর আগের space-টি source-এই আছে)। <code>/JoyState</code> subscription (L26) থেকে JoyStateCallback (L50-52) এই flag-টি set করে — মানুষ joystick ধরলে True, ছেড়ে দিলে False; ডিফল্ট False (L45)। Flag True হলেই নিচের brake branch চলে, নাহলে কোড একে এড়িয়ে L85-এ চলে যায়।"
+  },
+  {
+   "a": 82,
+   "b": 83,
+   "text": "L82 <code>self.pub_vel.publish(Twist())</code> — সব field default 0.0 এমন একটি zero Twist publish করে, তারপর L83 <code>return</code>। মানুষ joystick চেপে রাখা অবস্থায় <b>প্রতিটি</b> scan-এ এই zero-Twist বারবার বেরোয় — একবারের brake নয়, scan rate-এ active brake; ফলে wheel গুলো সক্রিয়ভাবে থেমে থাকে, পুরনো command-এর ভরসায় ভাসে না। আর <code>return</code>-টি নেমে যায় alarm block-এর (L89-95) <b>আগেই</b>, তাই Joy-এর নিচেও <code>/beep</code> refresh হয় না — buzzer শেষ state-এ latch করে থাকে, ঠিক empty-guard পথের মতোই।"
+  },
+  {
+   "a": 85,
+   "b": 85,
+   "text": "L85 <code>print(\"minDist: \", minDist)</code> — প্রতি scan-এ console-এ সবচেয়ে কাছের distance ছাপা হয়; এটি এই script-এর চার-print-এর প্রথমটি (পরে L99-এ minDistID, L112 ও L120-এ angular.z)। খেয়াল করো: empty guard (L73) বা Joy branch (L83) যে পথেই return নেয়, সেই পথে এই print আসেই না — console হঠাৎ নীরব হয়ে গেলে বোঝা যায় এই দুই পথের কোনো একটিতে কোড ঢুকেছে।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত দুটি প্রশ্নের উত্তর দেয় — cone-এর কোন beam-টি সবচেয়ে কাছে, আর tie থাকলে কোন angle-টি জেতে।",
+  "levels": [
+   {
+    "label": "Level 1 — min ও argmin-এর symbol",
+    "latex": "\\[ d_{min} = \\min_{i}\\, d_i\\ \\text{[m]}, \\qquad a_{min} = a_{j},\\; j = \\mathrm{index}(d_{min})\\ \\text{[deg]} \\]",
+    "text": "minDistList-এর i-তম entry d_i হলো i-তম qualifying beam-এর distance (মিটার), আর minDistIDList-এর a_i সেই beam-এর angle (ডিগ্রি)। Python-এ আলাদা argmin function নেই, তাই L78 দুই ধাপে কাজটি করে — <code>index()</code> দিয়ে position, তারপর parallel list থেকে সেই position-এর angle।"
+   },
+   {
+    "label": "Level 2 — tie-এর first-occurrence নিয়ম",
+    "latex": "\\[ a_1 < a_2 < \\dots < a_n, \\qquad d_j = d_k,\\; j < k \\;\\Rightarrow\\; \\mathrm{index}(d_{min}) = j \\]",
+    "text": "list-টি angle-এর ascending ক্রমে সাজানো (beam order -44.0 থেকে +44.0 ডিগ্রি, illustrative), তাই সমান distance-এর ভাগ্যে প্রথম entry-ই জেতে — অর্থাৎ tied দলের মধ্যে সবচেয়ে negative angle, cone-এর একেবারে ডান-দিকের beam-টি। পরের Part-গুলোর sign branch এই sign-এর উপরেই ঘোরে।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ d_{min} = \\min(0.55,\\, 0.50,\\, 0.50,\\, 0.62) = 0.50\\ \\mathrm{m}, \\qquad \\mathrm{index}(0.50) = 1 \\Rightarrow a_{min} = -6.0^{\\circ} \\]",
+    "text": "illustrative tie-উদাহরণ: minDistIDList = [-20.0, -6.0, +12.0, +30.0] আর minDistList = [0.55, 0.50, 0.50, 0.62] হলে 0-ভিত্তিক <code>index()</code> প্রথম 0.50-এর position 1 দেয়, ফলে minDistID = -6.0 — +12.0 নয়। এই angle-ই পরের Part-এ e = |a|/72 chain-কে চালাবে।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "minDist = min(minDistList)",
+    "math": "\\( d_{min} = \\min_i d_i \\)",
+    "text": "এই call-টি কোনো angle জানে না — শুধু ছোট distance ফেরত দেয়; angle পেতে হলে parallel list-এ আবার ফিরে যেতে হয়, যেটি পরের লাইনের কাজ।"
+   },
+   {
+    "code": "minDistID = minDistIDList[minDistList.index(minDist)]",
+    "math": "\\( a_{min} = a_{\\arg\\min_i d_i} \\)",
+    "text": "argmin-এর হাতে-লেখা রূপ: <code>index()</code> position দেয়, সেই position-এর subscript দুটি parallel list-কে sync রাখে — L69-70 যেহেতু দুটিতে একসাথে append করে, দুই list-এর দৈর্ঘ্য সবসময় সমান, তাই lookup-টি কখনো ভুল জায়গায় পড়ে না।"
+   }
+  ],
+  "failure": [
+   "Tie-এ শেষ occurrence নেওয়া কোনো বদলে-লেখা রূপ হলে উপরের উদাহরণে minDistID = +12.0 আসত — sign branch (L106-110) তখন উল্টো দিক বেছে robot-কে tied object-এর ভুল পাশে spin করাত।",
+   "L73-এর empty guard না থাকলে খালি list-এ <code>min()</code> প্রতি scan-এ ValueError ছুড়ত — callback crash, console-এ traceback ভরে যেত, আর wheel সাথে buzzer দুটোই last state-এ আটকে থাকত; guard-টিই এই Part-কে crash-safe রাখে।"
+  ]
+ },
+ "robot": {
+  "correct": "সামনে valid object থাকলে (illustrative Wave B: 0.70 m @ +20 deg) L76-78 ঠিক সেই beam-টি বেছে নেয় — প্রতিটি scan-এ console-এ <code>minDist: 0.7</code> লাইন আসে আর নিচের alarm-steering chain চালু থাকে। Cone খালি হয়ে গেলে (Wave E) L73-এ সব থেমে যায়: wheel গুলো শেষ /cmd_vel মেনেই চলতে থাকে, buzzer আগের state-এ latch করে থাকে — beep ON থাকলে সামনে কিছু নেই তবু বাজতেই থাকে। মানুষ joystick চেপে ধরলে প্রতি scan-এ zero Twist যাওয়ায় motor সক্রিয়ভাবে brake খায় — robot স্থির দাঁড়িয়ে থাকে, শুধু /beep refresh হয় না বলে latch হয়ে থাকে।",
+  "incorrect": "Guard-টা বাদ দিলে খালি cone-এর প্রতিটি scan-এ <code>min()</code> ValueError ছুড়ত — registerScan মরে যেত, console traceback-এ ভরে যেত, ঘুরন্ত robot আর থামত না (last /cmd_vel জমে থাকে) আর বেজে-ওয়া buzzer কখনো বন্ধ হতো না। Joy gate উঠে গেলে মানুষের হাতে চালানোর সময়ও AI-এর steering /cmd_vel-এ publish করত — joystick আর AI-এর command টানাটানি করে robot-কে ঝাঁকুনি খাওয়াত। Tie-এর first-occurrence নিয়ম ভেঙে দিলে minDistID-এর sign উল্টে যেত — robot সবচেয়ে কাছের object-এর উল্টো পাশে spin করত।"
+ },
+ "animType": null
+}

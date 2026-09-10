@@ -1,0 +1,33 @@
+{
+ "n": 1,
+ "id": "part-01",
+ "fname": "README.md",
+ "enTitle": "Runbook — Three Commands",
+ "lang": "bash",
+ "start": 1,
+ "end": 5,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 1,
+   "text": "<code>sh start_agent.sh</code> — runbook-এর প্রথম command: <code>sh</code> interpreter দিয়ে vendor-এর bringup script-টা চালানো হলো। মনে রাখতে হবে এই script-টা আমাদের কোনো source file-এর ভেতরে নেই, তাই ভেতরে ঠিক কী লেখা আছে তা আমরা দেখিনি — illustrative ধারণা: এটা robot-এর base driver আর সামনে-পেছনের দুটো lidar-এর vendor driver তুলে দেয়, যাতে কাঁচা scan data বেরোতে শুরু করে। folder 10 আর folder 11 — দুই আগের app-এর README-এর প্রথম line-ও হুবহু এই command-ই — মানে series-এর প্রতিটা lidar পরীক্ষার গোড়ায় একই bringup। README-টা মোট ৫ line-এর: L2 আর L4 blank line, শুধু তিনটা স্তরকে চোখে আলাদা দেখানোর separator — আসল content তিনটা command, আর তিনটাই পরেরটার পূর্বশর্ত।"
+  },
+  {
+   "a": 3,
+   "b": 3,
+   "text": "<code>ros2 launch yahboom_M3Pro_laser laser_driver.launch.py</code> — দ্বিতীয় স্তর: sensor chain। রূপটা <code>ros2 launch package_name launch_file</code>: ROS 2 আগে <code>yahboom_M3Pro_laser</code> package-টা খোঁজে, তার share directory থেকে <code>laser_driver.launch.py</code> হাতে নিয়ে তার <code>generate_launch_description()</code> চালায়। launch file-টাই এই folder-এর দ্বিতীয় source file, আর এটা folder 11-এর driver-এর সঙ্গে byte-identical — ভেতরে কোনো node সরাসরি লেখা নেই; দুটো <code>IncludeLaunchDescription</code> দিয়ে folder 10-এর গোটা fusion pipeline চেইন করা হয়েছে — <code>ira_laser_tools</code>-এর merger সামনে-পেছনের lidar জোড়ে একটা 360-degree scan বানায়, <code>yahboom_laser_filter</code> robot-এর নিজের শরীর-হাতের blind-spot reading সরিয়ে data পরিষ্কার করে। ফলে <code>/scan</code> topic-এ merged, filtered stream প্রস্তুত হয়। একটা জরুরি সীমা মনে রাখো — এই launch file tracking node-টা চালু করে না; L3 শুধু sensor chain-ই তোলে, behavior node-এর জন্য আলাদা L5 লাগবে। <code>ros2 launch</code>-এর ক্ষমতা এখানেই — এক command-এ একাধিক node-এর পুরো chain একসাথে ওঠে।"
+  },
+  {
+   "a": 5,
+   "b": 5,
+   "text": "<code>ros2 run yahboom_M3Pro_laser laser_Tracker</code> — তৃতীয় ও শেষ স্তর: tracking node। এবার <code>ros2 launch</code> নয়, <code>ros2 run package_name executable_name</code> — কোনো launch file ছাড়াই package-এর একটাই executable সরাসরি চালানো হয়েছে, নাম <code>laser_Tracker</code> (বড় হাতের T লক্ষ্য করুন)। এই এক শব্দেই আগের app-এর README-র সঙ্গে পুরো তফাত — বাকি চার line (L1-L4) হুবহু এক, কিন্তু folder 11-এর L5-এ ছিল <code>laser_Avoidance</code>। অর্থের তফাত আরও গভীর: folder 11-এর node বাধা এড়াতো (avoidance), এই node সামনের জিনিস এড়ায় না — ফলো করে। node-টা <code>laser_Tracker_a1</code> নাম নিয়ে জন্মায় (laser_Tracker.py-র L137), L3-এর chain থেকে আসা merged <code>/scan</code> আর joystick-এর <code>/JoyState</code> subscribe করে, প্রতিটা scan-এ সামনের ±45° cone-এর সবচেয়ে কাছের valid object খুঁজে তার দিকে এগোয় — dual PID (linear + angular) মিলে <code>ResponseDist</code> parameter-এর মান 0.55 m stand-off দূরত্ব ধরে রাখে আর object-টাকে সামনে কেন্দ্রে রাখতে ঘোরায়, command যায় <code>/cmd_vel</code>-এ। ক্রমটা সৌন্দর্যের নয়: L3 না উঠলে এই node কোনো scan পায় না, উঠে চুপচাপ বসে থাকে।"
+  }
+ ],
+ "math": null,
+ "robot": {
+  "correct": "বাস্তব robot-এ তিনটা command ঠিক এই ক্রমে দিন। L1-এর vendor bringup base আর দুটো lidar driver জাগায় (illustrative), L3-এর launch folder 10-এর merger ও filter chain তুলে <code>/scan</code>-এ পরিষ্কার 360-degree data পাঠাতে শুরু করে, তারপর L5-এর <code>laser_Tracker</code> node প্রতিটা scan পেয়ে সামনের ±45° cone-এর সবচেয়ে কাছের object-টার দিকে এগোয় — দুটো PID মিলে চাকা ঘুরিয়ে 0.55 m দূরত্ব ধরে রাখে ও object-কে সামনে কেন্দ্রে রাখে, velocity যায় <code>/cmd_vel</code>-এ, আর console-এ প্রতিটা scan-এ সামনের object-এর দূরত্ব ও angle ছাপাতে থাকে। ফলে robot বাধা এড়ায় না — সামনের কাছের জিনিসটাকেই টার্গেট ধরে তার 0.55 m দূরে ঘুরে-ঘুরে লেগে থাকে। একটা স্তর বাদ গেলে পরের স্তরের খাবারই আসে না।",
+  "incorrect": "সাধারণ ভুল: L5 আগে চালানো। ROS 2-এ subscription এমন topic-এও সফল হয় যার publisher এখনো নেই, তাই node ত্রুটিমুক্ত উঠে বসে থাকে — <code>registerScan</code> একবারও চলে না, <code>/cmd_vel</code>-এ কিছু যায় না, চাকা নড়ে না; আসল কারণ L3-এর fusion chain ওঠেনি বলে <code>/scan</code> চুপ। দ্বিতীয় ভুল প্রত্যাশা: folder 11-এর <code>laser_Avoidance</code> দেখে এটাকেও বাধা এড়ানোর node ভাবা — বাস্তবে <code>laser_Tracker</code> সামনের object-এর দিকেই এগিয়ে যায়, তাই robot-কে দেয়াল বা মানুষের দিকে মুখ করে ছেড়ে দিলে সে ওটার 0.55 m দূরে গিয়ে থেমে সেটাকে ফলো করতে থাকবে। একই রকম চুপচাপ ফল হয় L1 বাদ দিলে — lidar থেকে কাঁচা scan-ই আসে না।"
+ },
+ "animType": "runbookFlow"
+}

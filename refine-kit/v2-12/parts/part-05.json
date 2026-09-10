@@ -1,0 +1,93 @@
+{
+  "n": 5,
+  "id": "part-05",
+  "fname": "laser_Tracker.py",
+  "enTitle": "Tracker Node — Module Head",
+  "lang": "python",
+  "start": 1,
+  "end": 15,
+  "flags": [],
+  "explain": [
+    {
+      "a": 1,
+      "b": 1,
+      "text": "ফাইলের একদম শুরুর section-marker comment: <code>#ros lib</code>। কাজ শুধু পাঠকের দিকনির্দেশ — নিচের চারটা import ROS 2-এর core লাইব্রেরির গ্রুপ বোঝাচ্ছে। Comment হওয়ায় Python এটাকে execute করে না; machine-এর ওপর এর কোনো প্রভাব নেই, ফাইলটা মানুষের পড়ার সুবিধার জন্য ভাগ করাই এর একমাত্র উদ্দেশ্য।"
+    },
+    {
+      "a": 2,
+      "b": 5,
+      "text": "চারটা ROS 2 import, আর পরের অংশে প্রতিটার সরাসরি ব্যবহার আছে। <code>import rclpy</code> — client library-র core; পরে <code>rclpy.init()</code> (L136) আর spin-loop এটার ওপর দাঁড়াবে। <code>from rclpy.node import Node</code> — L17-এ <code>class laserTracker(Node)</code> এই base class-টা এখান থেকেই পাবে। <code>from geometry_msgs.msg import Twist</code> — velocity-command message; L29-এর <code>/cmd_vel</code> publisher ঠিক এই type publish করবে, চাকা কত দ্রুত ঘুরবে সেই নির্দেশ এই message-এর ঘরে লেখা হবে। <code>from sensor_msgs.msg import LaserScan</code> — LiDAR-র scan message; L23-এর <code>/scan</code> subscription থেকে প্রতিটা beam-এর distance এই type-এই আসবে। এক কথায়: tracker-এর INPUT (LaserScan) আর OUTPUT (Twist) — দুটোরই উৎস এই চার লাইন।"
+    },
+    {
+      "a": 7,
+      "b": 7,
+      "text": "দ্বিতীয় section-marker: <code>#commom lib</code>। বানানে খেয়াল করুন — লেখা “commom”, “common” শব্দের typo, আর এই typo-টা source-এ নিজেই আছে; আমরা source কখনো ঠিক করি না, শুধু চিনিয়ে দিই। অর্থ: নিচের import-গুলো ROS-এর বাইরের সাধারণ লাইব্রেরি আর vendor-এর নিজস্ব package।"
+    },
+    {
+      "a": 8,
+      "b": 9,
+      "text": "<code>import math</code> আর <code>import numpy as np</code>। math-এর এই part-এ সরাসরি ব্যবহার একটাই — L15-এর <code>math.pi</code>, একটা scalar constant বানানোর জন্য। numpy আসছে ছদ্মনাম <code>np</code> নিয়ে: L58-এ <code>np.array(scan_data.ranges)</code> পুরো beam-distance list-টাকে numpy array-তে রূপান্তর করবে। scalar-এর কাজ math-এর, পুরো distance-array-র কাজ numpy-র — দুই লাইব্রেরির ভূমিকা গুছানো করে রাখা।"
+    },
+    {
+      "a": 10,
+      "b": 11,
+      "text": "এখানে এই ফাইলের একটা VERIFIED QUIRK: <code>import time</code> আর <code>from time import sleep</code> — দুটোই import করা হয়েছে, কিন্তু পুরো ১৪৬ লাইনে এই দুটো নাম আর কোথাও ব্যবহৃত হয় না; দুটোই dead import। ফলাফল: behavior-এ শূন্য প্রভাব, খরচ শুধু import-এর মুহূর্তে সামান্য সময়। সম্ভাবনা এটাই যে অন্য কোনো স্ক্রিপ্ট থেকে copy-paste করতে গিয়ে বাড়তি লাইন দুটো রয়ে গেছে (inferred)। জরুরি তথ্যটা উল্টোদিকে: registerScan callback-এর গতি কোনো <code>sleep()</code> দিয়ে throttle করা হয় না — /scan-এ message আসার হারই loop-এর pace ঠিক করে।"
+    },
+    {
+      "a": 12,
+      "b": 12,
+      "text": "<code>from yahboom_M3Pro_laser.common import *</code> — star-import: ওই module-এর সব public নাম এই ফাইলের namespace-এ ঢুকে যায়। পাশের comment বলছে <code># Custom Yahboom tools (like Bool message and SinglePID)</code>, আর এই ফাইল আসলে ঠিক দুটো নামই সেখান থেকে নেয়: <code>Bool</code> (L25-এর /JoyState subscription আর L53-এর type guard) আর <code>SinglePID</code> (L47, L49 — linear আর angular দুটো PID controller)। মনে রাখতে হবে এই <code>Bool</code> Yahboom-এর common-module-এর Bool, std_msgs-এর Bool নয়। QUIRK: <code>yahboom_M3Pro_laser.common</code> module-টা এই folder-এ নেই, ভেতরের implementation আমাদের দেখা হয়নি — তাই SinglePID-এর ভেতরের হিসাব (sign convention সহ) যা-ই বলা হোক তা inferred/illustrative হিসেবেই থাকবে; এই ফাইল থেকে নিশ্চিতভাবে শুধু এতটুকু বলা যায় — constructor-কে কোন argument দিয়ে ডাকা হয়েছে আর method-এর নাম <code>pid_compute</code>।"
+    },
+    {
+      "a": 13,
+      "b": 13,
+      "text": "<code>import os</code> — পুরো ফাইলে এর ব্যবহার একটাই জায়গায়: exit_pro-র L133-এ <code>os.system(cmd)</code>। node বন্ধ হওয়ার সময় shell-এর ভেতর দিয়ে একবার zero-velocity <code>/cmd_vel</code> message publish করা হয় — node মরে যাওয়ার পথেও যেন চাকা থেমে যায়, সেই বাইরের নিরাপত্তা-ব্যবস্থা। এই head-অংশে os-এর আর কোনো কাজ নেই।"
+    },
+    {
+      "a": 14,
+      "b": 15,
+      "text": "<code>print (\"improt done\")</code> — সব import শেষে console-এ ছাপা হয়; বানানের দিকে তাকান: “improt” — typo-টা source-এ নিজেই, আর পাশের comment <code># (Typo in original: means \"import done\")</code> নিজেই স্বীকার করে এর অর্থ “import done”। লাইনটা module-এর top level-এ বলে node তৈরি হওয়ার আগেই, import-এর মুহূর্তে চলে — console-এ এই লাইন দেখা মানেই module লোড হয়েছে, এটুকুই এর কাজ। এরপর <code>RAD2DEG = 180 / math.pi</code> — module-level constant, মান 57.29577951…; radian থেকে degree-তে যাওয়ার গুণন-factor। LaserScan message-এর সব কোণ radian unit-এ আসে, কিন্তু L70-এর cone-test <code>abs(angle)</code>-এর মান <code>self.LaserAngle</code> (45.0, degree unit) parameter-এর সাথে তুলনা করে — দুই unit-এর এই মেলানোই L15-এর constant L67-এ গিয়ে করে দেয়।"
+    }
+  ],
+  "math": {
+    "intro": "এই Part-এর গণিত একটাই প্রশ্নের উত্তর দেয়: L15-এর RAD2DEG constant-টা কোথা থেকে আসে আর এর মান কেন 57.2958 — অর্থাৎ radian থেকে degree-র unit-conversion-ই মূল বিষয়।",
+    "levels": [
+      {
+        "label": "Level 1 — Symbols & units",
+        "latex": "\\[ \\pi\\ \\mathrm{rad} = 180^{\\circ}, \\qquad 2\\pi\\ \\mathrm{rad} = 360^{\\circ} \\]",
+        "text": "radian হলো কোণের প্রাকৃতিক unit: অর্ধবৃত্ত = π rad = 180°, পূর্ণ বৃত্ত = 2π rad = 360°। LaserScan message-এর angle_min আর angle_increment এই unit-েই আসে — তাই fused ring-এ প্রথম beam-এর কোণ angle_min = -π হয় (illustrative, folder 09-এ রেকর্ড করা echo-র সাথে consistent)। θ চিহ্নটা যেকোনো কোণ, subscript শুধু unit-টা বোঝায়।"
+      },
+      {
+        "label": "Level 2 — মৌলিক সম্পর্ক",
+        "latex": "\\[ \\theta_{\\mathrm{deg}} = \\theta_{\\mathrm{rad}} \\times \\frac{180}{\\pi}, \\qquad \\frac{180}{\\pi} \\approx 57.29577951 \\]",
+        "text": "দুই unit-এর অনুপাত থেকে গুণন-factor বের হয়: 180/π ≈ 57.2958, আর এটাই RAD2DEG-এর মান। কোণ ঋণাত্মক হলেও একই factor কাজ করে — চিহ্ন বাসী থাকে, মান গুণ হয়; তাই -π rad হয়ে যায় ঠিক -180°।"
+      }
+    ],
+    "numeric": [
+      {
+        "latex": "\\[ 0.0174533\\ \\mathrm{rad} \\times 57.29577951 \\approx 1.0^{\\circ} \\]",
+        "text": "illustrative: fused ring-এ প্রতিটা beam-এর ধাপ angle_increment = 0.0174533 rad (π/180-এর কাছাকাছি; folder 09-এ রেকর্ড করা echo-র সাথে consistent)। একে RAD2DEG দিয়ে গুণ করলে পাওয়া যায় প্রায় ঠিক 1.0° — অর্থাৎ প্রতিটা beam ঠিক ১ ডিগ্রি করে এগোয়, ৩৬০টা beam-এ পুরো বৃত্ত শেষ হয়।"
+      },
+      {
+        "latex": "\\[ (-\\pi)\\ \\mathrm{rad} \\times 57.29577951 = -180^{\\circ} \\]",
+        "text": "illustrative: ring-এর প্রথম beam-এর কোণ angle_min = -π; রূপান্তরের পর সেটি -180°। L67-এর সূত্রে i = 0 হলে ঠিক এই মানই বের হবে, আর i প্রতি ধাপে বাড়লে কোণ ~1° করে বাড়ে — এই রূপান্তরই degree-জগতের পুরো scale-টা তৈরি করে।"
+      }
+    ],
+    "mapping": [
+      {
+        "code": "RAD2DEG = 180 / math.pi",
+        "math": "\\( k = \\frac{180}{\\pi} \\approx 57.2958\\ \\mathrm{deg/rad} \\)",
+        "text": "import-এর মুহূর্তে একবার হিসাব হয়ে মানটা constant হয়ে যায়; পরে L67-এ প্রতিটা beam-এর radian কোণের সাথে গুণ হয়ে সেটাকে degree-তে আনে — কারণ L70-এর cone-test করে LaserAngle parameter-এর (45.0, degree unit) সাথে তুলনা। unit না মিললে ওই তুলনাটাই অর্থহীন হয়ে যেত।"
+      }
+    ],
+    "failure": [
+      "গুণকটা উল্টে যদি কেউ RAD2DEG-এর জায়গায় math.pi / 180 (মান 0.01745) বসাত, তাহলে L67 সেই ছোট গুণকটাকে beam-এর radian মানের সাথেই গুণ করত — সত্যিকারের 45° beam-এর radian মান 0.7854, আর 0.7854-কে 0.01745 দিয়ে গুণ করলে আসে 0.0137, অর্থাৎ 45°-এর বদলে রূপান্তরিত মান আসত মাত্র ~0.014 (এমনকি 180° মানে π rad beam-ও নামত মাত্র ~0.055-এ) — L70-এর cone-test (রূপান্তরিত কোণ কি 45-এর কম?) প্রায় পুরো 360° ring-এর beam-কেই “সামনে” মেনে নিত; robot পেছনে বা পাশের object-ও follow করার চেষ্টা করত, একটার পর একটার দিকে ঘুরতে ঘুরতে দিশেহারা হয়ে যেত (illustrative)।",
+      "উল্টো দিকের ভুল — conversion একটা কোণের ওপর দুবার প্রয়োগ (degree-কে আবার degree-এ রূপান্তর) — হলে প্রতিটা কোণ 57.3 গুণ ফুলে যায়: cone-টা ±45° থেকে সেঁটে যায় মাত্র ±0.785°-এ। minDistList তখন প্রায় সবসময় ফাঁকা, L82-এর dashes-branch-এ return — robot সামনের object-টাকেই আর দেখত না, চাকা এক মিলিমিটারও এগোত না (illustrative)।"
+    ]
+  },
+  "robot": {
+    "correct": "Import pass-এ এই ১৫ লাইন চলার সময় robot সম্পূর্ণ নিস্ক্রিয় থাকে — কোনো node তৈরি হয়নি, কোনো /cmd_vel publish হয়নি, চাকা স্থির; README L3-এর launch থেকে LiDAR chain আগেই চলছে থাকলে sensor-রা ঘুরতে থাকে, কিন্তু এই module তখনও কিছু শুনছে না। Console-এ এই অংশের একমাত্র দৃশ্যমান ফল হলো \"improt done\" লাইনটা ছাপা — module ওই পর্যন্ত এসেছে এটাই প্রমাণ। এখানে বাঁধা RAD2DEG constant-টাই পরে L67-এ প্রতিটা beam-এর কোণ degree-তে এনে ±45° সামনের cone-টা সঠিক রাখবে, আর সেই cone থেকেই laser_Tracker_a1 সবচেয়ে কাছের object-টা খুঁজে 0.55 m দূরত্বে তাকে follow করবে।",
+    "incorrect": "ধরুন machine-এ yahboom_M3Pro_laser package-টাই install করা নেই — L12-এর star-import-এ module-টা সেখানেই আটকে যাবে: console-এ \"improt done\" ছাপা হবে না (L14-এ পৌঁছানোই হয়নি), কোনো node তৈরি হবে না, ros2 run command-টা import error নিয়ে মরবে, /cmd_vel-এ কিছু যাবে না — চাকা এক মুহূর্তও নড়বে না। আবার RAD2DEG-এর মান ভুল হলে রূপান্তর পরে beam-বাছাইকে ভুল করাবে: উল্টো গুণকে robot পেছনের object-ও follow করার চেষ্টা করে এলোমেলো ঘুরবে, দুবার প্রয়োগে সামনের সব object-ই তার কাছে অদৃশ্য হয়ে যাবে। আর dead import দুটো (time, sleep) মুছলেও বা রাখলেও behavior-এ তিলমাত্র পরিবর্তন নেই — এরা কোনো চাকা বা lidar-কে স্পর্শ করে না।"
+  },
+  "animType": null
+}

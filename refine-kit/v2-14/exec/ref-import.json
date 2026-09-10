@@ -1,0 +1,378 @@
+[
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 1,
+  "lns": [
+   1
+  ],
+  "kind": "struct",
+  "cap": "নতুন file, নতুন pass — laser_Avoidance.py-র import pass শুরু হলো এই line দিয়ে। <code>#ros lib</code> শুধু একটা label: নিচে L2-5-এর ROS import block-এর মাথায় বসানো। Comment হিসেবে interpreter এটাকে লাফিয়ে যায় — কিছু define হয় না, চলেও না; ভাগটার নাম শুধু পড়ার মানুষের জন্য।",
+  "op": "skip ros lib comment",
+  "dbg": [
+   [
+    "content",
+    "#ros lib - comment header"
+   ],
+   [
+    "effect",
+    "none - skipped by interpreter"
+   ],
+   [
+    "labels",
+    "L2-5: rclpy, Node, Twist, LaserScan"
+   ]
+  ],
+  "fx": "#ros lib   # header comment - import pass begins"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 2,
+  "lns": [
+   2,
+   3,
+   4,
+   5
+  ],
+  "kind": "exec",
+  "cap": "L2-5 চারটা ROS import এখন সত্যিই চলে: <code>import rclpy</code>, <code>from rclpy.node import Node</code>, <code>Twist</code>, <code>LaserScan</code>। কয়েকটা নামের গন্তব্য আগেই ঠিক — <code>Node</code> L17-এ <code>class laserAvoid</code>-এর বাবা হবে, <code>Twist</code> <code>/cmd_vel</code>-এর message, <code>LaserScan</code> <code>/scan</code>-এর।",
+  "op": "import rclpy twist laserscan",
+  "dbg": [
+   [
+    "imports",
+    "rclpy; rclpy.node.Node; geometry_msgs.msg.Twist; sensor_msgs.msg.LaserScan"
+   ],
+   [
+    "binds",
+    "Node, Twist, LaserScan enter module namespace"
+   ],
+   [
+    "feeds",
+    "Node -> class base L17; Twist -> /cmd_vel pub; LaserScan -> /scan sub"
+   ]
+  ],
+  "fx": "import rclpy; from rclpy.node import Node; from geometry_msgs.msg import Twist; from sensor_msgs.msg import LaserScan"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 8,
+  "lns": [
+   8,
+   9,
+   10,
+   11
+  ],
+  "kind": "exec",
+  "cap": "L8-11-ও এখনই চলে: <code>import math</code>, <code>import numpy as np</code>, <code>import time</code>, <code>from time import sleep</code>। দুটোর গন্তব্য আগে থেকেই ঠিক — <code>math</code> যাবে L15-এর <code>RAD2DEG = 180 / math.pi</code>-তে, আর <code>sleep</code> পরে registerScan-এর publish branch-গুলোতে <code>sleep(0.2)</code> হয়ে executor-কে 0.2s আটকে রাখবে।",
+  "op": "import math numpy time sleep",
+  "dbg": [
+   [
+    "imports",
+    "math; numpy as np; time; sleep (from time)"
+   ],
+   [
+    "math feeds",
+    "RAD2DEG = 180 / math.pi at L15"
+   ],
+   [
+    "sleep feeds",
+    "sleep(0.2) after Twist publishes in registerScan"
+   ]
+  ],
+  "fx": "import math; import numpy as np; import time; from time import sleep"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 14,
+  "lns": [
+   14
+  ],
+  "kind": "event",
+  "cap": "<code>print (\"improt done\")</code> — import-এর সময়েই চলে যায়, main ডাকার আগেই। বানানটা source-এর typo (\"improt\"), আর print-এর পরের space-ও আছে — দুটোই চলতি Python-এ বৈধ, আর দুটোই source-এ যেমন তেমনই শেখা হচ্ছে।",
+  "op": "print at import time",
+  "dbg": [
+   [
+    "when",
+    "module import — before main() runs"
+   ],
+   [
+    "output",
+    "improt done (typo as-is)"
+   ]
+  ],
+  "fx": "print (\"improt done\")  · import-time side effect, typo as-is",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">launch file loaded</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">generate_launch_description() called</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">constructor: L1 to L42</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/ira_laser_tools</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/yahboom_laser_filter</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">executable direct - no launch file</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">improt done</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">RAD2DEG = 57.29578</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import pass</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"236\" y=\"56\" width=\"168\" height=\"112\" rx=\"5\" fill=\"#161b22\" stroke=\"#1f6feb\"/><text x=\"320\" y=\"70\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance.py IMPORT</text><text x=\"248\" y=\"86\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">improt done  (L14, typo as-is)</text><text x=\"248\" y=\"97\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">RAD2DEG = 180/pi = 57.29578</text><text x=\"248\" y=\"108\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">class laserAvoid(Node) L17</text><text x=\"248\" y=\"119\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def JoyStateCallback L49</text><text x=\"248\" y=\"130\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def registerScan L53</text><text x=\"248\" y=\"141\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def exit_pro L168 · def main L176</text><text x=\"248\" y=\"154\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">defs bound - none executed yet</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">main pass next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">import pass চলছে।</text><text x=\"16\" y=\"273\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#8b949e\">print-টা এখনই সত্যি ছাপা — typo সহ।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 15,
+  "lns": [
+   15
+  ],
+  "kind": "exec",
+  "cap": "<code>RAD2DEG = 180 / math.pi</code> — L15-এর এই assignment-টাও module level, তাই import চলাকালীনই মান বসে যায়: প্রায় <b>57.2958</b>। Comment-এ কাজ লেখা — radian-কে এটা দিয়ে গুণলে degree। এই constant-টাই পরে registerScan-এর angle হিসাবে ফেরে (L65), যেখানে প্রতিটা beam-এর কোণ degree-এ বদলায়।",
+  "op": "compute rad2deg constant",
+  "dbg": [
+   [
+    "value",
+    "180 / math.pi = 57.2958 approx"
+   ],
+   [
+    "kind",
+    "module-level float, computed at import"
+   ],
+   [
+    "used at",
+    "registerScan L65 — beam rad -> deg"
+   ]
+  ],
+  "fx": "RAD2DEG = 180 / math.pi   -> 57.2958"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 17,
+  "lns": [
+   17
+  ],
+  "kind": "event",
+  "cap": "L17: <code>class laserAvoid(Node):</code> — import চলাকালীন এই statement-টাই এখন fire করে: L3-এ আনা <code>Node</code>-কে base ধরে <code>laserAvoid</code> নামের class object তৈরি হয়ে module-এ বসে যায়। ভেতরের def-গুলো (__init__ থেকে registerScan) এই মুহূর্তে শুধু bind হয় — কোনো instance নেই, কেউ চলেনি।",
+  "op": "create class laserAvoid",
+  "dbg": [
+   [
+    "fires",
+    "class statement executes at import time"
+   ],
+   [
+    "base",
+    "Node — imported at L3"
+   ],
+   [
+    "result",
+    "class object laserAvoid bound in module namespace"
+   ],
+   [
+    "not yet",
+    "no instance; methods bound but never called"
+   ]
+  ],
+  "fx": "class laserAvoid(Node):   · class object built, methods bound"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 19,
+  "lns": [
+   19
+  ],
+  "kind": "struct",
+  "cap": "L19: <code>super().__init__(name)</code> — <code>__init__</code>-এর প্রথম line, এখনো define-only। চলার দিন এটাই <code>Node</code>-র constructor ডেকে node-এর নাম রেজিস্টার করাবে — main থেকে আসা <code>laser_Avoidance_a1</code> নামটা তখন ROS-এর দুনিয়ায় বসবে। নাম ছাড়া node অচল, তাই এটাই constructor-এর প্রথম কাজ।",
+  "op": "stage super init call",
+  "dbg": [
+   [
+    "now",
+    "definition phase — line not executed"
+   ],
+   [
+    "runs when",
+    "main pass — laserAvoid(...) constructed"
+   ],
+   [
+    "effect then",
+    "Node base constructor registers node name"
+   ]
+  ],
+  "fx": "super().__init__(name)   · node naming, deferred"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 23,
+  "lns": [
+   23
+  ],
+  "kind": "struct",
+  "cap": "সিদ্ধান্তের সব উপকরণ এই line-এ — L23: <code>self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)</code>। এখনো চালানো হয়নি, আর <code>self.registerScan</code>-এর পরে বন্ধনী নেই — কল নয়, callback-এর reference হাতবদল। চলবে main pass-এ; তখন <code>/scan</code> মানে folder 10-এর merger+filter-এর শেষে বেরোনো stream, depth 1 — থাকবে শুধু সবশেষ scan।",
+  "op": "stage laser subscription",
+  "dbg": [
+   [
+    "now",
+    "definition phase — line written, not executed"
+   ],
+   [
+    "callback",
+    "self.registerScan passed without call parens"
+   ],
+   [
+    "topic",
+    "/scan — merged + filtered stream (folder 10 chain)"
+   ],
+   [
+    "qos depth",
+    "1 — keep latest scan only"
+   ]
+  ],
+  "fx": "self.sub_laser = self.create_subscription(LaserScan,\"/scan\",self.registerScan,1)"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 32,
+  "lns": [
+   32,
+   33
+  ],
+  "kind": "struct",
+  "cap": "L32-33 — প্রথম জোড়া: <code>self.declare_parameter(\"linear\",0.2)</code> তারপর <code>self.linear = self.get_parameter('linear').get_parameter_value().double_value</code>। declare করে নাম রেজিস্টার করা, পরের লাইনেই সেটা পড়ে আনা আর <code>.double_value</code> দিয়ে float-এ টানা — এক লাইনে লেখা যেত না, কারণ declare-এর আগে get করা যায় না। এখন import pass-এ শুধু define; আসল চালনা হবে main pass-এর constructor-এ।",
+  "op": "stage linear parameter pair",
+  "dbg": [
+   [
+    "declares",
+    "linear default 0.2 (m/s forward)"
+   ],
+   [
+    "reads back",
+    "get_parameter().get_parameter_value().double_value"
+   ],
+   [
+    "runs when",
+    "main pass constructor"
+   ]
+  ],
+  "fx": "self.declare_parameter(\"linear\",0.2)  ·  self.linear = ... double_value"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 53,
+  "lns": [
+   53
+  ],
+  "kind": "event",
+  "cap": "<code>def registerScan(self, scan_data):</code> — এই callback-টাই পুরো file-এর মগজ: প্রতিটি fused scan-এ তিন zone-এর warning count হিসেবে 9-branch decision tree চালিয়ে <code>/cmd_vel</code>-এ কমান্ড দেয়। এখন শুধু define হচ্ছে; চলবে spin-এর event হয়ে।",
+  "op": "bind def registerscan",
+  "dbg": [
+   [
+    "trigger",
+    "/scan message arrives (fused+filtered stream)"
+   ],
+   [
+    "qos depth",
+    "1 — keep latest only"
+   ]
+  ],
+  "fx": "def registerScan(self, scan_data):   · the brain callback, fires per scan",
+  "rob": "<rect x=\"16\" y=\"22\" width=\"196\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#4fc3f7\" stroke-width=\"1.4\"/><text x=\"26\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">TERMINAL</text><text x=\"202\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import</text><text x=\"26\" y=\"45\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#6e7681\">jetson@yahboom: ~ (illustrative)</text><text x=\"26\" y=\"73\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">generate_launch_description() called</text><text x=\"26\" y=\"81\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">constructor: L1 to L42</text><text x=\"26\" y=\"89\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/ira_laser_tools</text><text x=\"26\" y=\"97\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">share: .../share/yahboom_laser_filter</text><text x=\"26\" y=\"105\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">LaunchDescription: 2 includes returned</text><text x=\"26\" y=\"113\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #1: merge_multi.launch.py (folder 10)</text><text x=\"26\" y=\"121\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laserscan_multi_merger</text><text x=\"26\" y=\"129\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">include #2: laser_filter_node.launch.py</text><text x=\"26\" y=\"137\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">process spawned: laser_filter_node</text><text x=\"26\" y=\"145\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">window full circle - pass-through</text><text x=\"26\" y=\"153\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">/scan fused: 360 ring flowing</text><text x=\"26\" y=\"161\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\"><tspan fill=\"#7ee787\">$ </tspan>ros2 run yahboom_M3Pro_laser laser_Avoidance</text><text x=\"26\" y=\"169\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#6e7681\">executable direct - no launch file</text><text x=\"26\" y=\"177\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#7ee787\">improt done</text><text x=\"26\" y=\"185\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#d2a8ff\">RAD2DEG = 57.29578</text><text x=\"26\" y=\"193\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e3b341\">def registerScan bound (not run)</text><rect x=\"216\" y=\"22\" width=\"208\" height=\"228\" rx=\"9\" fill=\"#161b22\" fill-opacity=\".55\" stroke=\"#1f6feb\" stroke-width=\"1.4\"/><text x=\"226\" y=\"34\" text-anchor=\"start\" font-family=\"monospace\" font-size=\"10\" fill=\"#e6edf3\" font-weight=\"bold\">SYSTEM</text><text x=\"414\" y=\"34\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#4fc3f7\">import pass</text><rect x=\"224\" y=\"42\" width=\"192\" height=\"196\" rx=\"4\" fill=\"#0d1117\" fill-opacity=\".8\" stroke=\"#21262d\" stroke-width=\"1\"/><rect x=\"236\" y=\"56\" width=\"168\" height=\"112\" rx=\"5\" fill=\"#161b22\" stroke=\"#1f6feb\"/><text x=\"320\" y=\"70\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#e6edf3\">laser_Avoidance.py IMPORT</text><text x=\"248\" y=\"86\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#7ee787\">improt done  (L14, typo as-is)</text><text x=\"248\" y=\"97\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#d2a8ff\">RAD2DEG = 180/pi = 57.29578</text><text x=\"248\" y=\"108\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">class laserAvoid(Node) L17</text><text x=\"248\" y=\"119\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def JoyStateCallback L49</text><text x=\"248\" y=\"130\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def registerScan L53</text><text x=\"248\" y=\"141\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#8b949e\">def exit_pro L168 · def main L176</text><text x=\"248\" y=\"154\" font-family=\"monospace\" font-size=\"5.8\" fill=\"#e3b341\">defs bound - none executed yet</text><text x=\"320\" y=\"200\" text-anchor=\"middle\" font-family=\"monospace\" font-size=\"6.2\" fill=\"#484f58\">main pass next</text><text x=\"16\" y=\"262\" font-family=\"Hind Siliguri, sans-serif\" font-size=\"7.2\" fill=\"#e6edf3\">মগজ-callback এখন শুধু নথিবদ্ধ।</text>"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 57,
+  "lns": [
+   57,
+   58,
+   59,
+   60
+  ],
+  "kind": "struct",
+  "cap": "L57-60 — <code># Reset the counters every time a new scan comes in</code> আর তিনটা রিসেট: <code>Right_warning = 0</code>, <code>Left_warning = 0</code>, <code>front_warning = 0</code>। constructor-এ যে শূন্যে জন্ম হয়েছিল, প্রতি scan-এর শুরুতে সেই জন্ম আবার হয় — ফলে দুই scan-এর গণনা কখনো মেশে না। প্রতি সেকেন্ডে কয়েকবার ঘুরে আসা এই রিসেট-গণনা-সিদ্ধান্ত চক্রই আসলে robot-এর \"চোখে দেখা প্রতিবার\"।",
+  "op": "compile per-scan counter reset",
+  "dbg": [
+   [
+    "resets",
+    "three zone counters to 0 per scan"
+   ],
+   [
+    "purpose",
+    "no carry-over between scans"
+   ],
+   [
+    "runs when",
+    "event wave — each fused scan"
+   ]
+  ],
+  "fx": "self.Right_warning = 0  ·  self.Left_warning = 0  ·  self.front_warning = 0"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 93,
+  "lns": [
+   93,
+   94
+  ],
+  "kind": "struct",
+  "cap": "Branch 1 (L93-94): সবচেয়ে খারাপ দশা — তিন দিকেই বাধা। L94-এ তিনটা টেস্ট and-এ বাঁধা: <code>front_warning &gt; self.conut</code>, <code>Left_warning &gt; self.conut</code>, <code>Right_warning &gt; self.conut</code> — তিনটাই সত্য হলেই ঢোকা। L93 বলে Trapped -> Back up, কিন্তু L96 বসাবে <code>twist.linear.x = self.linear</code> — পজিটিভ, মানে সামনে; source-এর কমেন্টই bug স্বীকার করে। এখন শুধু শর্তটা define হচ্ছে।",
+  "op": "compile trapped branch test",
+  "dbg": [
+   [
+    "cond",
+    "all three counters > self.conut (3) required"
+   ],
+   [
+    "order",
+    "branch 1 of 9; if/elif chain, first match wins"
+   ],
+   [
+    "comment",
+    "L93 promises back up; L96 sets linear.x forward"
+   ]
+  ],
+  "fx": "if self.front_warning > self.conut and self.Left_warning > self.conut and self.Right_warning > self.conut:  # L94"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 169,
+  "lns": [
+   169,
+   170,
+   171,
+   172,
+   173
+  ],
+  "kind": "struct",
+  "cap": "exit_pro-র দেহ L169-L173-এ লেখা হলো, এখনো একটাও চলেনি: <code>cmd1 = \"ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"</code> (শেষে লুকানো একটা space), <code>cmd2</code>-তে triple-quote-এর ভেতরে quote-মোড়ানো zero Twist, তারপর <code>cmd = cmd1 +cmd2</code> — যোগচিহ্নের দুই পাশে space নেই — শেষে <code>os.system(cmd)</code>।",
+  "op": "define exit_pro body",
+  "dbg": [
+   [
+    "cmd1",
+    "ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist (trailing space)"
+   ],
+   [
+    "cmd2",
+    "zero Twist wrapped in literal double quotes"
+   ],
+   [
+    "join",
+    "cmd = cmd1 +cmd2 — no spaces around +"
+   ],
+   [
+    "call",
+    "os.system(cmd) — defined, runs at shutdown"
+   ]
+  ],
+  "fx": "cmd = cmd1 +cmd2   · then os.system(cmd)"
+ },
+ {
+  "file": "laser_Avoidance.py",
+  "ln": 174,
+  "lns": [
+   174,
+   175
+  ],
+  "kind": "struct",
+  "cap": "দুটো ফাঁকা line — L174-L175, আর এখানেই একটা সীমানা পড়ে যায়: পরের <code>def main():</code> (L176) column 0-তে বসেছে, মানে class <code>laserAvoid</code>-এর দেহ L173-এর <code>os.system(cmd)</code>-এ শেষ। PEP8-এর রীতি অনুযায়ী module-level function-এর আগে দুটো ফাঁকা line; import pass-এর bytecode-খাতায় এদের কোনো নাম নেই।",
+  "op": "skip two blank lines 174",
+  "dbg": [
+   [
+    "lines",
+    "L174-L175 both blank"
+   ],
+   [
+    "boundary",
+    "class laserAvoid ends at L173 os.system"
+   ],
+   [
+    "style",
+    "PEP8 two blanks before module-level def"
+   ],
+   [
+    "bytecode",
+    "none — whitespace only"
+   ]
+  ],
+  "fx": "def main():   · L176 below blanks L174-175"
+ }
+]

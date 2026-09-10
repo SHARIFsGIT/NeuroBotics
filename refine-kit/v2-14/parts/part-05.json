@@ -1,0 +1,187 @@
+{
+ "n": 5,
+ "id": "part-05",
+ "fname": "yahboom_keyboard.py",
+ "enTitle": "Menu & Key Bindings",
+ "lang": "python",
+ "start": 1,
+ "end": 64,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 2,
+   "text": "L1-এর <code>#!/usr/bin/env python</code> হলো shebang — প্রথম লাইনেই interpreter-এর ঠিকানা দিয়ে বলা হয়, ফাইলটি সরাসরি চালালে কে চালাবে। এই folder-এর README অবশ্য অন্য পথ দেখায় — L7-এর ros2 run yahboomcar_ctrl yahboom_keyboard command-এ package-এর entry point থেকেই node ওঠে, তখন shebang-টি কাজে লাগে না; তবু রাখাটা convention। L2-এর <code># encoding: utf-8</code> ঘোষণা করে ফাইলটি UTF-8 encoding-এ লেখা — Python 3-এ default-ই তাই, এটি নিছক স্বীকৃতি-সূত্র, কোনো ভুল নয়। দুই লাইনই <code>#</code> দিয়ে শুরু, অর্থাৎ Python এগুলোকে execute করে না — শুধু মানুষ আর launcher-এর জন্য লেখা।"
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "text": "L4-এর <code># --- IMPORTING TOOLS ---</code> নামফলক-এর নিচে দুই দল import সাজানো — প্রথম দল Python-এর নিজের standard library, কিছু লাইন পরে ROS 2-এর দল। <code>import sys</code> আনে sys.stdin handle: L83-এ <code>termios.tcgetattr(sys.stdin)</code> terminal-এর বর্তমান setting এই stdin থেকেই পড়ে, L90-এ <code>select.select([sys.stdin], [], [], 0.1)</code> ঠিক এই handle-টিকে 0.1 সেকেন্ড পর্যন্ত নজরে রাখে, আর লুপ শেষে L240-এ terminal restore-ও sys.stdin দিয়েই হয়। এক কথায় — keyboard-ই এই node-এর একমাত্র input device, তার সংযোগ-লাইন এটি।"
+  },
+  {
+   "a": 6,
+   "b": 9,
+   "text": "এই চার লাইনের তিনটিই raw-keyboard তন্ত্রের অংশ। <code>import select</code> — L90-এ key এসেছে কি না 0.1 সেকেন্ড পর্যন্ত অপেক্ষা করে দেখে; না এলে ফাঁকা string ফেরায়। <code>import termios</code> আর <code>import tty</code> জুটি terminal-এর চাবি: L89-এ <code>tty.setraw(sys.stdin.fileno())</code> terminal-কে raw mode-এ ফেলে — চাপা key এখন Enter-এর অপেক্ষা করে না, আর Ctrl+C আর signal নয়, <code>'\\x03'</code> অক্ষর হয়ে পড়া হয়; L95-এ <code>termios.tcsetattr</code> দিয়ে প্রতি পাঠের পর setting ফিরিয়ে দেওয়া হয়। চতুর্থটি আলাদা কথার: পুরো 242 লাইনে <code>import time</code> আর কোথাও ব্যবহৃত হয়নি — এই file-টিতে verified dead import, সম্ভবত vendor-এর অন্য script থেকে পাওয়া উত্তরাধিকার; ক্ষতি বলতে গেলে শূন্য, কেবল পাঠক ভেবে বসে নিচে কোথাও delay-লজিক আছে।"
+  },
+  {
+   "a": 11,
+   "b": 14,
+   "text": "ROS 2-এর দল। <code>import rclpy</code> মূল client library — L151-এ <code>rclpy.init()</code> দিয়ে context জন্মাবে, L242-এ <code>rclpy.shutdown()</code> দিয়ে বন্ধ হবে। <code>from rclpy.node import Node</code> base class — L66-এর <code>class YahboomKeyboard(Node)</code> এর উপরেই দাঁড়াবে। <code>from geometry_msgs.msg import Twist</code> চাকার velocity message: এই file-এ ছোঁয়া হয় মাত্র তিনটি field — <code>linear.x</code>, <code>linear.y</code> (mecanum সাইড-চালার জন্য), <code>angular.z</code>; Twist-এর বাকি সব field অব্যবহৃত থাকে। শেষ লাইনে <code>from arm_msgs.msg import ArmJoint, ArmJoints</code> — arm-এর দুই রকম message একসঙ্গে: ArmJoint একটি joint (id + joint + time), ArmJoints ছয়টি একবারে (joint1..joint6 + time)। folder-এর README L13-এর one-shot arm command-ও এই ArmJoints-ই পাঠায় /arm6_joints topic-এ — একই ভাষায় কথা বলা দুটি আলাদা দরজা।"
+  },
+  {
+   "a": 16,
+   "b": 17,
+   "text": "L16-এর <code># --- PROFESSIONAL CONTROL PANEL MENU ---</code> নিজেই ঘোষণা করছে নিচে কী আসছে: user-facing menu। <code>msg = \"\"\"</code> দিয়ে triple-quoted string শুরু হয় L45-এর <code>\"\"\"</code>-এ গিয়ে শেষ — মাঝের 27টি line (L18-44) কোনো code নয়, সব ছাপার অক্ষর। এটি module-level variable: script load-এর মুহূর্তেই তৈরি হয়ে যায়, কিন্তু ছাপা হয় অনেক পরে — main()-এর L161-এ <code>print(msg)</code>। তাই menu-টি দেখা মানে এই পর্যন্ত সব ঠিকঠাক চলেছে: node জেগেছে, publisher নিয়েছে, terminal ধরেছে — menu-ই এই teleop-এর প্রস্তুত-সংকেত।"
+  },
+  {
+   "a": 18,
+   "b": 20,
+   "text": "তিন line-এর শিরোনাম-বার: 36 অক্ষরের <code>====================================</code>, তার মাঝে <code> TELEOPERATION (Mecanum & 6-DOF Arm)</code> — শিরোনামেই পুরো program-এর পরিচয়: mecanum চাকার base আর 6-DOF arm, দুই-ই চালানো হবে এই এক keyboard থেকে। খেয়াল করো title-টির শুরুতে একটা leading space আছে (মাঝানোর চেষ্টা), আর প্রান্তের দুই রেখার দৈর্ঘ্য আলাদা — উপরেরটি 36, নিচের L44-এরটি 60 অক্ষর; menu-র এই হাতে-করা বিন্যাস কেউ মিলিয়ে দেখে না, সবই display-only। string-এর ভেতরে থাকায় Python এর কোনো অংশই execute করে না।"
+  },
+  {
+   "a": 21,
+   "b": 23,
+   "text": "L21 string-এর ভেতরের ফাঁকা line — ছাপায় চোখের বিরতি ছাড়া কাজ নেই। <code> [ BASE MOTION ]</code> প্রথম বিভাগ-শিরোনাম: নিচের চার line robot-এর base, অর্থাৎ চাকার নড়াচড়া। প্রথম জোড়া <code>   i / ,       : Forward / Backward</code> — i সামনে, comma পেছনে; এই দুই key-ই moveBindings-এর প্রথম দুই সারি (L49-50) থেকে (1, 0, 0) আর (-1, 0, 0) মান পাবে। মনে রাখো — এই folder-এর মূল কাজ gmapping SLAM, আর SLAM চলাকালে robot-টা ঠিক এই base key-গুলো দিয়েই ঘোরানো হয়; মানুষ না চালালে map বাড়ে না।"
+  },
+  {
+   "a": 24,
+   "b": 26,
+   "text": "<code>   j / l       : Rotate Left / Right (in-place)</code> — ঘোরা: j বাঁয়ে, l ডানে, in-place মানে জায়গায় দাঁড়িয়ে yaw বদলানো (angular.z)। <code>   a / d       : Strafe Left / Right (Mecanum)</code> — mecanum চাকার বিশেষ দক্ষতা: শরীর না ঘুরিয়ে সাইডে সরে যাওয়া (linear.y); সাধারণ differential চাকায় অসম্ভব, তাই বন্ধনীতেই Mecanum লেখা। <code>   u / o / m /.: Diagonal Movements</code> — চারটি diagonal key এক line-এ তালিকাভুক্ত, কিন্তু কোনটি কোন কোণে যায় তা menu বলে না; সেই উত্তর শুধু moveBindings-এর L55-57-তে (u সামনে-বাঁয়ে, o সামনে-ডানে, m পেছনে-বাঁয়ে, . পেছনে-ডানে)। menu-র এই সংক্ষিপ্ততাই dict-টিকে পড়া জরুরি করে তোলে।"
+  },
+  {
+   "a": 27,
+   "b": 28,
+   "text": "আবার ফাঁকা line, তারপর দ্বিতীয় বিভাগ <code> [ ARM MOTION (5 deg / press) ]</code> — শিরোনামেই একমাত্র সংখ্যা-সূত্র: প্রতিটি চাপে 5 ডিগ্রি করে নড়বে। এই 5-ই পরে L195-208-এর <code>robot_teleop.step_arm_joint(1, -5)</code> ধরনের কলগুলোর delta — menu-র promise আর code-এর সংখ্যা হুবহু মিলে যায়। 6-DOF arm-এর ছয়টি joint এর পরের ছয় line-এ জোড়ায় জোড়ায় সাজানো — প্রতিটি জোড়ায় odd key নামায়, even key তোলে।"
+  },
+  {
+   "a": 29,
+   "b": 31,
+   "text": "<code>   1 / 2       : Joint 1 (Base)      Down / Up</code> — joint 1 বা base: 1 চাপলে Down, 2 চাপলে Up; L195-196-এ যথাক্রমে -5 আর +5 delta। একই ছাঁচে <code>   3 / 4       : Joint 2 (Shoulder)  Down / Up</code> (L197-198) আর <code>   5 / 6       : Joint 3 (Elbow)      Down / Up</code> (L199-200) — জোড়ার সংখ্যা বাড়ে, নিয়ম এক। menu শুধু নাম দেয় (Base, Shoulder, Elbow), সীমা দেয় না — প্রতিটি joint-এর চলার সীমা পরের Part-এর clamp-লাইন থেকে আসবে।"
+  },
+  {
+   "a": 32,
+   "b": 34,
+   "text": "<code>   7 / 8       : Joint 4 (Wrist)     Down / Up</code> (L201-202) আর <code>   9 / 0       : Joint 5 (Wrist Rot) Down / Up</code> (L203-204) — এখানে একটা লুকানো তথ্য: joint 5-এর চলার সীমা বাকিদের চেয়ে বহু বড়, 0 থেকে 270 ডিগ্রি (L106-এর clamp), কারণ wrist-rotation প্রায় পুরো বৃত্ত ঘোরার স্বাধীনতা চায়; menu-তে সেকথা লেখা নেই। শেষ জোড়া অন্যরকম: <code>   g / h       : Joint 6 (Gripper)   Close / Open</code> — joint 6 হলো gripper, তাই Up/Down-এর বদলে Close/Open; L207-208-এ step_arm_joint(6, -5) আর (6, 5), আর এর সীমা 30..180 ডিগ্রি (L108)।"
+  },
+  {
+   "a": 35,
+   "b": 37,
+   "text": "তৃতীয় বিভাগ <code> [ SYSTEM ]</code> — নড়াচড়ার key নয়, নিয়ন্ত্রণের জরুরি লিভার। প্রথমটিই সবচেয়ে ভারী: <code>   SPACE       : EMERGENCY STOP (Base + Arm)</code> — spacebar চাপলে base আর arm দুটোই সঙ্গে সঙ্গে থামে। বাস্তবায়ন L176-179: emergency_stop() কল (L136-148 — zero Twist আর arm-এর বর্তমান অবস্থা time=100 দিয়ে জোর করে brake), সঙ্গে x, y, th শূন্য। একটি পার্থক্য মাথায় রাখো: SPACE এক-চাপের এক-বারের ব্যবস্থা — এটি pause-toggle নয়; চাপ ছাড়ার পর আবার কোনো base key চাপলে চলা ফিরে আসে।"
+  },
+  {
+   "a": 38,
+   "b": 40,
+   "text": "<code>   s           : PAUSE ALL CONTROLS (Press 's' again to resume)</code> — s একটি toggle: L169-এ <code>stop = not stop</code>; pause-এ ঢুকলেই emergency_stop() চলে যায় আর x, y, th শূন্য হয় (L171-173)। Pause মানে সম্পূর্ণ স্তব্ধতা: L182-এর <code>elif not stop:</code> গেটের কারণে এ অবস্থায় arm key-সহ সব key অচল, শুধু s আর Ctrl+C ঢোকে — menu-র সব-নিয়ন্ত্রণ-থামানো কথাটি এখানে আক্ষরিক। <code>   r           : Reset Arm to Home Position</code> — L210-এ reset_arm(): ছয় joint [90, 90, 0, 0, 90, 90]-এ ফেরত, time=2000। <code>   q / z       : Increase / Decrease overall speed by 10%</code> — overall মানে দুই স্কেল একসঙ্গে: speedBindings-এ q = (1.1, 1.1), z = (.9, .9)।"
+  },
+  {
+   "a": 41,
+   "b": 43,
+   "text": "<code>   w / x       : Increase / Decrease linear speed by 10%</code> শুধু linear — w = (1.1, 1), x = (.9, 1); <code>   e / c       : Increase / Decrease angular speed by 10%</code> শুধু angular — e = (1, 1.1), c = (1, .9)। অর্থাৎ দুই স্কেল আলাদা করে সুর করা যায়, আর q/z দুটোই একসঙ্গে ধরে। 10% কথাটির আসল অর্থ গুণনীয়ক: প্রতি চাপে বর্তমান মান ×1.1 বা ×0.9 — সেই হিসাব নিচের গণিত-অংশে। শেষ line <code>   CTRL + C    : Quit</code> — কিন্তু raw mode-এ Ctrl+C আর সাধারণ signal নয়: সে আসে <code>'\\x03'</code> অক্ষর হয়ে, আর L215 আর L220-এ <code>if key == '\\x03':</code> দিয়েই লুপ ভাঙা হয়।"
+  },
+  {
+   "a": 44,
+   "b": 45,
+   "text": "L44-এর <code>============================================================</code> শেষ সীমানা-রেখা — শুরুর বার (L18) ছিল 36 অক্ষরের, এটি 60; menu-র ভেতরের এই অসমতা ছাপায় যায় ঠিকই, তাৎপর্য আর কিছু নেই। L45-এর <code>\"\"\"</code> দিয়ে string শেষ — msg variable এখন পুরো দরপত্রটি বহন করে। একবার উপর থেকে গুনলে দেখা যায়: তিন বিভাগে মোট 17টি key-line (base 4, arm 6, system 7), আর প্রতিটির পেছনের বাস্তব সংজ্ঞা নিচের দুই dictionary-তে ধরা — base motion moveBindings-এ, গতির সুর speedBindings-এ।"
+  },
+  {
+   "a": 47,
+   "b": 49,
+   "text": "L47-এর <code># Maps keys to (forward_back, strafe_left_right, rotate_left_right)</code> comment-টি চুক্তির খতিয়ান: প্রতিটি value তিন সংখ্যার tuple, ক্রমে সামনে-পেছনে, বাঁয়ে-ডানে strafe, বাঁয়ে-ডানে ঘূর্ণন। <code>moveBindings = {</code> dictionary খুলছে — এটিই menu-র প্রথম বিভাগের আসল অনুবাদ-টেবিল। প্রথম সারি <code>    'i': (1, 0, 0),     'I': (1, 0, 0),</code> — i আর তার বড়-হাতের যমজ I, দুজনেই (1, 0, 0): সামনে সোজা। সংখ্যাগুলো সবই unit int — কেবল -1, 0, 1 — অর্থাৎ এখানে ঠিক হয় শুধু দিক; কত দ্রুত, সেই মাপ পরে speed/turn variable থেকে আসবে (L226-228)।"
+  },
+  {
+   "a": 50,
+   "b": 52,
+   "text": "দ্বিতীয় সারিতেই এই file-এর সবচেয়ে কৌতূহল-জাগানো বাঁক: <code>    ',': (-1, 0, 0),    'M': (-1, 0, 0),</code> — বড় হাতের M এখানে m-এর যমজ নয়, comma-র যমজ: দুজনেই (-1, 0, 0), সোজা পেছনে। অন্য সারিতে যে নিয়ম চলছে — প্রতিটি lowercase key-এর সঙ্গে তার uppercase কপি, একই মানে — সেই ধারা এখানে ভাঙা; কারণ ছোট হাতের m-এর নাম আগেই অন্য কাজে লেখা হয়ে গেছে: diagonal। এরপর <code>    'a': (0, 1, 0),     'A': (0, 1, 0),</code> — বাঁ দিকে strafe (দ্বিতীয় ঘর +1), আর <code>    'd': (0, -1, 0),    'D': (0, -1, 0),</code> — ডান দিকে (দ্বিতীয় ঘর -1); প্রথম ঘর 0 মানে strafe-র সময় সামনে-পেছনে কোনো ভেক্টর নেই।"
+  },
+  {
+   "a": 53,
+   "b": 54,
+   "text": "ঘূর্ণনের জোড়া: <code>    'j': (0, 0, 1),     'J': (0, 0, 1),</code> বাঁয়ে ঘোরা, <code>    'l': (0, 0, -1),    'L': (0, 0, -1),</code> ডানে। তৃতীয় ঘরটিই rotate — এই মান পরে turn variable-এর সঙ্গে গুণিয়ে twist.angular.z হবে (L228)। প্রথম দুই ঘর 0 থাকায় এ ঘোরা একেবারে in-place: robot অবস্থান বদলায় না, শুধু মুখ ঘোরায়। SLAM-এর দরুন এই দুই key-র দাম বেশি — জায়গায় দাঁড়িয়ে নতুন দিকে তাকালে gmapping নতুন দিক থেকে scan পেয়ে map-এ নতুন অঞ্চল যোগ করতে পারে।"
+  },
+  {
+   "a": 55,
+   "b": 57,
+   "text": "Diagonal-চারের প্রথম জোড়া: <code>    'u': (1, 1, 0),     'U': (1, 1, 0),</code> সামনে-বাঁয়ে, <code>    'o': (1, -1, 0),    'O': (1, -1, 0),</code> সামনে-ডানে — প্রথম দুই ঘরে ভাগ, তৃতীয় ঘরে 0। শেষ সারি আবার সেই M-বাঁকের জায়গা: <code>    'm': (-1, 1, 0),     '.': (-1, -1, 0),</code> — m পেছনে-বাঁয়ের diagonal, আর তার সঙ্গী বড় হাতের অক্ষর নয়, পূর্ণচ্ছেদ। অর্থাৎ diagonal-চারের কেউই uppercase twin পায়নি; shift ধরে M চাপলে পাওয়া যায় সোজা পেছনের চলা, পেছনে-বাঁয়ের diagonal নয়। চারটি মিলে একটি পূর্ণ X-আকার: সামনে-বাঁয়ে, সামনে-ডানে, পেছনে-বাঁয়ে, পেছনে-ডানে — mecanum চাকা ছাড়া আর কোনো base এ কথায় আনা যায় না।"
+  },
+  {
+   "a": 58,
+   "b": 60,
+   "text": "<code>}</code> দিয়ে moveBindings শেষ — মোট 18টি entry: 10টি lowercase (i, comma, a, d, j, l, u, o, m, period) আর 8টি uppercase যমজ (I, M, A, D, J, L, U, O); নয় সারির প্রতিটিতে জোড়ায় জোড়ায় দুটি করে। L59 ফাঁকা line, তারপর L60-এ <code>speedBindings = {</code> — দ্বিতীয় dictionary: এবার key-এর মানে দিক নয়, গতির সুর। প্রতিটি value দুই সংখ্যার tuple (linear_factor, angular_factor), আর মূল লুপের L187-188-এ <code>speed = speed * speedBindings[key][0]</code> আর <code>turn = turn * speedBindings[key][1]</code> ঠিক এই দুই ঘরকে ধরে গুণ করে।"
+  },
+  {
+   "a": 61,
+   "b": 64,
+   "text": "চার সারিতে 12টি key: L61-এ বড় হাতের <code>    'Q': (1.1, 1.1), 'Z': (.9, .9), 'W': (1.1, 1), 'X': (.9, 1),</code> — Q দুই স্কেলই ×1.1, Z দুই-ই ×0.9, W শুধু linear ×1.1, X শুধু linear ×0.9। L62-তে E (1, 1.1) আর C (1, .9) — angular-এর ওঠানামা — সঙ্গে ছোট হাতের q, z; L63-এ w, x, e, c। এখানে uppercase-lowercase যমজ-নিয়ম সব জায়গায় খাটে — moveBindings-এর M-ধরনের বাঁক নেই। L64-এর <code>}</code> দিয়ে dictionary শেষ। আর নিষ্পত্তির জায়গাটা এই dict-এ নয়: গুণের পর L190-191-এ <code>min</code> linear-কে 1.0 m/s আর angular-কে 5.0 rad/s ছাদে আটকে দেয় (L76-77-এ declare করা দুই parameter) — সেই হিসাবই নিচে।"
+  }
+ ],
+ "math": {
+  "intro": "menu বলে “10% বাড়াও / কমাও”, কিন্তু code-এর হিসাব গুণের: প্রতি চাপে ×1.1 বা ×0.9, তারপর উপরের দিকে একটি ছাদ (linear 1.0 m/s, angular 5.0 rad/s), নিচের দিকে কিছুই নেই। শেষে এই সুর-করা গতি moveBindings-এর unit int-এর সঙ্গে গুণিয়ে twist হয়ে বেরোয়। শুরুর মান main থেকে: speed 0.2 m/s, turn 1.0 rad/s (L154)। তিনটি ধাপ — এক চাপ, বারবার চাপ, চূড়ান্ত গুণফল।",
+  "levels": [
+   {
+    "label": "Level 1 — এক চাপের আপেক্ষিক 10%",
+    "latex": "\\[ s_{n+1} = s_n \\times f_{\\mathrm{lin}}, \\qquad \\tau_{n+1} = \\tau_n \\times f_{\\mathrm{ang}}, \\qquad f \\in \\{0.9,\\ 1,\\ 1.1\\} \\]",
+    "text": "10% কথাটি আপেক্ষিক: প্রতি চাপ বর্তমান মানের উপর গুণ হয়, যোগ নয়। শুরুর speed 0.2 এক চাপে 0.2 × 1.1 = 0.22 m/s (+10%), আর কমানোর key হলে 0.2 × 0.9 = 0.18 m/s (−10%); turn 1.0 একইভাবে 1.1 বা 0.9 rad/s। q/z দুই স্কেল একসঙ্গে নাড়ায়, w/x শুধু প্রথম ঘর, e/c শুধু দ্বিতীয় ঘর — কিন্তু নিয়ম সব ক্ষেত্রে এই একটিই গুন।"
+   },
+   {
+    "label": "Level 2 — n চাপের compound বৃদ্ধি",
+    "latex": "\\[ s_n = 0.2 \\times 1.1^{n}, \\qquad \\tau_n = 1.0 \\times 1.1^{n} \\]",
+    "text": "প্রতিটি চাপ আগের ফলের উপর আবার ×1.1 বসায়, তাই n চাপে বৃদ্ধি সূচকীয়: 0.2, 0.22, 0.242, 0.2662, ... প্রতি 7-8 চাপে মান প্রায় দ্বিগুণ হয় (1.1^8 ≈ 2.14)। কমানোর দিকেও একই নিয়মে 0.2 × 0.9^n ধীরে 0-এর দিকে যায় — কখনো শূন্য হয় না, কখনো ঋণাত্মক হয় না।"
+   },
+   {
+    "label": "Level 3 — min() ছাদ ও সীমা-তুলনা",
+    "latex": "\\[ s_n = \\min\\!\\left(0.2 \\times 1.1^{n},\\ 1.0\\right), \\qquad \\tau_n = \\min\\!\\left(1.0 \\times 1.1^{n},\\ 5.0\\right) \\]",
+    "text": "L190-191-এর <code>min</code> হলো এই সীমা-তুলনা। দুই ছাদ আলাদা: linear_speed_limit 1.0 m/s, angular_speed_limit 5.0 rad/s। শর্ত দুটি আশ্চর্যরকম এক: 0.2 × 1.1^n ≤ 1.0 মানে 1.1^n ≤ 5, আর 1.0 × 1.1^n ≤ 5.0-ও তাই — ফলে দুই স্কেলই ঠিক একই চাপ-সংখ্যায়, 17-তম চাপে, ছাদ ছোঁয়। নিচের দিকে min-এর কোনো যমজ নেই: মান নামতে নামতে শূন্যের দিকে এগোয়, থামে না।"
+   },
+   {
+    "label": "Level 4 — unit int-এর সঙ্গে গুণ: twist",
+    "latex": "\\[ v_x = s \\cdot u_x, \\quad v_y = s \\cdot u_y, \\quad \\omega_z = \\tau \\cdot u_\\theta, \\qquad u_x, u_y, u_\\theta \\in \\{-1,\\ 0,\\ 1\\} \\]",
+    "text": "চূড়ান্ত আদেশে দুই জগৎ মেলে: moveBindings-এর unit int (u) দিক ঠিক করে, speedBindings-সুর করা s আর τ মাপ দেয়। L226-228 ঠিক এই তিনটি গুণই করে। যেমন speed 0.22 অবস্থায় u key (1, 1, 0) চাপলে vx = 0.22 আর vy = 0.22 — দুই অক্ষে সমান ভাগ, তাই চলার দিক প্রায় 45 ডিগ্রি কোণে।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 1.1^{3} = 1.331, \\qquad s_3 = 0.2 \\times 1.331 = 0.2662\\ \\mathrm{m/s}, \\qquad \\tau_3 = 1.0 \\times 1.331 = 1.331\\ \\mathrm{rad/s} \\]",
+    "text": "q (বা Q) = (1.1, 1.1) মানে দুই স্কেল একসঙ্গে বাড়ে। তিন চাপে speed 0.2662 m/s আর turn 1.331 rad/s — দুটোই ছাদের (1.0 / 5.0) বহু নিচে; এই পর্যায়ে গুণের গতি মনে হয় মৃদু, কিন্তু সূচক জমতে থাকে।"
+   },
+   {
+    "latex": "\\[ 1.1^{16} = 4.595, \\qquad 1.1^{17} = 5.054, \\qquad 0.2 \\times 5.054 = 1.011 \\]",
+    "text": "ষোল চাপ পর্যন্ত turn = 4.595 rad/s (< 5.0) আর speed = 0.2 × 4.595 = 0.919 m/s (< 1.0)। সতেরো-তম চাপে গুণফল 5.054 আর 1.011 — দুটোই নিজের ছাদ ছাড়িয়ে যায়, তাই L190-191-এর min() সেগুলিকে 5.0 আর 1.0-এ নামিয়ে আনে। অর্থাৎ q চেপে চলা কেউ 17-তম চাপ থেকে আর বাড়তে দেখে না — দুই কাউন্টারই একই চাপে পূর্ণ।"
+   },
+   {
+    "latex": "\\[ x\\ \\text{-key} \\times 3: \\quad 0.2 \\times 0.9^{3} = 0.1458\\ \\mathrm{m/s} \\quad (0.2,\\ 0.18,\\ 0.162,\\ 0.1458) \\]",
+    "text": "x = (.9, 1) তিনবার চাপলে speed 0.2, 0.18, 0.162, 0.1458 — প্রতি চাপে 10% কমে, কিন্তু কখনো শূন্য বা ঋণাত্মক হয় না; নিচের clamp নেই। তাই x চেপে robot পেছনে যাওয়া শুরু করবে না — উল্টো দিকে পাঠাতে হলে moveBindings-এর ঋণাত্মক unit int (comma বা M) লাগবে, গতি কমানোর key নয়।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "speed = speed * speedBindings[key][0]",
+    "math": "\\( s_{n+1} = s_n \\cdot f_{\\mathrm{lin}}, \\quad f_{\\mathrm{lin}} \\in \\{0.9,\\ 1.0,\\ 1.1\\} \\)",
+    "text": "L187 — dictionary-র প্রথম ঘর linear factor: w/q হলে 1.1, x/z হলে 0.9, e/c হলে 1। L188-এ turn-এর জন্য দ্বিতীয় ঘর দিয়ে একই এক ধাপ; দুই লাইন মিলে এক চাপের পুরো রূপান্তর।"
+   },
+   {
+    "code": "speed = min(speed, robot_teleop.linear_speed_limit)",
+    "math": "\\( s_{n+1} = \\min\\!\\left(s_{n+1},\\ 1.0\\ \\mathrm{m/s}\\right) \\)",
+    "text": "L190 — সূত্রের টুপি: গুণের ফল যত বড়ই হোক, L76-এ declare হওয়া linear_speed_limit 1.0-এর উপরে উঠতে দেয় না। L191-এ turn-এর একই বন্দোবস্ত angular_speed_limit 5.0 নিয়ে। দুই লাইনের কোনোটিতেই নিচের দিকের সীমা নেই।"
+   },
+   {
+    "code": "'u': (1, 1, 0),",
+    "math": "\\( (u_x,\\, u_y,\\, u_\\theta) = (1,\\, 1,\\, 0) \\)",
+    "text": "moveBindings-এর প্রতিটি value এই তিন-ঘরের unit-ভেক্টরই; u-তে প্রথম দুই ঘর 1 — সামনে আর বাঁয়ে সমান ভাগ, ঘূর্ণন 0। সব মান −1, 0, 1-এর মধ্যে বাঁধা, তাই এখান থেকে কখনো মাপ আসে না, শুধু দিক আসে।"
+   },
+   {
+    "code": "twist.linear.x = speed * x",
+    "math": "\\( v_x = s \\cdot u_x, \\quad u_x \\in \\{-1,\\ 0,\\ 1\\} \\)",
+    "text": "L226 — দিক (u) আর মাপ (s) এই এক গুণে মিলে যায়। L227-এ linear.y = speed × y আর L228-এ angular.z = turn × th একই ছাঁচে; তিনটির ফলে ওই লুপ-iteration-এর পুরো Twist message তৈরি।"
+   }
+  ],
+  "failure": [
+   "সবচেয়ে সাধারণ ভ্রান্তি — “প্রতি চাপে +10%” কথাটিকে যোগ পড়া: ভাবা হয় প্রতি চাপে 0.2-এর 10% অর্থাৎ +0.02 m/s জোড় হয়। সেই নিয়মে 17 চাপে speed হতো মাত্র 0.54 m/s এবং কোনোদিন ছাদ ছুঁত না; আসল নিয়ম ×1.1 গুণ, যাতে 17-তম চাপেই মান 1.0-এ ঠেকে। যোগ-ধারণায় থাকলে ছাদে আটকে যাওয়াটাই অব্যাখ্যা মনে হয়।",
+   "দ্বিতীয় ভ্রান্তি-জোড়া — ভুল ধ্রুবক আর ভুল চিহ্ন: (এক) ছাদ দুই স্কেলে সমান ভাবা, অথচ linear 1.0 m/s আর angular 5.0 rad/s — একই চাপ-সংখ্যায় দুটো পূর্ণ হলেও মান আলাদা; (দুই) ভাবা ×0.9 কখনো ঋণাত্মক করে দেবে বা robot উল্টো দিকে পাঠাবে — অথচ নিচের clamp নেই, 0.2 × 0.9^n চিরকাল ধনাত্মক, শূন্যের দিকেই নামে; উল্টো দিক চাইলে moveBindings-এর ঋণাত্মক unit int-ই একমাত্র রাস্তা।"
+  ]
+ },
+ "robot": {
+  "correct": "আসল robot-এ এই Part চলে script load-এর মুহূর্তে, একবার: import-গুলো মেলে, msg string আর দুই dictionary মেমরিতে তৈরি হয়ে যায় — node তখনো জন্মায়নি। README L7-এর ros2 run yahboomcar_ctrl yahboom_keyboard command-এ node-টি ওঠে, main-এর L161-এ menu একবার ছাপা হয়, তারপর থেকে প্রতি 0.1 সেকেন্ডে একটি key পড়া হয়। base key চাপলে দিক বদলায়, w/x/e/c/q/z চাপলে speed আর turn ×1.1 বা ×0.9 হয় (ছাদ 1.0 m/s আর 5.0 rad/s), arm key প্রতি চাপে 5 ডিগ্রি করে নাড়ায়, SPACE চাপলে base-arm দুটোই সঙ্গে সঙ্গে থামে। গতির key চেপে ধরে রাখলে terminal-এর auto-repeat একই key বারবার পাঠায়, ফলে প্রতি iteration-এ আরেকটি ×1.1 জমে — দেড়-দুই সেকেন্ডেই ছাদ। SLAM-এর মূল কাজও এখানেই: gmapping চালু থাকা অবস্থায় robot-টা এই key-গুলো দিয়েই ঘোরানো হয়, কারণ map শুধু robot নড়লেই বাড়ে — i আর comma মিলিয়ে সামনে-পেছনে, j/l দিয়ে জায়গায় ঘুরে নতুন দিক, a/d দিয়ে পাশে সরে কাঠামো মেলানো; ড্রাইভিং শেষে README L15-এর save_map launch জমা map-টি ফাইলে লিখে রাখে।",
+  "incorrect": "প্রথম ও সবচেয়ে সাধারণ ভুল প্রত্যাশা: “10% by press” মানে প্রতি চাপে +0.02 m/s যোগ — আসলে প্রতি চাপ ×1.1 গুণ, তাই 17 চাপেই speed 1.0-এর ছাদে আটকে যায়; যোগ-হিসাব ধরে চললে এই আটকে যাওয়ার কোনো ব্যাখ্যাই মেলে না। দ্বিতীয়: uppercase সব সারিতে lowercase-এর কপি দেখে shift ধরে M চাপলে m-এর মতো পেছনে-বাঁয়ে diagonal আশা করা — আসলে M = (−1, 0, 0), সোজা পেছনে; mapping-এর মাঝে এই ভুলে robot হঠাৎ পেছনে সরে গিয়ে scan-এ অপ্রত্যাশিত ধাক্কা ফেলে দিতে পারে। তৃতীয়: SPACE-কে pause ভেবে চাপ দিয়ে হাত সরিয়ে বসে থাকা — SPACE এক-চাপের জরুরি brake, latching pause নয়; আবার s-কে এক-বারের থামানো ভাবাও ভুল, s toggle — দ্বিতীয়বার না চাপলে robot চিরদিন থেমে থাকে আর সে অবস্থায় arm key-সহ সব key অচল। আর কেউ x চেপে ধরে রেখে robot-এর পেছনে যাওয়ার অপেক্ষা করলে সে হতাশ হবে — ×0.9 কখনো ঋণাত্মক করে না, পেছনে পাঠাতে comma বা M-ই লাগবে।"
+ },
+ "animType": "teleop14"
+}

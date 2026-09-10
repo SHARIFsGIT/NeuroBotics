@@ -1,0 +1,177 @@
+{
+ "n": 15,
+ "id": "part-15",
+ "fname": "save_map.launch.py",
+ "enTitle": "Saving the Map — Free 0.196, Occ 0.65",
+ "lang": "python",
+ "start": 1,
+ "end": 49,
+ "flags": [],
+ "explain": [
+  {
+   "a": 1,
+   "b": 3,
+   "text": "<code># --- IMPORTING ROS 2 LAUNCH TOOLS ---</code> — folder-14-এর সাত নম্বর ও শেষ source file-টার যাত্রা এই banner দিয়ে; ৪৯ লাইনের এই ছোট launch file-টাই README-র অষ্টম ও শেষ command-এর (L15) কাজ সামলায়। <code>from launch import LaunchDescription</code> — সেই পরিচিত container, যার ভেতরে চালু করার জিনিসের list জমে; gmapping.launch.py-তে এই container-এ ৫টা program ঢুকেছিল, এখানে ঢুকবে মাত্র দুটো entry (L46-49)। <code>from launch.actions import DeclareLaunchArgument</code> — launch-এর command line-override ধরার tool। gmapping-এ এই দুই নামই import হয়ে কোথাও ব্যবহৃত হয়নি ছিল (ওই file-এর L3-L4); এই file-এ উল্টো — DeclareLaunchArgument সত্যিই কাজে নামবে L23-এ।"
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "text": "<code>from launch.substitutions import LaunchConfiguration</code> — command line-এ দেওয়া মান ধরে রাখার substitution; নামবে L37-এ, map_saver_cli-র <code>-f</code> argument-এর মান হিসেবে। আর ঠিক পরের লাইনেই এই file-এর প্রথম quirk: <code>from ament_index_python.packages import get_package_share_directory</code> — পুরো ৪৯ লাইনে এই function আর কোথাও ডাকা হয় না; import হয়ে বসে থাকে, dead import। gmapping.launch.py-তেও unused import-এর অভ্যাস ছিল; এই পরিবারের launch file-গুলো একই টেমপ্লেট-ঘরানার — সোর্স যেমন, বর্ণনাও তেমন, কিছু ঠিক করা হয় না।"
+  },
+  {
+   "a": 6,
+   "b": 8,
+   "text": "<code>from launch_ros.actions import Node</code> — একে একে program বানানোর class; L31-এর map_saver_node দাঁড়াবে এর উপরে। <code>import os</code> — L18-এর <code>os.path.join</code>-এর জন্য। আর শেষ লাইনটাই আসল কাজের জিনিস: <code>from ament_index_python.packages import get_package_share_path</code> — L5-এর বসে-থাকা ভাইটার থেকে তফাত শুধু শেষ শব্দটায় (<code>directory</code> নয়, <code>path</code>)। FACTS-14-এর quirk-তালিকায় জোর দিয়ে লেখা জোড়াটাই এটা: directory-ওয়ালা import হয়ে মরে বসে আছে, path-ওয়ালাটাই L18-এ কাজে লাগবে — দুজনেই কাজ একই, ament-এর package index থেকে installed package-এর ঠিকানা খোঁজা।"
+  },
+  {
+   "a": 9,
+   "b": 10,
+   "text": "একটা খালি line — import-block আর function-এর মাঝের চোখের separator। তারপর <code>def generate_launch_description():</code> — README L15-এর <code>ros2 launch slam_mapping save_map.launch.py</code> চালালে ROS 2 ঠিক এই নামের function-টাকেই একবার ডাকে; launch file-এ কোনো main() নেই, ঢোকার একমাত্র দরজা এই চুক্তি-নাম। Function-এর ভেতরের প্রতিটা লাইন চলে construction phase-এ — কোনো program চালু হওয়ার আগে, একবার, উপর থেকে নিচে। তাই L18-এর package-খোঁজা join-টাও চলবে এখনই, eagerly: M3Pro_navigation package-টা robot-এ install-ই না থাকলে ament-এর index-এ মিলবে না, error উঠবে launch নামার আগেই — কিছু চালু হওয়ার আগে মরা, gmapping-এর চার path-খোঁজার মতোই early failure।"
+  },
+  {
+   "a": 11,
+   "b": 13,
+   "text": "L11 দেখতে খালি কিন্তু সত্যিটা নয় — ভেতরে চারটা space, whitespace-only line; সোর্সের নিজস্ব ছোট দাগ, এই file-এ আরও কয়েকবার ফিরবে। তারপর প্রথম ধাপের banner: <code># --- 1. NAMING THE MAP ---</code>, আর পাশের comment উদ্দেশ্যটা বলে — map-টাকে একটা নাম দিতে হবে যাতে পরে চিনে রাখা যায়। গোটা file-টা তিন নম্বরযুক্ত ধাপে সাজানো: ১ নামকরণ আর ঠিকানা (L12-18), ২ launch argument (L20-27), ৩ map saver node (L29-42) — শেষে সব এক list-এ ফেরানো (L46-49)।"
+  },
+  {
+   "a": 14,
+   "b": 15,
+   "text": "<code>map_name = \"yahboom_map\"</code> — map-এর নাম। এই string সরাসরি আর কোথাও ব্যবহৃত হয় না; একবারই ঢোকে, পরের লাইনের join-এ তৃতীয় টুকরো হিসেবে। নামের গায়ে <code>yahboom</code> — vendor-এর নিজের নাম-ঘরানা; ডিস্কে লেখা ফাইল দুটোও এই নামেই হবে (illustrative রূপ: yahboom_map.pgm আর yahboom_map.yaml)। L15 আবার whitespace-only — চারটা space, খালি নয়।"
+  },
+  {
+   "a": 16,
+   "b": 17,
+   "text": "দুটি comment পথ দেখায়। L16: <code># Figure out where to save it.</code> — কোথায় সেভ হবে সেই প্রশ্ন (সোর্স-লাইনের শেষে একটা অতিরিক্ত space আছে — সোর্সের নিজস্ব ছোট quirk)। L17: <code># It goes into the 'M3Pro_navigation' package, inside a folder called 'map'.</code> — ঠিকানা এই SLAM package-এর ভেতরে নয়, আলাদা navigation package-এর <code>map</code> folder-এ। কেন সেখানে — কারণ এই map আসলে ভবিষ্যৎ navigation-এর কাঁচামাল: Nav2 stack পরে ঠিক এই folder থেকেই map তুলবে; জন্মস্থান থেকেই কাজের জায়গায় রাখা হলো।"
+  },
+  {
+   "a": 18,
+   "b": 19,
+   "text": "<code>default_map_path = os.path.join(get_package_share_path(\"M3Pro_navigation\"), 'map', map_name)</code> — file-টার সবচেয়ে কাজের লাইন। <code>get_package_share_path(\"M3Pro_navigation\")</code> ament-এর index থেকে package-টার installed share-ঠিকানা আনে (L8-এর import এখানেই খরচ হলো — L5-এর ভাইটা আগেই দেখা গেছে বসে আছে), <code>os.path.join</code> তার সঙ্গে <code>'map'</code> folder আর L14-এর নামটা জুড়ে দেয় (illustrative পূর্ণরূপ: <code>.../M3Pro_navigation/map/yahboom_map</code>)। gmapping.launch.py-র চারটা eager path-খোঁজার মতোই এটাও চলে এখনই, construction phase-এ; কিছু launch হয়নি, জমা হলো একটা path-মাত্র। L19 খালি line।"
+  },
+  {
+   "a": 20,
+   "b": 22,
+   "text": "দ্বিতীয় ধাপের banner: <code># --- 2. CREATING A LAUNCH ARGUMENT ---</code>। L21-এর comment সুযোগটা বলে: চাইলে terminal-এ অন্য নাম টাইপ করা যাবে, উদাহরণস্বরূপ <code>map_path:=my_new_map</code>; L22 বলে কিছু না দিলে উপরের default পথটাই চলবে। <code>:=</code> চিহ্নটাই launch argument-override-এর রীতি — নাম, কোলন-সমান, মান। একবারের সেভ-এর নাম বদলানোর এই একটা সুযোগের জন্যই পুরো declare-default block-টা দাঁড়িয়ে।"
+  },
+  {
+   "a": 23,
+   "b": 25,
+   "text": "<code>map_arg = DeclareLaunchArgument(</code> — L3-এর import এখানে নামল; bracket খোলা, তিনটা তথ্য আসবে নিচে। <code>name='map_path'</code> — argument-এর নাম; terminal-এ <code>map_path:=</code> লিখে যে নামটা ডাকা হবে এটাই (সোর্স-লাইনের শেষে একটা অতিরিক্ত space আছে — সোর্সের নিজের)। <code>default_value=str(default_map_path),</code> — কেউ কিছু না দিলে L18-এর path-টাই মান। <code>str(...)</code> মোড়কটা সতর্কতার: <code>get_package_share_path</code> pathlib-ঘরানার Path object ফেরায় (ভাই <code>get_package_share_directory</code> string ফেরায় — দুজনের তফাত নামেই নয়, ফেরানো মানেও; illustrative), আর এখানে চাই string — রূপান্তরটা এখানেই নিশ্চিত হয়ে যায়।"
+  },
+  {
+   "a": 26,
+   "b": 28,
+   "text": "<code>description='The path of the map'</code> — তৃতীয় তথ্যটা মানুষের জন্য: argument-টা কী কাজে করে, এক লাইনের ব্যাখ্যা; launch-এর সাহায্য-ছাপে (যেমন --show-args ধরনের দেখা, framework-এর প্রচলিত আচরণ) এই লাইনটাই চোখে পড়ে। L27-এর <code>)</code> দিয়ে DeclareLaunchArgument বন্ধ — map_arg এখন সম্পূর্ণ একটা object, কিন্তু এখনো কোথাও নামেনি; নামবে L46-এর list থেকে। L28 খালি line — দুই ধাপ শেষ, বাকি তৃতীয়টা।"
+  },
+  {
+   "a": 29,
+   "b": 30,
+   "text": "তৃতীয় ধাপের banner: <code># --- 3. THE MAP SAVER NODE ---</code>। L30-এর comment পরিচয় করিয়ে দেয়: <code># Start the official ROS 2 Navigation (Nav2) map saving tool.</code> — নিজে লেখা কোনো save-কোড এই file-এ নেই; কাজটা করতে আসবে Nav2-র তৈরি হাতিয়ার। ভঙ্গিটা চেনা: camera_arm_kin.launch.py vendor-এর launch file ঢুকিয়েছিল, gmapping-এর imu node ছিল অন্য package-এর executable-কে সরাসরি Node বানানো — এখানে দ্বিতীয় পথটাই, কাজটা বাইরের পাকা হাতের হাতে দেওয়া।"
+  },
+  {
+   "a": 31,
+   "b": 33,
+   "text": "<code>map_saver_node = Node(</code> — L6-এ import হওয়া Node class দিয়ে object তৈরি শুরু। <code>package='nav2_map_server',</code> — খোঁজা হবে Nav2-র map server package-এ; পাশের comment-ও তা-ই বলে। <code>executable='map_saver_cli',</code> — ওই package-এর ভেতরের প্রোগামের নাম; cli মানে command line interface। নামের মধ্যেই স্বভাব লেখা: এটা সারাক্ষণ ঘুরতে থাকা node নয় — একবার উঠে কাজ সেরে বেরিয়ে যাওয়া one-shot হাতিয়ার, gmapping-এর পাঁচ program-এর মতো দাপট নেই। দুই লাইনের comment-গুলো কলাম-বরাবর সারানো — সোর্সের নিজস্ব alignment।"
+  },
+  {
+   "a": 34,
+   "b": 36,
+   "text": "L34 আবার whitespace-only — আটটা space, খালি নয়; চোখের ফাঁক। L35-এর comment ঘোষণা করে: হাতিয়ারকে নির্দিষ্ট নির্দেশ দেওয়া হচ্ছে। <code>arguments=[</code> — শুরু হলো argument-এর list; ঠিক তিনটা জোড়া আসবে, আর শেষ দুই জোড়াই এই পুরো app-টার গণিতের প্রাণ — map-এর প্রতিটা cell সাদা না কালো না ধূসর, সেই রায়ের দুই সীমা।"
+  },
+  {
+   "a": 37,
+   "b": 38,
+   "text": "<code>'-f', LaunchConfiguration('map_path'),</code> — প্রথম জোড়া: <code>-f</code> মানে ফাইলটা এই পথে সেভ হবে (পাশের comment-ই বলে)। মান হিসেবে বসেছে সাদা string নয় — L4-এ import হওয়া <code>LaunchConfiguration('map_path')</code> substitution: L23-এ declare করা argument-টার run-time মান। folder 10-এর lesson এখানেও খাটে — substitution অলস; construction phase-এ কিছু মেলে না, launch নামার সময় আগে command line-এ <code>map_path:=...</code> আছে কি না দেখা হয়, থাকলে সেই মান, না থাকলে L25-এর default। ফলে ডিস্কে লেখা হয় এক জোড়া ফাইল — PGM (map-এর ছবি) আর YAML (তার metadata) — একই নামে (illustrative: yahboom_map.pgm + yahboom_map.yaml)। L38 whitespace-only line।"
+  },
+  {
+   "a": 39,
+   "b": 39,
+   "text": "<code>'--free', '0.196',</code> — দ্বিতীয় জোড়া, free-space-এর সীমা। সোর্সের নিজের comment-টাই ভালো ব্যাখ্যা: কোনো ঘর (cell) দেয়াল হওয়ার সম্ভাবনা 19.6%-এর কম হলে সেটাকে White বা clear লেখা হয়। gmapping-এর তৈরি occupancy grid-এর প্রতিটা cell একটা সম্ভাবনা p বহন করে (0 থেকে 1-এর মধ্যে); এই সীমা বলে p-এর কত নিচের অংশ নিশ্চিন্তে free ধরা যাবে — 0.196 মানে দেয়াল-সম্ভাবনা 19.6% বা তার কম হলে ঘরটা সাদা। খেয়াল করো মানটা সম্ভাবনা-স্কেলে (0.196), শতাংশ-সংখ্যা নয় (19.6 নয়) — এই পার্থক্যটাই math-অংশের আসল গল্প।"
+  },
+  {
+   "a": 40,
+   "b": 40,
+   "text": "<code>'--occ', '0.65'</code> — তৃতীয় জোড়া, occupied-এর সীমা: দেয়াল-সম্ভাবনা 65% বা তার বেশি হলে ঘরটা Black বা solid দেয়াল। দুই সীমা মিলে তিন-ভাগ বিভাজন তৈরি করে: p সর্বোচ্চ 0.196 হলে free (সাদা), p অন্তত 0.65 হলে occupied (কালো), আর মাঝের পুরো অঞ্চল — 0.196 আর 0.65-এর মধ্যে — অনিশ্চিত: সাদাও নয় কালোও নয়, unknown ধূসর হয়ে থাকে। SLAM চলাকালীন robot যেসব জায়গায় কখনো পৌঁছায়নি বা মাত্র ঝলক দিয়ে দেখেছে, সেই cell-গুলোর p ঠিক এই মাঝ-অঞ্চলেই পড়ে — সেভ করা map-এ সেগুলো ধূসরই থাকে। দুই সীমার গাণিতিক খুঁটিনাটি নিচের math-অংশে খোলা।"
+  },
+  {
+   "a": 41,
+   "b": 43,
+   "text": "L41-এর <code>],</code> দিয়ে argument-list বন্ধ, L42-এর <code>)</code> দিয়ে Node। map_saver_node এখন সম্পূর্ণ একটা action object — কিন্তু এখনো কিছু চালু হয়নি: construction phase কেবল জিনিস বানায়, নামায় না। এই মুহূর্তে file-এর অবস্থা: একটা declare-object, একটা Node-object, আর একটা default path — সব হাতে, কেউ নামেনি। L43 খালি line — শেষ ধাপের আগের ফাঁক।"
+  },
+  {
+   "a": 44,
+   "b": 45,
+   "text": "<code># --- THE FINAL LIST ---</code> — শেষ ধাপের banner। L45-এর comment কাজটা বলে: <code># Hand the list back to ROS 2 to start the tool and save the map!</code> — তৈরি list-টা ROS 2-এর হাতে ফেরিয়ে দেওয়া, যাতে সে হাতিয়ারটা চালু করে মাপ সেভ করাতে পারে। camera_arm_kin.launch.py-র শেষেও একই নামের banner দাঁড়িয়ে ছিল — একই টেমপ্লেট-ঘরানার শেষ-লাইনের রীতি।"
+  },
+  {
+   "a": 46,
+   "b": 47,
+   "text": "<code>return LaunchDescription([</code> — function-টা ফেরায় LaunchDescription, আর তার ভেতরে প্রথম entry <code>map_arg,</code> (L23-এর declare)। slam_view.launch.py আর camera_arm_kin.launch.py — দুই আগের file-এর মতোই দুই-entry return; gmapping-এর list-এ ছিল ৫টা। declare-টা আগে রাখা রীতি — argument আগে চেনানো, তবে নামবে সব পরে, run phase-এ।"
+  },
+  {
+   "a": 48,
+   "b": 49,
+   "text": "<code>map_saver_node</code> — দ্বিতীয় ও শেষ entry; <code>])</code> দিয়ে list আর function একসঙ্গে বন্ধ। run phase-এ map_saver_cli উঠে চলমান SLAM-stack-এর কাছ থেকে বর্তমান map সংগ্রহ করে (সংগ্রহের ভেতরের নিয়ম Nav2-এর — illustrative), দুই সীমা মেনে প্রতিটা cell সাদা/কালো/ধূসর করে PGM+YAML জোড়া লেখে, তারপর exit — launch-টাও তখন শেষ। README-র আট-command-এর যাত্রার মুকুট এখানেই: SLAM মেমরিতে যা গড়েছিল, সেটা এখন ডিস্কের ফাইল।"
+  }
+ ],
+ "math": {
+  "intro": "এই Part-এর গণিত একটাই প্রশ্ন ঘিরে: gmapping-এর দেওয়া প্রতিটা cell-এর দেয়াল-সম্ভাবনা p থেকে সেভ করা map-এর তিন রকম মান — 0 (free, সাদা), 100 (occupied, কালো), -1 (unknown, ধূসর) — কীভাবে ঠিক হয়। পুরো নিয়মটা চালায় দুটো সংখ্যা: --free 0.196 আর --occ 0.65।",
+  "levels": [
+   {
+    "label": "Level 1 — Cell-সম্ভাবনা p",
+    "latex": "\\[ p \\in [0,1], \\qquad p = P(\\text{cell wall}) \\]",
+    "text": "SLAM চলাকালীন gmapping প্রতিটা ঘরের (cell) জন্য একটা সম্ভাবনা রাখে — ঐ ঘরটা দেয়াল হওয়ার সম্ভাবনা। sensor যতবার একই রায় দেয়, p তত দৃঢ়ভাবে 0 (নিশ্চিত ফাঁকা) বা 1 (নিশ্চিত দেয়াল) দিকে যায়; কম দেখা বা দ্বিধাগ্রস্ত ঘরগুলো মাঝে ঝুলে থাকে। সোর্সের comment-গুলো ঠিক এই p-কেই বোঝায় — 19.6% sure, 65% sure।"
+   },
+   {
+    "label": "Level 2 — তিন-ভাগ বিভাজন (trichotomy)",
+    "latex": "\\[ v(p) = \\begin{cases} 0 & p \\le 0.196 \\\\ 100 & p \\ge 0.65 \\\\ -1 & 0.196 \\lt p \\lt 0.65 \\end{cases} \\]",
+    "text": "map_saver_cli প্রতিটা cell-এর p-কে এই তিন-শাখা নিয়মে ছকায়। সীমাগুলো সমাবেশী: p ঠিক 0.196 হলে free রায়, ঠিক 0.65 হলে occupied রায় — সীমারেখার উপরের মান ওই দলেরই গণ্য। 0 আর 100 ROS map_server-জগতের প্রচলিত মান (free/occupied), আর -1 (কোনো কোনো সংস্করণে nan) মানে অজানা — সোর্সের ভাষায় ধূসর।"
+   },
+   {
+    "label": "Level 3 — মাঝ-অঞ্চলের প্রস্থ",
+    "latex": "\\[ 0.65 - 0.196 = 0.454, \\qquad \\frac{0.454}{1.0} = 45.4\\% \\]",
+    "text": "দুই সীমার ফাঁক 0.454 — পুরো [0,1] সম্ভাবনা-স্কেলের প্রায় অর্ধেক (45.4%) unknown দলে পড়ে। এটা ইচ্ছাকৃত নকশা: SLAM যতটা নিশ্চিত নয়, ততটা সাদা-কালো রায় না দিয়ে ধূসর রাখা হয়। সেভ করা map-এর নিজের ভাষাতেই ধূসর ঘর কখনো দেয়াল-চিহ্নিত হয় না — দেয়াল নয়, অচেনা; robot যেখানে যায়নি, সেখানকার রায় অনুমানে নয়, অজানাতেই থাকে।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ 0.196 \\lt p = 0.5 \\lt 0.65 \\;\\Rightarrow\\; v = -1 \\;(\\text{gray}) \\]",
+    "text": "একটা cell-এ দেয়াল-সম্ভাবনা 0.5 — ৫০-৫০ সন্দেহ (illustrative cell-মান)। 0.196-এর উপরে, 0.65-এর নিচে, তাই রায় unknown: সেভ করা map-এ ঘরটা ধূসর, মান -1। robot যেসব করিডোরের মুখ দূর থেকে ঝলক দিয়ে দেখেছে শুধু, সেই ঘরগুলোর p প্রায়ই এরকম মাঝামাঝি।"
+   },
+   {
+    "latex": "\\[ p = 0.196 \\Rightarrow v = 0, \\qquad p = 0.65 \\Rightarrow v = 100 \\]",
+    "text": "সীমারেখার দুই মান: p ঠিক 0.196 হলে <code>&lt;=</code> শর্তে ধরা পড়ে free (সাদা, 0); p ঠিক 0.65 হলে <code>&gt;=</code> শর্তে ধরা পড়ে occupied (কালো, 100)। সীমার উপরে বসে থাকা cell কোথাও হারায় না — দুই দলের একটাতেই গণ্য হয়, ধূসর বাদ।"
+   },
+   {
+    "latex": "\\[ p = 0.19 \\Rightarrow v = 0, \\qquad p = 0.20 \\Rightarrow v = -1, \\qquad p = 0.70 \\Rightarrow v = 100 \\]",
+    "text": "সীমার সংবেদনশীলতা: 0.19 আর 0.20-এর পার্থক্য সামান্য (illustrative cell-মান), কিন্তু 0.196-রেখাটা দুটোকে আলাদা দলে ফেলে — একটা সাদা, পরেরটা ধূসর। আর 0.70 সহজেই 0.65-ছুঁয়ে কালো হয়ে যায়। সেভ করা PGM ছবিতে চোখে যা দেখা যায় — সাদা ফাঁকা, কালো দেয়াল, ধূসর অচেনা — তার পেছনের রায়দাতা এই দুই সংখ্যাই।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "'--free', '0.196',",
+    "math": "\\( p \\le 0.196 \\;\\Rightarrow\\; v = 0 \\)",
+    "text": "free-সীমা code থেকে নিয়মে নামার জায়গা: দেয়াল-সম্ভাবনা 0.196 বা তার নিচে হলে cell-এর মান 0 — সেভ করা map-এ সাদা, নিরাপদে চলাচলযোগ্য ফাঁকা জায়গা।"
+   },
+   {
+    "code": "'--occ', '0.65'",
+    "math": "\\( p \\ge 0.65 \\;\\Rightarrow\\; v = 100 \\)",
+    "text": "occupied-সীমা: দেয়াল-সম্ভাবনা 0.65 বা তার উপরে হলে মান 100 — কালো, দৃঢ় দেয়াল। দুই mapping-এর ফাঁকের অংশই একমাত্র বাদ পড়া দল: -1 ধূসর।"
+   },
+   {
+    "code": "default_map_path = os.path.join(get_package_share_path(\"M3Pro_navigation\"), 'map', map_name)",
+    "math": "\\( P_{\\mathrm{save}} = \\mathrm{join}(D_{\\mathrm{nav}},\\ \\text{'map'},\\ \\text{'yahboom\\_map'}) \\)",
+    "text": "path-তৈরির সমীকরণ: D_nav মানে M3Pro_navigation package-এর share-ঠিকানা, তার সঙ্গে 'map' folder আর map_name-এর নাম জুড়ে সেভ-পথ। <code>-f</code> argument run phase-এ ঠিক এই পথটাই পায় (override না দিলে)।"
+   }
+  ],
+  "failure": [
+   "সম্ভাবনা আর শতাংশ গুলিয়ে ফেলা: ধরে নেওয়া --free-এর মান 19.6 হওয়া উচিত ছিল (শতকরা হিসাবে), বা নিজের টেস্টে <code>--free 19.6</code> বসিয়ে দেওয়া। p কখনো 1-এর বেশি হয় না, তাই p &lt;= 19.6 প্রতিটা cell-এর জন্যই সত্য — গোটা map সাদা হয়ে যায়, দেয়াল একটাও কালো হয় না; navigation পরে ওই ফাঁকা-ফাঁকা map নিয়ে বাস্তব দেয়ালে ধাক্কা খায়। একই যুক্তিতে <code>--occ 65</code> দিলে উল্টো বিপদ: একটাও cell কালো হয় না — p &lt;= 0.196-এর ঘরগুলো সাদা থাকে, বাকি সব ধূসর হয়ে যায়; পুরো map থেকে দেয়াল হারিয়ে যায়, navigation অন্ধ হয়ে যায়।",
+   "দুই সীমা অদল-বদল করা: <code>--free 0.65</code> আর <code>--occ 0.196</code> লিখে ফেলা। তখন 0.196 আর 0.65-এর মাঝের প্রতিটা p দুই শর্তই মেটায় (p &lt;= 0.65-ও সত্য, p &gt;= 0.196-ও সত্য) — কোন রায় জিতবে তা হাতিয়ারের ভেতরের যাচাই-ক্রমের উপরে নির্ভর করে (illustrative: Nav2-র হাতিয়ার occupied-যাচাই আগে করে)। ফলে সন্দেহ-ঘেরা মাঝের অঞ্চলটাই প্রায় পুরোটা কালো দেয়াল হয়ে দাঁড়ায় — ধূসর নিরপেক্ষ ভূমিটা হারিয়ে যায়, robot নিজের সামনের খোলা করিডোরকেও দেয়াল দেখে।"
+  ]
+ },
+ "robot": {
+  "correct": "বাস্তব robot-এ এই launch-টা README-র শেষ ধাপ — আগে প্রস্তুতি চাই: gmapping-এর ৫-প্রোগ্রাম stack (README L3) চালু থাকতে হবে আর keyboard (L7) বা follow_line (L11) দিয়ে robot ঘুরিয়ে map গড়তে হবে, কারণ SLAM তার map মেমরিতে রাখে, ডিস্কে নয় — আর map বাড়ে robot নড়ার সঙ্গে সঙ্গে। তারপর <code>ros2 launch slam_mapping save_map.launch.py</code> দিলে construction phase-এ M3Pro_navigation-এর share-ঠিকানা মিলে যায়, run phase-এ map_saver_cli উঠে চলমান SLAM-stack-এর কাছ থেকে বর্তমান map নিয়ে (সংগ্রহের ভেতরের নিয়ম Nav2-এর — illustrative) প্রতিটা cell-এ তিন-ভাগ রায় প্রয়োগ করে: 19.6% বা কম দেয়াল-সম্ভাবনা সাদা, 65% বা বেশি কালো, মাঝেরটা ধূসর। ফাইল লেখা হয় M3Pro_navigation-এর map folder-এ yahboom_map নামে PGM+YAML জোড়া (illustrative পথ), console-এ সেভ-বার্তা দেখা যায়, তারপর হাতিয়ারটা exit করে — launch-টাও শেষ। robot যেখানে পৌঁছায়নি সেখানকার ঘর ধূসরই থাকে; আবার ঘুরে আবার launch দিলে নতুন কভারেজসহ ফাইল আবার লেখা হয়, আর <code>map_path:=my_map</code> দিয়ে অন্য নামেও সেভ করা যায়।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: এই launch-টাই SLAM চালু করে ভেবে একা এটা চালানো — আসলে file-এ gmapping-এর কোনো প্রোগ্রাম নেই, শুধুই saver; SLAM stack বন্ধ অবস্থায় চালালে সেভ করার map-ই পাওয়া যায় না, হাতিয়ারটা খালি হাতে ব্যর্থ হয়, কাঙ্ক্ষিত ফাইল তৈরি হয় না (ঠিক কী হবে তা Nav2-এর ভেতরের ব্যাপার — illustrative)। দ্বিতীয় ভুল: একবার সেভ করলে map আরও বাড়বে ভাবা — map_saver_cli one-shot: সেভ করেই exit করে; পরে আরও ঘুরলে ডিস্কের ফাইল নিজে নিজে আপডেট হয় না, আবার launch দিতে হয়। তৃতীয় ভুল: দুই সীমাকে শতাংশ-সংখ্যা ভেবে 19.6 বা 65 বসানো, বা মাঝ-অঞ্চলের ধূসর ঘরগুলোকে দেয়াল ভাবা — সীমা সম্ভাবনা-স্কেলে 0.196 আর 0.65, আর ধূসর ঘর দেয়াল নয়, অচেনা। একটা কারিগরি ধরাও আছে: M3Pro_navigation robot-ে install না থাকলে construction phase-এই ament-এর index-এ package মেলে না — launch কিছু চালু করার আগেই মরে পড়ে।"
+ },
+ "animType": "savemap14"
+}

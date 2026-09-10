@@ -1,0 +1,197 @@
+{
+ "n": 13,
+ "id": "part-13",
+ "fname": "follow_line.py",
+ "enTitle": "State Machine — Init, Identify, Track, Remove",
+ "lang": "python",
+ "start": 291,
+ "end": 380,
+ "flags": [],
+ "explain": [
+  {
+   "a": 291,
+   "b": 292,
+   "text": "L291 <code>def process(self, rgb_img, action):</code> — এই ৯০ লাইনের function-টাই পুরো node-এর হৃদয়: প্রতিটা synced color+depth ফ্রেম-জোড়ার জন্য L171 থেকে ডাকা হয়, আর এখানেই init, identify, tracking, Remove — চার অবস্থার রাষ্ট্র-যন্ত্র বসে আছে। দুটো ইনপুট: rgb_img (callback-এর রঙিন ফ্রেম) আর action — L166-এর <code>cv2.waitKey(1)</code>-এর ফেরত-মান, অর্থাৎ কীবোর্ডের খবর এই function-এর ভেতরে ঢোকে একটা সংখ্যা হয়ে। L292-এর <code>#print(\"********************************\")</code> — ডেভেলপারের নিজের debug-separator, comment হয়েই থেকে গেছে; এটা কোনো ঢাকা রাস্তা নয়, শুধু নিচের মূল যন্ত্রের আগে একটা নীরব সীমানা-রেখা।"
+  },
+  {
+   "a": 293,
+   "b": 294,
+   "text": "প্রথম দুটো লাইন প্রস্তুতি। L293 <code>binary = []</code> — খালি local তালিকা; পরে line_follow-এর বানানো সাদাকালো HSV-মাস্ক ছবিটা এখানে জমা হবে (L320), না জমলে খালিই থাকবে — L173-174-এর প্রদর্শনী-শাখা এই খালি-না-খালি দেখেই ছবি সাজায়। L294 <code>rgb_img = cv.resize(rgb_img, (640, 480))</code> — রঙিন ফ্রেমকে 640x480-এ নামানো; depth-ছবিকে callback ঠিক এই সাইজেই টেনেছিল (L154), তাই পিক্সেল-ঘর দুই ছবিতে এক-এ-এক মিলবে — L357-এ tag-কেন্দ্রের ঘর থেকে depth পড়তে যাওয়ার আগে এই মিলটাই দরকার।"
+  },
+  {
+   "a": 295,
+   "b": 296,
+   "text": "L295 <code># self.Track_state = 'tracking'</code> — এক সময়ে হার্ডকোড করা অবস্থা-সেট, এখন comment; অবস্থা এখন ঠিক করে কীবোর্ড, mouse, ৩-সেকেন্ড arming আর tag-দেখা — ঘটনাগুলো। L296 <code>if self.img_flip == True: rgb_img = cv.flip(rgb_img, 1)</code> — img_flip খোলা থাকলে ফ্রেম অনুভূমিকে উল্টে নেওয়া (flip-কোড 1); ক্যামেরা উল্টো লাগানো থাকলে সেই সারানো এখানেই। মনে রেখো execute-এর L263-ও একই flag দেখে angular.z-এর চিহ্ন উল্টে দেয় — ছবি উল্টালে স্টিয়ারিং-এর হিসাবও উল্টাতে হয়, দুই জায়গায় একসাথে।"
+  },
+  {
+   "a": 297,
+   "b": 301,
+   "text": "কীবোর্ডের মই — প্রতি ফ্রেমে একবার, চারটা তুলনা। L297 <code>if action == 32: self.Track_state = 'tracking'</code> — ASCII 32 মানে SPACE: যে-কোনো মুহূর্তে চাপলেই সোজা tracking-এ নামা। L299 <code>elif action == ord('i') or action == 105: self.Track_state = \"identify\"</code> — ছোট্ট কৌতূহল: ord('i')-এর মানই তো 105, একই সংখ্যার দুই নামে দুইবার তুলনা; নিরীহ ব্যাপার, source-এ আছে তেমনই। L300 <code>elif action == ord('r') or action == 114: self.Reset()</code> — r চাপলে রিসেট (L403-410, পরের Part)। L301 <code>elif action == ord('q') or action == 113: self.cancel()</code> — cancel কিন্তু এই file-এর কোথাও define নয়; আসতে হবে L11-এর follow_common wildcard থেকে (vendor module, এই folder-এ নেই — illustrative)। ওখানেও না থাকলে q চাপা মাত্রই AttributeError-এ node থমকে যাবে। আর কোনো কী-ই না পড়লে waitKey -1 ফেরায় — চার শর্তই চুপচাপ মিস পড়ে, অবস্থা অপরিবর্তিত থাকে।"
+  },
+  {
+   "a": 302,
+   "b": 304,
+   "text": "init-অবস্থা — ব্যবহারকারীকে দিয়ে লাইনের উপর ROI আঁকানোর পর্ব। L303 <code>cv.namedWindow(self.windows_name, cv.WINDOW_AUTOSIZE)</code> — 'frame' নামের প্রদর্শন-উইন্ডো খোলা (windows_name-এর মান L85-এ 'frame'; AUTOSIZE মানে মাউস টেনে সাইজ বদলানো যাবে না)। L304 <code>cv.setMouseCallback(self.windows_name, self.onMouse, 0)</code> — সেই উইন্ডোর mouse-ঘটনা onMouse-এ (L232-243) পাঠানোর নল বসানো; press-drag-release করে আঁকা বাক্সের সব হিসাব ওই callback-এই চলে। init-এ থাকার প্রতিটা ফ্রেমে দুটো ডাকই বারবার চলে — একই উইন্ডোয় একই callback আবার বসানো, নিরীহ পুনরাবৃত্তি।"
+  },
+  {
+   "a": 305,
+   "b": 307,
+   "text": "select_flags সত্য মানে mouse-বোতাম চেপে-রাখা অবস্থায় আছি (onMouse-এর L235 খুলেছিল)। তখন প্রতি ফ্রেমে দুটো আঁকিয়ে কাজ: L306 <code>cv.line(rgb_img, self.cols, self.rows, (255, 0, 0), 2)</code> — cols (min-কোণা) থেকে rows (max-কোণা) পর্যন্ত মোটা নীল রেখা, আর L307 <code>cv.rectangle(rgb_img, self.cols, self.rows, (0, 255, 0), 2)</code> — সবুজ 2-পিক্সেল ঘিরে-রাখা আয়তক্ষেত্র। ব্যবহারকারী টেনে যে বাক্স বানাচ্ছে তার লাইভ-চিত্র এটাই; সীমানা-সংখ্যাগুলো আসে onMouse-এর L241-243-এ বসে-থাকা cols, rows থেকে।"
+  },
+  {
+   "a": 308,
+   "b": 310,
+   "text": "বোতাম চেপে-রাখা অবস্থায় প্রতি ফ্রেমেই আসল বিচার (L308-310 তিনটেই L305-এর ভেতরে, তাই টান চলতে থাকতেই ঘোরে): L308 <code>if self.Roi_init[0]!=self.Roi_init[2] and self.Roi_init[1]!=self.Roi_init[3]:</code> — আঁকাটা কি আদৌ বাক্স (x0 আর x2 আলাদা এবং y0 আর y3 আলাদা), নাকি শূন্য-চওড়া/শূন্য-লম্বা খালি টান। বৈধ হলে L309 <code>rgb_img, self.hsv_range = self.color.Roi_hsv(rgb_img, self.Roi_init)</code> — L89-এর color-অবজেক্টের (vendor, follow_common থেকে) Roi_hsv: ROI-র ভেতরের পিক্সেল ঘেঁটে HSV-সীমা বের করে দুটো জিনিস ফেরায় — চিহ্ন-লাগানো ছবি আর hsv_range, গঠন [[Hmin,Smin,Vmin],[Hmax,Smax,Vmax]] (ভেতরের অ্যালগরিদম illustrative)। তারপর L310 <code>self.dyn_update = True</code> — নতুন ক্যালিব্রেশন হয়েছে; নিচে নামলেই ডিস্কে লিখতে হবে (L321-322)।"
+  },
+  {
+   "a": 311,
+   "b": 314,
+   "text": "L311 আর L312 — দুটো লাইনের কোনো অক্ষর-সামগ্রী নেই, শুধু ট্যাব আর space-এর স্তূপ; source-এ আছে তেমনই, হুবহু উদ্ধৃত করতে গেলে সেই সাদা-শূন্যটাই বসাতে হয়। L313 <code>else: </code> (শেষে একটা space আছে) — জোড় L305-এর if-এর সঙ্গে: init-অবস্থায় আছি কিন্তু mouse-বোতাম এখনো চাপা হয়নি — কেউ এখনো টানে তেমন অবস্থা (পৌঁছানোর স্বাভাবিক পথ: identify-এ ডিস্কে HSV-ফাইল না পেয়ে L318-এ init-এ নামা, বা Reset-এর ডাক; আর বোতাম ছাড়ার মুহূর্তে onMouse অবস্থাটাকে 'mouse' করে নেয় — L238-239 — তাই আঁকা-শেষ কখনো এই else-এ আসেই না)। তখন L314 <code>self.Track_state = 'init'</code> — অবস্থা init-ই থেকে যায়, আঁকা শুরুর অপেক্ষা। কিছু নস্যাৎ হয় না, শুধু মৃদু অপেক্ষার লুপ।"
+  },
+  {
+   "a": 315,
+   "b": 318,
+   "text": "identify — পুরনো ক্যালিব্রেশন খোঁজার অবস্থা। L316 <code>#print(self.circle[0])</code> — comment হয়ে যাওয়া debug; খুলে ফেললে বিপদ, কারণ এই মুহূর্তে circle এখনো খালি () হতে পারে — L320-তেই তো সেটা বসে। L317 <code>if os.path.exists(self.hsv_text): self.hsv_range = read_HSV(self.hsv_text)</code> — hsv_text হলো L88-এর absolute ঠিকানা /home/jetson/yahboomcar_ws/.../LineFollowHSV.text; ফাইলটা ডিস্কে থাকলে read_HSV (vendor, wildcard) আগের রানে লেখা সীমাগুলো পুরোটা তুলে দেয় — মানুষের আঁকা ক্যালিব্রেশন পুনর্ব্যবহার। না থাকলে L318 <code>else: self.Track_state = 'init'</code> — আঁকাতেই হবে, init-এ ফেরত। জন্ম-অবস্থাও (L84) এই identify-ই: node উঠে আগে ডিস্কে খোঁজে, তারপর মানুষের কাছে যায়।"
+  },
+  {
+   "a": 319,
+   "b": 320,
+   "text": "যন্ত্রের মূল ইঞ্জিন-লাইন: L319 <code>if self.Track_state != 'init' and len(self.hsv_range) != 0:</code> — অবস্থা init নয় এবং হাতে HSV-সীমা আছে (identify, tracking, Remove — যে-কোনোটা হলেই চলে)। তখন L320 <code>rgb_img, binary, self.circle = self.color.line_follow(rgb_img, self.hsv_range)</code> — vendor line_follow: hsv_range দিয়ে মাস্ক বানিয়ে লাইনের কেন্দ্র বের করে; ফেরত আসে চিহ্ন-লাগানো ছবি, binary মাস্ক-ছবি আর circle = (cx, cy, r) — লাইন-কেন্দ্রের তিন-সংখ্যার টুপল। tracking-শাখা পড়ে শুধু এই circle; আর মনে রেখো Remove-অবস্থাতেও (HSV খালি না হলে) এই হিসাব প্রতি ফ্রেমে চলতেই থাকে — শুধু thread-ওঠানোর শাখাটাই tracking-এ সীমিত।"
+  },
+  {
+   "a": 321,
+   "b": 322,
+   "text": "dyn_update সত্য মানে এই ফ্রেমেই নতুন HSV পাওয়া গেছে (L310 খুলেছিল)। L322 <code>write_HSV(self.hsv_text, self.hsv_range)</code> — vendor function, সীমাগুলো ডিস্কের LineFollowHSV.text-এ লিখে রাখে। এই লেখা আর L317-এর পড়া মিলেই পুরো app-এর মনে-রাখা-ব্যবস্থা: node বন্ধ হয়ে গেলেও পরের রানের identify সেই ফাইল থেকেই ক্যালিব্রেশন তুলে নেবে — প্রতি রানে নতুন করে আঁকাতে হবে না।"
+  },
+  {
+   "a": 323,
+   "b": 328,
+   "text": "এবার ছয়টা rclpy Parameter-বাক্স বানানো — নতুন HSV-সংখ্যাগুলোকে ROS-জগতের স্বীকৃত parameter-আসনে বসানোর জন্য। নমুনা L323 <code>self.Hmin  = rclpy.parameter.Parameter('Hmin',rclpy.Parameter.Type.INTEGER,self.hsv_range[0][0])</code> (সমান-চিহ্নের আগে দুইটা space source-এ আছে) — নাম Hmin, ধরন INTEGER, মান hsv_range-এর [0][0]-ঘর। বাকি পাঁচটা একই ছাঁচে (L324-328): [0][1] থেকে Smin, [0][2] থেকে Vmin, [1][0] থেকে Hmax, [1][1] থেকে Smax, [1][2] থেকে Vmax। ছয় নামই declare_param-এর L189-200-এ ঘোষিত নামগুলো — মানে এখন সেই একই আসনগুলোতে নতুন মান বসানো যাবে।"
+  },
+  {
+   "a": 329,
+   "b": 333,
+   "text": "L329 ফাঁকা, L330 শুধু-ট্যাব — দুটোই সাজানোর ফাঁক। তারপর L331 <code>all_new_parameters = [self.Hmin,self.Smin,self.Vmin,self.Hmax,self.Smax,self.Vmax]</code> — ছয়টা Parameter-বাক্স এক তালিকায় গাঁথা। L332 <code>self.set_parameters(all_new_parameters)</code> — এক ডাকেই node-এর ছয়টা parameter-এর মান বদলে যায়; বাইরে থেকে ros2 param দিয়ে জিজ্ঞেস করলে এখন এই নতুন সংখ্যাগুলোই দেখাবে। শেষে L333 <code>self.dyn_update = False</code> — কাজ শেষ, পরের ফ্রেমে আবার ডিস্কে লিখতে বসবে না; এক ক্যালিব্রেশন, একবার লেখা।"
+  },
+  {
+   "a": 334,
+   "b": 336,
+   "text": "tracking — চালার অবস্থা। L334 <code>if self.Track_state == 'tracking' :</code> (কোলনের আগে একটা space source-এ আছে), তার নিচে L335 <code>if len(self.circle) != 0:</code> — এই ফ্রেমে লাইন-কেন্দ্র পাওয়া গেছে কি না। পেলে L336 <code>threading.Thread(target=self.execute, args=(self.circle[0], self.circle[2])).start()</code> — circle থেকে cx (circle[0]) আর ব্যাসার্ধ (circle[2]) নিয়ে execute-কে (L245-290, আগের Part-এর স্টিয়ারিং-মস্তিষ্ক) একেবারে নতুন এক thread-এ ছেড়ে দেওয়া। যত synced ফ্রেম, তত নতুন thread — কোনো pool নেই, পুরনোটার খোঁজও নেই; এটাই source-এর নিজস্ব রীতি (FACTS-এর quirks-তালিকার সদস্য), ব্যাখ্যা হয় যেমন আছে তেমনই। ছাড়ার কারণ সরল: process ফ্রেম-হাতড়াতে থাকে, execute-এর PID-হিসাব পাশের লাইনে চলতে থাকে।"
+  },
+  {
+   "a": 337,
+   "b": 340,
+   "text": "tracking-অবস্থায় না থাকলে নিচের শাখা — অবস্থা-ভিত্তিক জোড় L334-এর if-এর সঙ্গে (init, identify, Remove, mouse — যে-কোনোটা হলেই; শুধু লাইন হারালে নয়, tracking-এ থেকে circle খালি হলেও এখানে আসে না): L338 <code>if self.Start_state == True:</code> — Start_state এখনো খোলা মানে এই শাখায় নামার পাক এই প্রথম। কিন্তু L339 <code>#self.pub_cmdVel.publish(Twist())</code> — থামানোর publish-টা comment হয়ে আছে; এই শাখায় বাইরে আর কিছুই যায় না, শুধু L340 <code>self.Start_state = False</code> দিয়ে ঢাকা পড়ে যায়। প্রকৃ থামানো অন্য জায়গায়: execute-এর ভেতরে color_radius==0 হলেই Not Found আর সব-শূন্য Twist পাঠানো হয় (L253-257)। তাই এই else-দুই-লাইনের কাজ বোঝা-রাখা ছাড়া প্রায় কিছুই নয়।"
+  },
+  {
+   "a": 341,
+   "b": 345,
+   "text": "এই app-এর নাটকীয় মোড় — line-follow থেকে AprilTag-ধরায় রাষ্ট্র-বদল। L341 <code>if len(self.tags)>0 and self.Track_state!=\"Remove\":</code> — L157-158-এর detector এই ফ্রেমে অন্তত একটা tag পেয়েছে (tag_id অনুযায়ী সাজানো তালিকা), আর ইতিমধ্যে Remove-এ না ঢুকলেই শর্ত সত্য — init-এ আঁকানোর মাঝপথে হোক বা tracking-এর প্রবল গতি, tag চোখে পড়লেই টান এসে যায়। তখন প্রথমে L342 <code>self.Track_state = \"identify\"</code> — কৌতূহল-জাগানো এক লাইন, কারণ মাত্র তিন লাইন পরেই মান আবার Remove হয়ে যায়; এই ফ্রেমের elif-চেইন অনেক আগেই পেরিয়ে গেছে, পরের ফ্রেমও Remove-ই দেখবে — মাঝের identify-কে কেউ পড়ে না, থাকে শুধু পাঠের খাতিরে। তারপর L343 <code>self.pub_cmdVel.publish(Twist())</code> — সব-শূন্য Twist, চাকা মুহূর্তে থামে; L344 <code>print(\"Find the apriltag.\")</code> — console-এ ঘোষণা; শেষে L345 <code>self.Track_state = \"Remove\"</code> — এখন থেকে লাইন নয়, tag-ই সব।"
+  },
+  {
+   "a": 346,
+   "b": 349,
+   "text": "Remove-অবস্থার দুয়ার। L346 <code>if  self.Track_state == \"Remove\":</code> — if-এর পরে দুইটা space source-এ আছে। ভেতরে L347 <code>print(\"len(tags) = \",len(self.tags))</code> — প্রতি ফ্রেমে কতগুলো tag ধরা পড়ছে তার লাইভ গণনা; tag চোখের সামনে থেকে সরে গেলে এই ছাপাই চলতে থাকে (len(tags) = 0), ভেতরের শাখা বন্ধ — তখন SPACE/i/r-কী বা grasp_done-handshake ছাড়া Remove থেকে বেরোনোর রাস্তা নেই। tag থাকলে L348 <code>if len(self.tags)>0 :</code> (কোলনের আগে এক space) পেরিয়ে L349 <code>center_x, center_y = self.tags[0].center</code> — তালিকার প্রথমজনের (সবচেয়ে ছোট tag_id, L158-এর sort) কেন্দ্র-পিক্সেল দুটোতে খোলা; পরের সব হিসাব এই দুই সংখ্যার উপরেই দাঁড়াবে।"
+  },
+  {
+   "a": 350,
+   "b": 352,
+   "text": "প্রথম গেট — সারিবদ্ধকরণ। L350 <code>if (abs(center_x-320) >10 or abs(center_y-400)>10) and self.move_flag == True:</code> (লাইনের শেষে একটা space-ও আছে source-এ) — x-দিকে অথবা y-দিকে, যে-কোনো একটাতেই লক্ষ্য-বিন্দু (320,400) থেকে 10 পিক্সেলের বেশি দূরে, আর move_flag এখনো খোলা (জন্মে L70-এ খোলা, বন্ধ হবে L359-এ)। দুটোই মিললে L351 <code>print(\"adjusting.\")</code> — console-এ স্বীকৃতি, আর L352 <code>self.remove_obstacle(center_x, center_y)</code> — পরের Part-এর function (L389-395): কেন্দ্র-পিক্সেল দুটো Remove_PID-এর হাতে দিয়ে mecanum-বেস strafe, উদ্দেশ্য tag-কেন্দ্রকে জানলার ভেতরে টেনে আনা। Remove-মোডের সারিবদ্ধকরণ-পর্ব এটুকুই — নাম যা-ই হোক, এখানে বাধা সরানো মানে নিজের জায়গা মানিয়ে নেওয়া।"
+  },
+  {
+   "a": 353,
+   "b": 357,
+   "text": "দ্বিতীয় গেট — দুই দিকেই সারিবদ্ধ। L353 <code>if abs(center_x-320) <10 and abs(center_y-400)<10:</code> — x এবং y দুই-ই 10-এর ভেতর। তখন পরপর কাজ: L354 <code>self.pubVel(0.0, 0.0)</code> — স্পষ্ট শূন্য-গতি (linear.x আর linear.y দুটোই শূন্য, L382-387); L355 <code>print(\"start crawling.\")</code> — ঘোষণা ছাপা হলো, কিন্তু এই function-এ নিজে আর কোনো চলা নেই — crawling-এর দায়িত্ব upstream-এর arm/grasp-জগতের; L356 <code>time.sleep(3)</code> — ফ্রেম-হ্যান্ডলার thread-টাই ৩ সেকেন্ড আটকে যায়, এই সময়ে নতুন synced ফ্রেম জমা/পড়ে যায়, প্রদর্শনী জমে থাকে; ঘুম ভাঙলে L357 <code>c_dist = self.depth_image_info[int(center_y),int(center_x)]/1000</code> — L155-এ জমা depth-ছবির (float32) ঠিক tag-কেন্দ্রের ঘরের মান, int() ভগ্নাংশ ফেলে সারি-সূচক বানায়, আর 1000-ভাগ — ক্যামেরার মিলিমিটার থেকে ROS-জগতের মিটারে।"
+  },
+  {
+   "a": 358,
+   "b": 360,
+   "text": "দূরত্বের বৈধতা-দুয়ার: L358 <code>if c_dist!=0 and self.pubPos_flag == True:</code> — depth-ঘর শূন্য মানে সেন্সরের অন্ধ স্পট (খুব কাছে, খুব দূরে বা প্রতিফলনহীন), আর pubPos_flag (L71-এ জন্ম-খোলা) মানে তথ্য এখনো একবারও পাঠানো হয়নি। দুটোই সত্য হলে প্রথম কাজই দুই পতাকা বন্ধ: L359 <code>self.move_flag = False</code> — L350-এর adjusting-গেট এখন থেকে মৃত, আর L360 <code>self.pubPos_flag = False</code> — এই tag-এর জন্য দ্বিতীয়বার পাঠানো বন্ধ। একমুখী দরজা; আবার খোলে শুধু L140-145-এর grasp_done-handshake — upstream জানায় ধরা-কাজ ফুরিয়েছে, তখন দুই পতাকাই ফের খোলা হয়।"
+  },
+  {
+   "a": 361,
+   "b": 365,
+   "text": "বার্তা-বাক্স ভরাট। L361 <code>pos = AprilTagInfo()</code> — L25-এ import-করা arm_interface-এর message-type, publisher হলো L45-এর PosInfo। L362 <code>pos.id = self.tags[0].tag_id</code> — কোন tag (tag36h11 পরিবারের id), L363 <code>pos.x = center_x</code> আর L364 <code>pos.y = center_y</code> — ছবির মধ্যে কেন্দ্র-পিক্সেল দুটো, L365 <code>pos.z = c_dist</code> — মিটারে দূরত্ব। ছবির 2D-পরিচয় আর depth-এর 1D-দূরত্ব জুড়ে tag-এর পূর্ণ অবস্থান-সংবাদ তৈরি — downstream-এর বাহু-গণিত এটার উপরেই দাঁড়াবে।"
+  },
+  {
+   "a": 366,
+   "b": 370,
+   "text": "সঙ্গে tag-এর কাত-পরিচয়: L366 <code>vx = int(self.tags[0].corners[0][0]) - int(self.tags[0].corners[1][0])</code> আর L367 <code>vy = int(self.tags[0].corners[0][1]) - int(self.tags[0].corners[1][1])</code> — tag-এর প্রথম দুই কোণার স্থানাঙ্ক-বিয়োগফল, ধারের দিক নির্দেশক এক ছোট ভেক্টর (কোণাগুলোর ক্রম vendor-রীতির, illustrative)। L368 <code>target_joint5 = compute_joint5(vx,vy)</code> — L26-এর wildcard import; vendor গণিত ভেক্টর দুটো থেকে joint5-এর কাঙ্ক্ষিত কোণ বের করে (ভেতরের সূত্র illustrative, এই folder-এ নেই)। L369 সেই কোণ ছাপে, আর L370 <code>self.joint5.data = int(target_joint5)</code> — L102-এ বানানো Int16 বাক্সে পূর্ণসংখ্যায় ভরা।"
+  },
+  {
+   "a": 371,
+   "b": 376,
+   "text": "প্রত্যক্ষ-ছাপার পর্ব: L371 tag_id, L372 কেন্দ্র-পিক্সেল জোড়া, L373 মিটারে দূরত্ব — পরপর console-এ। তারপর পাঠানো দুই দফা: L374 <code>self.pos_info_pub.publish(pos)</code> — PosInfo topic-এ AprilTagInfo; upstream-এর ধরার-যন্ত্র এটাই অপেক্ষা করছিল। তারপর হুবহু পরপর দুই লাইন (L375 ও L376): <code>self.TargetJoint5_pub.publish(self.joint5)\n\t\t\t\t\t\tself.TargetJoint5_pub.publish(self.joint5)</code> — একই set_joint5 বার্তা পরপর দুইবার; হাতে-লেখা নকল, source-এর নিজস্ব দাগ (FACTS-এর quirk)। দ্বিতীয়টা কোনো ক্ষতি করে না — একই মান আরেকবার পৌঁছায় — কিন্তু কেন বাদ পড়ল না তার ব্যাখ্যা কোডে নেই; পড়া হয় যেমন আছে তেমনই।"
+  },
+  {
+   "a": 377,
+   "b": 380,
+   "text": "দূরত্ব-বৈধতা fail হলে L378 <code>print(\"Invalid distance.\")</code> — depth-ঘর শূন্য, বা pubPos_flag ইতিমধ্যে বন্ধ: দুই কারণেই এই একই মুখ। মনে রেখো flags বন্ধ হয়ে যাওয়ার পরেও tag সামনে কেন্দ্রে-সারিবদ্ধ থাকলে প্রতি ফ্রেমে এই একই পথ ঘুরবে — pubVel(0,0), ৩ সেকেন্ডের ঘুম, তারপর এই ছাপা; নতুন কোনো পাঠানো নয়। L379 শুধু space-এর লাইন, আর সবশেষে L380 <code>return rgb_img, binary</code> — process-এর ফল: চিহ্ন-লাগানো ছবি আর মাস্ক-ছবি (বা খালি তালিকা); L171-এর কলার এগুলোই পায়, L172-174 সেগুলো দিয়ে প্রদর্শনী সাজায়। রাষ্ট্র-যন্ত্রের এক পাক শেষ — পরের synced ফ্রেমে আবার একই ৯০ লাইন, তখন শুরু যে-অবস্থায় রেখে এসেছে সেটা থেকে।"
+  }
+ ],
+ "math": {
+  "intro": "Remove-মোডের প্রতিটি সিদ্ধান্ত দুটি প্রশ্নে নেমে আসে — tag-এর কেন্দ্র ফ্রেমের কোথায়, আর সে কতদূরে। প্রথম প্রশ্নের মানদণ্ড লক্ষ্য-পিক্সেল (320,400)-এর চারপাশে ±10-এর জানলা, দ্বিতীয়টার মানদণ্ড depth-ঘরের মিলিমিটারকে 1000 দিয়ে ভাগ করা। চার ধাপে সেই জানলা আর একক-বদলটা খুলে দেখা যাক — কারণ এই দুই সংখ্যাই ঠিক করে robot কখন একটু একটু করে সরবে, কখন থেমে ধরার-ভঙ্গিতে পড়বে।",
+  "levels": [
+   {
+    "label": "Level 1 — কেন্দ্র-জানলা",
+    "latex": "\\[ (c_x^{\\ast},\\,c_y^{\\ast})=(320,\\,400),\\qquad 310 < c_x < 330,\\quad 390 < c_y < 410 \\]",
+    "text": "640x480 ফ্রেমে x-লক্ষ্য 320 মানে ঠিক অর্ধেক; কিন্তু y-লক্ষ্য 400 — ফ্রেমের নিচের দিকে। L353-এর শর্ত |cx-320|<10 এবং |cy-400|<10 একসাথে মানে tag-কেন্দ্র 20x20 পিক্সেলের একটা বাক্সের ভেতরে — crawl-দুয়ার খোলে কেবল সেই বাক্সে ঢুকলে।"
+   },
+   {
+    "label": "Level 2 — দুই গেট ও সীমান্ত-ফাঁক",
+    "latex": "\\[ \\text{adjusting: } |c_x-320|>10\\ \\lor\\ |c_y-400|>10,\\qquad \\text{centered: } |c_x-320|<10\\ \\land\\ |c_y-400|<10 \\]",
+    "text": "দুই গেটই কঠোর অসমতা — মান ঠিক 10-এ দাঁড়ালে (যেমন cx=330) কোনোটাই সত্য নয়: সেই ফ্রেমে adjusting-ও নয়, crawl-ও নয়, ফাঁকা এক ফ্রেম। OR/AND-এর জোড়াও অর্থবহ — সারিবদ্ধকরণ-গেটে এক দিক এড়িয়ে গেলেই যথেষ্ট, crawl-গেট দুই দিকই চায়।"
+   },
+   {
+    "label": "Level 3 — মিলিমিটার থেকে মিটার",
+    "latex": "\\[ d = \\frac{D[\\,\\lfloor c_y\\rfloor,\\ \\lfloor c_x\\rfloor\\,]}{1000}\\ \\mathrm{m},\\qquad 1000\\ \\mathrm{mm} = 1\\ \\mathrm{m} \\]",
+    "text": "depth-ছবির (L155, float32) প্রতিটি ঘর ক্যামেরার রীতিতে মিলিমিটার-এককে (illustrative vendor convention — প্রমাণ কোডের নিজের 1000-ভাগ)। int() কেন্দ্রের ভগ্নাংশ ফেলে পূর্ণসংখ্যা সারি-সূচক বানায়, 1000-ভাগ একক বদলায়। বৈধতা-দুয়ার d != 0 — শূন্য মানে সেন্সরের অন্ধ ঘর, L378-এর Invalid distance।"
+   },
+   {
+    "label": "Level 4 — লক্ষ্য কেন 400 (240 নয়)",
+    "latex": "\\[ \\left(\\tfrac{640}{2},\\ \\tfrac{480}{2}\\right)=(320,\\,240),\\qquad 400-240 = 160\\ \\mathrm{px} \\]",
+    "text": "ফ্রেমের জ্যামিতিক কেন্দ্র (320,240); কোডের লক্ষ্য-বিন্দু তার ঠিক 160 পিক্সেল নিচে — ছবির নিচের প্রান্তের কাছে, robot-এর শরীর আর বাহুর দিকে। tag সেখানে নামলেই ধরার-ভঙ্গি প্রস্তুত বলে গণ্য হয়। সঙ্গে কাত-ভেক্টর (vx, vy) = corners[0] বিয়োগ corners[1] — tag-ধারের দিক থেকে compute_joint5 (illustrative) joint5-এর কোণ বানায়।"
+   }
+  ],
+  "numeric": [
+   {
+    "latex": "\\[ |317-320|=3<10,\\qquad |395-400|=5<10 \\]",
+    "text": "illustrative এক পাঠ: tag-কেন্দ্র (317,395)-এ দাঁড়ালে দুই দিকই জানলার ভেতরে — L353-এর crawl-শাখা খোলে; pubVel(0,0), ৩ সেকেন্ডের ঘুম, তারপর দূরত্ব-পাঠ।"
+   },
+   {
+    "latex": "\\[ |330-320|=10,\\qquad 10>10\\ \\text{false},\\qquad 10<10\\ \\text{false} \\]",
+    "text": "cx ঠিক 330-এ দাঁড়ালে (সীমানা) ওই ফ্রেমে দুই গেটই চুপ — কোনো চালনা নয়, কোনো crawl-ও নয়; পরের ফ্রেমে কেন্দ্র এক পিক্সেলও সরলেই ফয়সালা হয়ে যায়। দুই গেটের কঠোর অসমতার এই সরু ফাঁকটুকুই source-এর নিজস্ব।"
+   },
+   {
+    "latex": "\\[ 623\\ \\mathrm{mm} \\div 1000 = 0.623\\ \\mathrm{m},\\qquad 0 \\div 1000 = 0 \\]",
+    "text": "depth-ঘরে 623 থাকলে pos.z হয় 0.623 মিটার — PosInfo-তে ঠিক এই মানই যায়; ঘর শূন্য হলে ভাগ করেও শূন্যই থাকে, d != 0 দুয়ার বন্ধ, console-এ Invalid distance., পরের ফ্রেমে আবার চেষ্টা।"
+   }
+  ],
+  "mapping": [
+   {
+    "code": "if (abs(center_x-320) >10 or abs(center_y-400)>10) and self.move_flag == True:",
+    "math": "\\( |c_x-320|>10\\ \\lor\\ |c_y-400|>10 \\)",
+    "text": "L350-এর adjusting-গেট: যে-কোনো এক দিকে 10 পিক্সেল এড়ালেই সত্য, তখনই remove_obstacle ডাকা হয় — দুই দিক মিলিয়ে দেখার দরকার নেই।"
+   },
+   {
+    "code": "if abs(center_x-320) <10 and abs(center_y-400)<10:",
+    "math": "\\( |c_x-320|<10\\ \\land\\ |c_y-400|<10 \\)",
+    "text": "L353-এর crawl-গেট: দুই দিকই একসাথে 10-এর ভেতরে থাকতে হবে — AND, OR নয়; এক দিক বাইরে থাকলেই সারিবদ্ধকরণ চলতেই থাকে।"
+   },
+   {
+    "code": "c_dist = self.depth_image_info[int(center_y),int(center_x)]/1000",
+    "math": "\\( d = D[\\lfloor c_y\\rfloor,\\ \\lfloor c_x\\rfloor]/1000\\ \\mathrm{m} \\)",
+    "text": "L357-এর একক-বদল: সারি-সূচক হিসেবে y আগে (numpy-র row, column নিয়ম), তারপর মিলিমিটার থেকে মিটারে 1000-ভাগ।"
+   }
+  ],
+  "failure": [
+   "লক্ষ্য-বিন্দুটা ফ্রেমের জ্যামিতিক কেন্দ্র ভেবে 400-এর জায়গায় 240 ধরে নেওয়া — তখন robot tag-কে ফ্রেমের একদম মাঝে তুলে থামবে, অর্থাৎ প্রকৃ লক্ষ্যের চেয়ে 160 পিক্সেল উঁচুতে; crawl-শাখা ভুঙ্গিতে আসবে না, বাহু-গণিত অন্য ভঙ্গির জন্য হিসাব করবে। কোডের নিজের লক্ষ্য কিন্তু (320,400) — নিচের দিকের বিন্দু, যেখানে নামলে tag ধরার কাজের দূরত্বে আসে।",
+   "একক-বদল মুছে ফেলা — /1000 ছাড়া c_dist থাকে মিলিমিটারে: depth-ঘরে 623 থাকলে pos.z যায় 623, আর c_dist!=0 দুয়ার প্রায় সবসময় খোলা থাকে, তাই Invalid distance. কখনোই ছাপা হবে না — অথচ upstream-এর বাহু-হিসাব পাবে অর্থহীন বিশাল সংখ্যা। উল্টো দিকে ঘর যদি আগে থেকেই মিটারে থাকত (বা ভাগের জায়গায় আরেকবার 1000 দিয়ে ভাগ করা হতো), প্রতিটি বৈধ দূরত্ব শূন্যের কাছে গুঁড়িয়ে যেত — আর 1000 দিয়ে গুণ করা হলে উল্টো সমস্যা: মানগুলো আকাশছোঁয়া বিশাল হয়ে যেত।"
+  ]
+ },
+ "robot": {
+  "correct": "আসল robot-এ README-যাত্রার L11-এর ros2 run M3Pro_demo follow_line উঠে ব্লকিং arm-অপেক্ষা (L52-55) পেরিয়ে synced ফ্রেম আসা শুরু করলেই প্রতি ফ্রেমে এই ৯০ লাইন চলে। SPACE বা ৩-সেকেন্ডের স্বয়ং arming (L167-170) tracking-এ নামায়; প্রতি ফ্রেমে নতুন thread-এ execute উঠে লাল লাইন ধরে চাকা চালায়। view-এ tag36h11 tag ঢুকতেই চাকা থামে, console-এ Find the apriltag. — Remove-মোড শুরু; mecanum বেস strafe করে tag-কেন্দ্রকে (320,400)-এর ±10 পিক্সেল জানলায় টানে। দুই দিকেই ঢুকলে robot পুরো থামে (pubVel(0,0)) আর ৩ সেকেন্ড নিশ্চল থাকে — start crawling. ছাপলেও এই node নিজে আর এক পাও নড়ে না, এগোনোর ভার upstream-এর — তারপর depth মিলিমিটার থেকে মিটারে বদলে একবারই PosInfo-তে AprilTagInfo আর set_joint5-এ joint5 (দুইবার) পাঠায়; console-এ tag_id, কেন্দ্র আর দূরত্ব ছাপা হয়। depth-ঘর শূন্য হলে Invalid distance. দেখিয়ে পরের ফ্রেমে আবার চেষ্টা; দুই flag grasp_done-handshake না আসা পর্যন্ত বন্ধ থাকে, তাই একই tag-এ বারবার পাঠানো হয় না।",
+  "incorrect": "প্রথম ভুল প্রত্যাশা: start crawling. মানে robot এগিয়ে চলবে — আসলে pubVel(0,0) ইতিমধ্যে চাকা বন্ধ করে দিয়েছে, sleep-এর ৩ সেকেন্ড নিছক অপেক্ষা; crawling করে upstream-এর arm-জগত, এই node শুধু থামা আর তথ্য-পাঠানোর কাজটা করে। দ্বিতীয়: q চাপলে program বন্ধ হবে — q self.cancel() ডাকে, যেটা এই file-এ define-ই নেই; follow_common wildcard থেকে না এলে AttributeError-এ node মারা যায়, আসল বন্ধের পথ Ctrl+C। তৃতীয়: একটাই thread সব ফ্রেম সামলাচ্ছে — বরং প্রতি ফ্রেমে নতুন thread, তাই ফ্রেমের ছন্দ আর স্টিয়ারিং-এর ছন্দ এক নয়। চতুর্থ: তথ্য পাঠানোর পর আপনা-আপনি line-follow-এ ফিরে যাবে — move_flag False হওয়ায় সারিবদ্ধকরণ বন্ধ, আর tag সামনে থাকতে থাকতে প্রতি ফ্রেমে pubVel(0,0) + ৩ সেকেন্ড ঘুম + Invalid distance. ছাপাই চলতে থাকে; flags খোলে একমাত্র grasp_done handshake (L140-145); কীবোর্ডের SPACE/i/r Remove থেকে বেরোনোর রাস্তা হলেও শুধু Track_state বদলায়, flags আবার খুলে না।"
+ },
+ "animType": "states14"
+}
