@@ -169,8 +169,11 @@ source install/setup.bash
 # 2. Local LLM (optional — fallback planner works without it):
 ollama pull phi3 && ollama serve
 
-# 3. Record waypoints into src/eira_bringup/config/waypoints.yaml (§ file
-#    header), then rebuild so the config installs.
+# 3. Record waypoints interactively from RViz ("Publish Point" tool):
+ros2 run eira_brain waypoint_recorder     # then name each click in the
+                                           # terminal; updates waypoints.yaml
+#    (or edit src/eira_bringup/config/waypoints.yaml by hand, § file header)
+#    Rebuild afterwards so a non-symlinked install picks up the file.
 
 # 4. Full system:
 ros2 launch eira_bringup eira_master.launch.py map:=$HOME/map/map.yaml
