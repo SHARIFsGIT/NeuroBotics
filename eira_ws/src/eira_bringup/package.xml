@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>eira_bringup</name>
+  <version>0.1.0</version>
+  <description>
+    E-AIRA system bringup: one master launch file that composes the existing
+    Yahboom driver stack (base, LiDAR, camera, arm kinematics, Nav2) with the
+    E-AIRA cognitive, perception and manipulation nodes.
+  </description>
+  <maintainer email="shariful@example.com">Shariful</maintainer>
+  <license>MIT</license>
+
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+
+  <!-- E-AIRA nodes -->
+  <exec_depend>eira_brain</exec_depend>
+  <exec_depend>eira_perception</exec_depend>
+  <exec_depend>eira_manipulation</exec_depend>
+
+  <!-- Existing robot stack (all verified present on the robot) -->
+  <exec_depend>orbbec_camera</exec_depend>
+  <exec_depend>arm_kin</exec_depend>
+  <exec_depend>arm_util</exec_depend>
+  <exec_depend>imu_filter_madgwick</exec_depend>
+  <exec_depend>ira_laser_tools</exec_depend>
+  <exec_depend>yahboom_laser_filter</exec_depend>
+  <exec_depend>ekf_bringup</exec_depend>
+  <exec_depend>M3Pro_navigation</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

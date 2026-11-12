@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>eira_manipulation</name>
+  <version>0.1.0</version>
+  <description>
+    E-AIRA manipulation layer: PID base alignment on /target_pose followed by
+    a grasping sequence driven by the existing arm_kin kinematics service
+    (get_kinemarics) and arm_msgs joint topics of the ROSMASTER M3 Pro.
+  </description>
+  <maintainer email="shariful@example.com">Shariful</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+
+  <!-- Robot-specific interfaces discovered in the workspace audit
+       (folders 22/23: grasp_transport.py, color_transport.py). -->
+  <depend>arm_msgs</depend>
+  <depend>arm_interface</depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-transforms3d</exec_depend>
+  <exec_depend>python3-tf-transformations</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
