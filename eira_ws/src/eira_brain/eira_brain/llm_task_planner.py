@@ -40,7 +40,7 @@ import time
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 
 from action_msgs.msg import GoalStatus
@@ -119,6 +119,8 @@ class LLMTaskPlanner(Node):
         self._state = self.IDLE
         self._plan = []            # validated list of action dicts
         self._plan_idx = 0
+        self._plan_seq = 0         # bumped per installed plan (retry budget key)
+        self._retries_stamp = None # (plan_seq, plan_idx) the budget was minted for
         self._deadline = None      # wall-clock deadline of current wait
         self._retries_left = 0
         self._last_vision_event = None
@@ -267,6 +269,7 @@ class LLMTaskPlanner(Node):
 
         self._plan = plan
         self._plan_idx = 0
+        self._plan_seq += 1
         self._planner_source = source
 
         plan_msg = String()
@@ -430,7 +433,15 @@ class LLMTaskPlanner(Node):
         target = action.get("target", "")
         self._publish_status(
             f"action {self._plan_idx + 1}/{len(self._plan)}: {kind} {target}")
-        self._retries_left = int(self.get_parameter("action_retries").value)
+        # Mint the retry budget ONCE per (plan, action-index). Re-dispatch
+        # after a failed attempt must NOT reset it — otherwise the counter
+        # cycles N→N-1→N→… and a failing action (e.g. `navigate` with Nav2
+        # down) retries forever at 10 Hz and the task never terminates.
+        stamp = (self._plan_seq, self._plan_idx)
+        if self._retries_stamp != stamp:
+            self._retries_stamp = stamp
+            self._retries_left = int(
+                self.get_parameter("action_retries").value)
 
         if kind == "navigate":
             if self._send_nav_goal(target):
@@ -459,7 +470,15 @@ class LLMTaskPlanner(Node):
             self._state = self.WAIT_MISC
         elif kind == "stop":
             self._stop_everything()
+            # Publish a terminal status: `eira_cli` (and any harness)
+            # blocks on /eira/status until DONE or FAILED — going straight
+            # to IDLE would leave listeners waiting forever.
+            self._state = self.DONE
+            self._publish_status(
+                f"stopped by command ({self._plan_idx} of "
+                f"{len(self._plan)} actions had completed)")
             self._state = self.IDLE
+            return
         else:  # unreachable — validator already dropped unknowns
             self._action_failed(f"unhandled action {kind}")
 
@@ -609,9 +628,19 @@ class LLMTaskPlanner(Node):
         return msg
 
     def _on_nav_feedback(self, feedback):
-        # Nav2 number-of-poses feedback; deliberately quiet, kept for metrics.
-        self.get_logger().debug(
-            f"nav feedback: {feedback.feedback.number_of_poses} poses left")
+        # NavigateThroughPoses feedback: 'number_of_poses' does NOT exist
+        # (that AttributeError kills the spin thread on the robot). Humble's
+        # NavigateThroughPoses carries 'distance_remaining'; NavigateToPose
+        # uses 'distance_to_goal'. Read defensively via getattr so this
+        # callback can never raise across Nav2 versions — a debug log line
+        # must not be able to take the node down.
+        message = feedback.feedback
+        distance = getattr(
+            message, "distance_remaining",
+            getattr(message, "distance_to_goal", None))
+        if distance is not None:
+            self.get_logger().debug(
+                f"nav feedback: {distance:.2f} m to goal")
 
     def _on_goal_response(self, future):
         goal_handle = future.result()
@@ -659,9 +688,14 @@ def main(args=None):
     executor.add_node(planner)
     try:
         executor.spin()
+    except (ExternalShutdownException, KeyboardInterrupt):
+        pass  # SIGTERM/Ctrl-C — context is already shutting down
     finally:
         planner.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            # On SIGTERM rclpy's signal handler shuts the context itself;
+            # a second shutdown call raises RCLError and spams a traceback.
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
