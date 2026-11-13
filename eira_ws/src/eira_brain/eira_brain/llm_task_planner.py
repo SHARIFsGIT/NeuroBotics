@@ -151,6 +151,7 @@ class LLMTaskPlanner(Node):
         self._scans_done = 0
         self._scan_until = None
         self._scan_direction = 1        # alternates: left, right, left...
+        self._last_target_pub = 0.0     # 1 Hz cap for vision-target re-sends
 
         self._cb_group = ReentrantCallbackGroup()
 
@@ -573,7 +574,9 @@ class LLMTaskPlanner(Node):
             # Tell vision WHAT to look for — the plan's target ('bottle',
             # 'red cup', ...) travels on /eira/vision_target and overrides
             # vision_manager's default search class for this task.
+            # _check_find re-sends it at 1 Hz until the find resolves.
             self._last_vision_event = None
+            self._last_target_pub = time.monotonic()
             target_msg = String()
             target_msg.data = target
             self._vision_target_pub.publish(target_msg)
@@ -635,6 +638,13 @@ class LLMTaskPlanner(Node):
             self._action_failed("navigation timeout")
 
     def _check_find(self):
+        # Keep-alive: re-send the vision target ~1 Hz while waiting. The
+        # message is volatile, so the dispatch-time copy is lost if
+        # vision_manager was still loading its YOLO weights (10-30 s on the
+        # Jetson) or restarted — without this the robot keeps hunting the
+        # default class instead of the plan's target.
+        self._republish_vision_target()
+
         event = self._last_vision_event
         if event:
             if event.get("event") == "found":
@@ -646,6 +656,21 @@ class LLMTaskPlanner(Node):
                 return
         if self._timed_out():
             self._find_failed("object not found in time")
+
+    def _republish_vision_target(self):
+        """(Re)send the current find target on /eira/vision_target, 1 Hz max."""
+        now = time.monotonic()
+        if now - self._last_target_pub < 1.0:
+            return
+        self._last_target_pub = now
+        action = self._plan[self._plan_idx] if self._plan_idx < len(
+            self._plan) else {}
+        target = str(action.get("target", "") or "").strip()
+        if not target:
+            return
+        message = String()
+        message.data = target
+        self._vision_target_pub.publish(message)
 
     def _find_failed(self, reason: str):
         """`find` came up empty: sweep the base before burning a retry.

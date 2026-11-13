@@ -88,7 +88,13 @@ class GraspExecutor(Node):
         self.declare_parameter("ang_kd", 0.05)
         self.declare_parameter("settle_ticks", 3)          # ticks inside tol
         self.declare_parameter("align_timeout_s", 45.0)
-        self.declare_parameter("target_timeout_s", 0.8)    # stale /target_pose
+        # Stale-target window. Real Jetson inference (YOLO + depth + TF per
+        # frame) can drop /target_pose below 2 Hz — 0.8 s aborted grasps on
+        # perfectly visible targets. Vision declares 'lost' itself after
+        # lost_after_s (1.5 s); this window only needs to cover pose gaps.
+        self.declare_parameter("target_timeout_s", 1.5)
+        self.declare_parameter("stale_grace_ticks", 3)  # ticks before abort
+        self.declare_parameter("service_wait_s", 5.0)   # IK service wait
         self.declare_parameter("control_hz", 20.0)
 
         # Arm / kinematics (folder-23 conventions).
@@ -143,6 +149,7 @@ class GraspExecutor(Node):
         self._steps = []               # timed sequencer queue
         self._step_wait_until = None
         self._settle_count = 0
+        self._stale_ticks = 0          # consecutive stale-pose align ticks
         self._align_deadline = None
         self._last_tick = None
 
@@ -228,7 +235,8 @@ class GraspExecutor(Node):
         if self._state != self.IDLE:
             self._emit_event("failed", reason=f"busy ({self._state})")
             return
-        if not self._kin_client.wait_for_service(timeout_sec=1.0):
+        wait_s = float(self.get_parameter("service_wait_s").value)
+        if not self._kin_client.wait_for_service(timeout_sec=wait_s):
             self._emit_event(
                 "failed",
                 reason="get_kinemarics service unavailable "
@@ -241,6 +249,7 @@ class GraspExecutor(Node):
         self._lin_pid.reset()
         self._ang_pid.reset()
         self._settle_count = 0
+        self._stale_ticks = 0
         self._align_deadline = time.monotonic() + \
             float(self.get_parameter("align_timeout_s").value)
         self._state = self.ALIGN
@@ -291,9 +300,19 @@ class GraspExecutor(Node):
     # -- stage 1: base alignment --------------------------------
 
     def _tick_align(self, dt: float, now: float):
+        # A single pose gap (slow inference frame) must not abort the grasp:
+        # hold still for up to stale_grace_ticks, and only fail when the
+        # target has been genuinely missing (vision's own 'lost' event also
+        # aborts — this counter covers silent gaps).
         if self._target_stale():
-            self._fail("target pose stale — vision lost the object")
+            self._stale_ticks += 1
+            if self._stale_ticks >= int(
+                    self.get_parameter("stale_grace_ticks").value):
+                self._fail("target pose stale — vision lost the object")
+                return
+            self._zero_cmd()           # hold position while blind
             return
+        self._stale_ticks = 0
         if now > self._align_deadline:
             self._fail("alignment timeout")
             return

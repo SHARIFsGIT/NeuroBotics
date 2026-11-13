@@ -75,7 +75,9 @@
       ang_kd: 0.05
       settle_ticks: 3
       align_timeout_s: 45.0
-      target_timeout_s: 0.8
+      target_timeout_s: 1.5             # pose-gap tolerance (Jetson fps dips)
+      stale_grace_ticks: 3              # consecutive stale ticks before abort
+      service_wait_s: 5.0               # IK service availability wait
       control_hz: 20.0
       # --- arm frame --------------------------------------------------
       # Preferred: name of the arm base frame in the live TF tree

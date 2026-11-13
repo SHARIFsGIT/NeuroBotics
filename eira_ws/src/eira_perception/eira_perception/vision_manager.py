@@ -45,6 +45,7 @@ perceive should say so, not sit silently.
 """
 
 import json
+import os
 import sys
 import time
 
@@ -113,21 +114,11 @@ class VisionManager(Node):
         self.declare_parameter("tf_timeout_s", 0.15)
 
         # --------------------------------------------------------
-        # MODEL — the lazy import gives an actionable error on machines
-        # without the ultralytics stack instead of a raw traceback.
+        # MODEL — loaded LAST, after every interface exists (see the note
+        # at the bottom of __init__). Until then callbacks no-op cleanly.
         # --------------------------------------------------------
-        try:
-            from ultralytics import YOLO  # noqa: WPS433 — deliberate lazy import
-        except ImportError as exc:
-            raise RuntimeError(
-                "ultralytics is not installed "
-                "(pip install ultralytics>=8, as on the Jetson course image)"
-            ) from exc
-
-        model_path = self.get_parameter("model_path").value
-        self.get_logger().info(f"loading YOLOv8 weights: {model_path}")
-        self._model = YOLO(model_path)
-        self._class_names = self._model.names            # {id: label}
+        self._model = None
+        self._class_names = {}                       # {id: label}
         self._conf = float(self.get_parameter("confidence").value)
 
         self._bridge = CvBridge()
@@ -175,7 +166,11 @@ class VisionManager(Node):
         # Dynamic target switching: the brain publishes the object label it
         # wants found (e.g. 'bottle') whenever a plan contains a 'find'
         # action. Until a message arrives the node hunts its 'target_class'
-        # parameter (default 'cup').
+        # parameter (default 'cup'). The brain re-sends the target ~1 Hz
+        # while waiting, so this subscription existing BEFORE the (slow)
+        # YOLO load matters: with volatile QoS a target published while the
+        # weights were still loading would be lost forever, and the robot
+        # would keep "searching for cup".
         self.create_subscription(
             String, "/eira/vision_target", self._on_target, 10)
 
@@ -191,6 +186,31 @@ class VisionManager(Node):
 
         # Housekeeping timer: emits timeout/lost lifecycle events.
         self.create_timer(0.5, self._housekeeping)
+
+        # --------------------------------------------------------
+        # LOAD YOLOv8 LAST — on the Jetson this takes 10-30 s, and every
+        # interface above must already exist by then (the brain's 1 Hz
+        # target re-publish keeps the search class correct even for a find
+        # dispatched during the load).
+        # --------------------------------------------------------
+        model_path = str(self.get_parameter("model_path").value)
+        if not os.path.isfile(model_path):
+            raise RuntimeError(
+                f"YOLOv8 weights not found at '{model_path}' — set the "
+                "model_path parameter to your yolov8n.pt location")
+        try:
+            from ultralytics import YOLO  # noqa: WPS433 — deliberate lazy import
+        except ImportError as exc:
+            raise RuntimeError(
+                "ultralytics is not installed "
+                "(pip install ultralytics>=8, as on the Jetson course image)"
+            ) from exc
+        self.get_logger().info(f"loading YOLOv8 weights: {model_path}")
+        try:
+            self._model = YOLO(model_path)
+        except Exception as exc:  # noqa: BLE001 — actionable startup failure
+            raise RuntimeError(f"failed to load YOLOv8 weights: {exc}") from exc
+        self._class_names = self._model.names            # {id: label}
 
         self.get_logger().info(
             f"vision_manager ready: model={model_path}, "
@@ -212,14 +232,39 @@ class VisionManager(Node):
 
         Each message re-targets the YOLO search class on the fly (the label
         is matched case-insensitively against detections, bidirectionally:
-        'red cup' matches the COCO class 'cup'). A new target also (re)arms
-        the timed search session whose 'found'/'timeout' events on
+        'red cup' matches the COCO class 'cup'). A target also (re)arms the
+        timed search session whose 'found'/'timeout' events on
         /eira/vision/event the brain's WAIT_FIND state consumes. Before any
         message arrives, the node hunts its 'target_class' param ('cup').
+
+        The brain re-sends the same target ~1 Hz while a find is in
+        flight, so repeats must be cheap: they silently extend the search
+        deadline; only an actual CLASS CHANGE produces a log line.
         """
         label = msg.data.strip().lower()
         if not label:
+            self.get_logger().warning(
+                "empty /eira/vision_target ignored — the plan's find action "
+                "had no target; still hunting "
+                f"'{self._target_class}'")
             return
+        if label == self._target_class:
+            # Same target re-sent (brain's 1 Hz keep-alive, or a re-dispatch
+            # after a scan sweep): (re)arm the session. While a search is
+            # already running this merely extends the deadline — the vision
+            # session now lives exactly as long as the brain stays
+            # interested. After a timeout it re-opens the acquisition.
+            if not self._searching:
+                self._announced_found = False
+                self._pose_logged = False
+                self.get_logger().info(
+                    f"re-searching for '{label}'...")
+            self._searching = True
+            self._search_deadline = time.monotonic() + \
+                float(self.get_parameter("find_timeout_s").value)
+            return
+        self.get_logger().info(
+            f"target switched: '{self._target_class}' → '{label}'")
         self._target_class = label
         self._announced_found = False
         self._pose_logged = False
@@ -233,7 +278,11 @@ class VisionManager(Node):
 
         Never raises: every failure path logs (throttled) and returns, so a
         bad frame or a missing transform costs one frame, not the node.
+        Frames arriving while the YOLO weights are still loading are
+        dropped without processing (the node stays alive and reachable).
         """
+        if self._model is None:       # weights still loading on the Jetson
+            return
         try:
             frame = self._bridge.imgmsg_to_cv2(
                 color_msg, desired_encoding="bgr8")

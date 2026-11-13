@@ -142,7 +142,11 @@ QoS so best-effort camera publishers actually match. The target class is a
 parameter (default `cup`) with case-insensitive bidirectional label
 matching ("red cup" ↔ COCO `cup`); each `find` action publishes its target
 on `/eira/vision_target`, re-targeting the search class and re-arming the
-search session dynamically. The pipeline is never headless:
+search session dynamically. The handoff is race-proof: the brain re-sends
+the target at 1 Hz while the find is in flight, and the node creates all
+its interfaces *before* the (10–30 s on Jetson) YOLO load, so a target
+published during startup is never lost — the robot always hunts the
+plan's object, not a stale default. The pipeline is never headless:
 every frame is annotated (boxes, class, confidence, live distance) and
 published on `/eira/detect_image`.
 
@@ -159,7 +163,9 @@ abort safely.
 Stage 1 aligns the base: angular PID on the target bearing, linear PID on
 the range error to a pre-grasp standoff (0.19 m), SI-rescaled from the
 proven folder-32 gains, with hard velocity clamps, a settle-count exit
-criterion and stale-target/watchdog aborts. Stage 2 transforms the target
+criterion and stale-target/watchdog aborts. Pose gaps from slow edge
+inference are tolerated (1.5 s staleness window plus a hold-still grace
+counter) so a single dropped `/target_pose` frame never aborts a grasp. Stage 2 transforms the target
 into the arm base frame (live TF when `arm_base_frame` is set, calibrated
 static mount offset otherwise) and sends the **unchanged** IK request to
 `get_kinemarics` — including the audited conventions of `grasp_transport.py`
