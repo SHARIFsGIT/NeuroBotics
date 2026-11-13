@@ -30,7 +30,7 @@ Topic contract
   subscribe  /camera/color/image_raw    sensor_msgs/Image    (sensor QoS)
   subscribe  /camera/depth/image_raw    sensor_msgs/Image    (sensor QoS)
   subscribe  /camera/color/camera_info  sensor_msgs/CameraInfo
-  subscribe  /eira/vision/request       std_msgs/String      (object label)
+  subscribe  /eira/vision_target       std_msgs/String      (dynamic object label)
   publish    /target_pose               geometry_msgs/PoseStamped (base_link)
   publish    /eira/detect_image         sensor_msgs/Image    (annotated)
   publish    /eira/vision/event         std_msgs/String      (JSON)
@@ -172,8 +172,12 @@ class VisionManager(Node):
             CameraInfo, self.get_parameter("camera_info_topic").value,
             self._on_camera_info, qos_profile_sensor_data)
 
+        # Dynamic target switching: the brain publishes the object label it
+        # wants found (e.g. 'bottle') whenever a plan contains a 'find'
+        # action. Until a message arrives the node hunts its 'target_class'
+        # parameter (default 'cup').
         self.create_subscription(
-            String, "/eira/vision/request", self._on_request, 10)
+            String, "/eira/vision_target", self._on_target, 10)
 
         # --------------------------------------------------------
         # PUBLISHERS
@@ -203,8 +207,16 @@ class VisionManager(Node):
         # code hardcodes these intrinsics; we read them live instead.
         self._camera_info = msg
 
-    def _on_request(self, msg: String):
-        """The brain asks for an object: (re)arm the search session."""
+    def _on_target(self, msg: String):
+        """Dynamic target switching — the brain names the object to find.
+
+        Each message re-targets the YOLO search class on the fly (the label
+        is matched case-insensitively against detections, bidirectionally:
+        'red cup' matches the COCO class 'cup'). A new target also (re)arms
+        the timed search session whose 'found'/'timeout' events on
+        /eira/vision/event the brain's WAIT_FIND state consumes. Before any
+        message arrives, the node hunts its 'target_class' param ('cup').
+        """
         label = msg.data.strip().lower()
         if not label:
             return

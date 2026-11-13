@@ -16,7 +16,7 @@ Pipeline
         ▼
     sequenced execution:
         navigate → nav2_msgs/action/NavigateThroughPoses   (folder 22 pattern)
-        find     → /eira/vision/request                     (vision_manager)
+        find     → /eira/vision_target                      (vision_manager)
         grasp    → /eira/manipulation/request               (grasp_executor)
         release  → /eira/manipulation/request
         home     → /eira/manipulation/request
@@ -32,7 +32,6 @@ the execution state machine is advanced by a wall-clock timer.
 
 import json
 import math
-import os
 import re
 import threading
 import time
@@ -119,8 +118,8 @@ class LLMTaskPlanner(Node):
         self._state = self.IDLE
         self._plan = []            # validated list of action dicts
         self._plan_idx = 0
-        self._plan_seq = 0         # bumped per installed plan (retry budget key)
-        self._retries_stamp = None # (plan_seq, plan_idx) the budget was minted for
+        self._plan_seq = 0          # bumped per installed plan (retry budget key)
+        self._retries_stamp = None  # (plan_seq, plan_idx) budget minted for
         self._deadline = None      # wall-clock deadline of current wait
         self._retries_left = 0
         self._last_vision_event = None
@@ -158,8 +157,12 @@ class LLMTaskPlanner(Node):
         # --------------------------------------------------------
         self._plan_pub = self.create_publisher(String, "eira/plan", 10)
         self._status_pub = self.create_publisher(String, "eira/status", 10)
-        self._vision_req_pub = self.create_publisher(
-            String, "eira/vision/request", 10)
+        # Dynamic vision target: the label the vision stack hunts for. The
+        # plan's 'find' action publishes its target here (e.g. 'bottle') and
+        # vision_manager switches its YOLO search class on the fly; until a
+        # message arrives, vision defaults to its own 'target_class' ('cup').
+        self._vision_target_pub = self.create_publisher(
+            String, "/eira/vision_target", 10)
         self._manip_req_pub = self.create_publisher(
             String, "eira/manipulation/request", 10)
         # Folder 22 (apriltag_transport_V2) beeps with UInt16 milliseconds.
@@ -452,10 +455,13 @@ class LLMTaskPlanner(Node):
                           else f"unknown waypoint '{target}'")
                 self._action_failed(reason)
         elif kind == "find":
+            # Tell vision WHAT to look for — the plan's target ('bottle',
+            # 'red cup', ...) travels on /eira/vision_target and overrides
+            # vision_manager's default search class for this task.
             self._last_vision_event = None
-            request = String()
-            request.data = target
-            self._vision_req_pub.publish(request)
+            target_msg = String()
+            target_msg.data = target
+            self._vision_target_pub.publish(target_msg)
             self._state = self.WAIT_FIND
         elif kind == "grasp":
             self._last_manip_event = None

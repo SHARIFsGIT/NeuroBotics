@@ -27,7 +27,7 @@
     ros__parameters:
       # Model exactly as used by the working folder-31 node.
       model_path: "/home/jetson/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/yolov8n.pt"
-      target_class: "cup"               # default hunt; /eira/vision/request overrides
+      target_class: "cup"               # default hunt; /eira/vision_target overrides
       confidence: 0.4                   # folder-31/32 working threshold
       target_frame: "base_link"
       camera_optical_frame: "camera_color_optical_frame"

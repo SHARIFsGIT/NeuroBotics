@@ -63,7 +63,7 @@ E-AIRA contributes:
    /eira/command         │  LLM (Ollama/Phi-3) ⇄ rules  │
                          │  plan validation · FSM        │
                          └───┬──────────┬──────────┬───┘
-             NavigateThroughPoses   /eira/vision/req   /eira/manipulation/req
+             NavigateThroughPoses   /eira/vision_target /eira/manipulation/req
                   (action)              │  ▲                │        ▲
                        ▼                ▼  │                ▼        │
         ┌────────────────────┐  ┌──────────────────┐  ┌──────────────────┐
@@ -97,7 +97,7 @@ E-AIRA contributes:
 | `/eira/command` | `std_msgs/String` | CLI/voice → brain | new |
 | `/eira/plan`, `/eira/status` | `String` (JSON) | brain → world | new |
 | `navigate_through_poses` | `nav2_msgs/action/NavigateThroughPoses` | brain → Nav2 | folder 22 |
-| `/eira/vision/request` · `/eira/vision/event` | `String` | brain ↔ perception | new |
+| `/eira/vision_target` · `/eira/vision/event` | `String` | brain → perception / perception → brain | new |
 | `/target_pose` | `geometry_msgs/PoseStamped` (`base_link`) | perception → manipulation | new |
 | `/camera/{color,depth}/image_raw`, `camera_info` | `sensor_msgs` | orbbec → perception | folders 25–33 |
 | `/eira/manipulation/request` · `…/event` | `String` | brain ↔ manipulation | new |
@@ -133,8 +133,9 @@ YOLOv8 (`yolov8n.pt`, the exact audited weights path) runs
 pair — the proven folder-31/32 inference path, subscribed with sensor-data
 QoS so best-effort camera publishers actually match. The target class is a
 parameter (default `cup`) with case-insensitive bidirectional label
-matching ("red cup" ↔ COCO `cup`); the brain's `find` request re-arms the
-search session and overrides the class. The pipeline is never headless:
+matching ("red cup" ↔ COCO `cup`); each `find` action publishes its target
+on `/eira/vision_target`, re-targeting the search class and re-arming the
+search session dynamically. The pipeline is never headless:
 every frame is annotated (boxes, class, confidence, live distance) and
 published on `/eira/detect_image`.
 
