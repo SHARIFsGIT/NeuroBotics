@@ -1,70 +1,81 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-vision_manager.py — E-AIRA perception layer.
+vision_manager.py — E-AIRA perception: YOLOv8 + RGB-D + TF2, with live video.
 
-Function
---------
-Wraps the two perception stacks already validated in this workspace:
+This node follows the proven Yahboom ROSMASTER M3 Pro tutorial patterns
+(course folders 22/23/25/31/32) and is **never headless**: every synchronized
+color+depth pair is annotated (bounding boxes, class names, confidence, live
+distance) and published on ``/eira/detect_image`` so RViz always shows what
+the perception layer sees.
 
-* **Acquisition — YOLOv8** (course folder 31): ``ultralytics YOLO(yolov8n.pt)``
-  runs ``model.track(frame, persist=True)`` on ``/camera/color/image_raw``.
-  We keep the exact model path and inference call of the working course code.
-
-* **Fine tracking — transformer tracker** (course folder 33): the
-  ``smart_tracker`` package (``super_tracker`` ONNX node) consumes the same
-  color stream (its ``/image_raw`` is remapped onto the camera topic) and is
-  selected via ``/tracker_id``. Because that package is a pre-built binary on
-  the robot, this node integrates it through a *configurable box topic*
-  (``sensor_msgs/RegionOfInterest``). Set ``tracker_mode:=external`` and
-  remap ``tracker_box_topic`` to the tracker's actual output (verify with
-  ``ros2 topic list`` / ``ros2 topic echo`` on the robot) to run the
-  transformer tracker in the loop; ``tracker_mode:=yolov8`` (default) uses
-  YOLOv8's own track IDs, mirroring folder 32.
-
-For every synchronized color+depth frame the manager computes the 3D centroid
-of the requested object:
-
-    pixel (u, v) + depth  --pinhole, K from /camera/color/camera_info-->  P_cam
-    P_cam --tf2 (live eye-in-hand chain)-->  P_base
-
-and publishes it on ``/target_pose`` (``geometry_msgs/PoseStamped``, frame
-``base_link``) — the contract the manipulation layer closes its PID loop on.
+Pipeline (per synchronized color+depth frame pair)
+--------------------------------------------------
+1. ``YOLO(yolov8n.pt).track(frame, persist=True, conf=0.4)`` on the color
+   image — the exact acquisition call of the working folder-31/32 nodes.
+2. The requested target class (case-insensitive match) is located; the
+   distance is read from the depth image at the bounding-box center
+   (median of a small ROI around it — robust against the zero/NaN pixels
+   depth cameras produce at object edges).
+3. Pixel + depth → camera-frame 3-D point by pinhole deprojection using the
+   **live** intrinsics from ``/camera/color/camera_info``.
+4. Camera frame → ``base_link`` via TF2 (the eye-in-hand chain).
+5. Results:
+   * ``/target_pose``   — geometry_msgs/PoseStamped in ``base_link``
+   * ``/eira/detect_image`` — annotated live view of the detector
+   * ``/eira/vision/event``  — JSON lifecycle events for the brain
 
 Topic contract
 --------------
-  subscribe  /eira/vision/request        std_msgs/String      object label
-  subscribe  /camera/color/image_raw     sensor_msgs/Image
-  subscribe  /camera/depth/image_raw     sensor_msgs/Image
-  subscribe  /camera/color/camera_info   sensor_msgs/CameraInfo
-  subscribe  <tracker_box_topic>         sensor_msgs/RegionOfInterest (opt.)
-  publish    /target_pose                geometry_msgs/PoseStamped (base_link)
-  publish    /target_pose_camera         geometry_msgs/PoseStamped (optical)
-  publish    /eira/vision/event          std_msgs/String (JSON)
-  publish    /tracker_id                 std_msgs/Int16
-  publish    detect_image                sensor_msgs/Image  (debug, folder 31 name)
+  subscribe  /camera/color/image_raw    sensor_msgs/Image    (sensor QoS)
+  subscribe  /camera/depth/image_raw    sensor_msgs/Image    (sensor QoS)
+  subscribe  /camera/color/camera_info  sensor_msgs/CameraInfo
+  subscribe  /eira/vision/request       std_msgs/String      (object label)
+  publish    /target_pose               geometry_msgs/PoseStamped (base_link)
+  publish    /eira/detect_image         sensor_msgs/Image    (annotated)
+  publish    /eira/vision/event         std_msgs/String      (JSON)
+
+The depth stream of the Dabai_DCW2 is registered to the color image (the
+audited grasp tutorials sample depth at color-box pixels directly); this
+node keeps that assumption.
+
+Startup failures (ultralytics / weights missing) exit cleanly with an
+actionable message instead of a traceback — a perception node that cannot
+perceive should say so, not sit silently.
 """
 
 import json
+import sys
 import time
 
 import cv2
 import numpy as np
 
 import rclpy
+import tf2_geometry_msgs  # noqa: F401 — registers the PointStamped/PoseStamped
+# transformers tf2_ros.Buffer.transform() dispatches on (without it the
+# call raises tf2.TypeException and kills the callback).
 import tf2_ros
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 
 from geometry_msgs.msg import PointStamped, PoseStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
+from rclpy.time import Time
 
-from sensor_msgs.msg import CameraInfo, Image, RegionOfInterest
-from std_msgs.msg import Int16, String
+from sensor_msgs.msg import CameraInfo, Image
+from std_msgs.msg import String
 
 
 class VisionManager(Node):
-    """YOLOv8 acquisition + tracker follow + depth-fused 3D target pose."""
+    """YOLOv8 detection + depth fusion → 3-D target pose in base_link.
+
+    Always runs the detector and always publishes the annotated frame; the
+    ``find`` request from the brain merely (re)arms the search session and
+    swaps the target class.
+    """
 
     def __init__(self):
         super().__init__("vision_manager")
@@ -72,35 +83,50 @@ class VisionManager(Node):
         # --------------------------------------------------------
         # PARAMETERS (defaults mirror the audited course files)
         # --------------------------------------------------------
-        # Weights path used by the working folder-31 node.
+        # Weights used by the working folder-31 node.
         self.declare_parameter(
             "model_path",
             "/home/jetson/yahboomcar_ws/src/yahboom_yolov8/"
             "yahboom_yolov8/yolov8/weights/yolov8n.pt")
-        self.declare_parameter("confidence", 0.5)
-        # "yolov8"  — self-contained: YOLOv8 track IDs (folder 32 pattern)
-        # "external"— transformer tracker provides the bbox (folder 33)
-        self.declare_parameter("tracker_mode", "yolov8")
-        self.declare_parameter("tracker_box_topic", "/tracker/box")
-        # Frames: resolved against the live TF tree (eye-in-hand chain).
+        # Target class — a parameter so demos can hunt bottles, books, ...
+        self.declare_parameter("target_class", "cup")
+        self.declare_parameter("confidence", 0.4)
+        # Topics (remappable without touching the code).
+        self.declare_parameter("color_topic", "/camera/color/image_raw")
+        self.declare_parameter("depth_topic", "/camera/depth/image_raw")
+        self.declare_parameter("camera_info_topic", "/camera/color/camera_info")
+        # Frames: color-optical frame comes from camera_info / image headers;
+        # this parameter is only the fallback when headers are empty.
         self.declare_parameter("target_frame", "base_link")
         self.declare_parameter("camera_optical_frame",
                                "camera_color_optical_frame")
-        # Robust depth: median over a (2*r+1)^2 window, zeros/NaNs rejected.
+        # Color/depth are synchronized exactly like the proven transport
+        # scripts (folders 22/23): ApproximateTimeSynchronizer, slop 0.5 s.
+        self.declare_parameter("sync_slop_s", 0.5)
+        # Robust depth: median over a (2r+1)^2 window at the box center.
         self.declare_parameter("depth_roi_half", 3)
-        self.declare_parameter("max_depth_m", 3.0)
         self.declare_parameter("min_depth_m", 0.10)
-        # Event timing.
+        self.declare_parameter("max_depth_m", 3.0)
+        # Find-session timing (consumed by the brain's WAIT_FIND state).
         self.declare_parameter("find_timeout_s", 20.0)
         self.declare_parameter("lost_after_s", 1.5)
-        self.declare_parameter("publish_debug_image", True)
+        self.declare_parameter("tf_timeout_s", 0.15)
 
         # --------------------------------------------------------
-        # MODEL (lazy fatal: the Jetson image has ultralytics installed)
+        # MODEL — the lazy import gives an actionable error on machines
+        # without the ultralytics stack instead of a raw traceback.
         # --------------------------------------------------------
-        from ultralytics import YOLO  # noqa: WPS433 — deliberate lazy import
+        try:
+            from ultralytics import YOLO  # noqa: WPS433 — deliberate lazy import
+        except ImportError as exc:
+            raise RuntimeError(
+                "ultralytics is not installed "
+                "(pip install ultralytics>=8, as on the Jetson course image)"
+            ) from exc
 
-        self._model = YOLO(self.get_parameter("model_path").value)
+        model_path = self.get_parameter("model_path").value
+        self.get_logger().info(f"loading YOLOv8 weights: {model_path}")
+        self._model = YOLO(model_path)
         self._class_names = self._model.names            # {id: label}
         self._conf = float(self.get_parameter("confidence").value)
 
@@ -110,230 +136,231 @@ class VisionManager(Node):
             self._tf_buffer, self, spin_thread=True)
 
         # --------------------------------------------------------
-        # TRACKING STATE
+        # STATE
         # --------------------------------------------------------
-        self._target_label = None        # requested object label (lowercase)
-        self._search_deadline = None     # wall-clock deadline for acquisition
-        self._last_seen = None           # last wall-clock time target was seen
-        self._announced_found = False    # emitted "found" only once per task
-        self._announced_lost = False
-        self._tf_warned = False
-        self._camera_info = None         # cached CameraInfo
-        self._external_box = None        # latest RegionOfInterest + timestamp
-        self._track_id = -1
+        self._target_class = str(
+            self.get_parameter("target_class").value).strip().lower()
+        self._searching = False        # find session active (deadline armed)
+        self._search_deadline = None   # monotonic deadline for acquisition
+        self._announced_found = False  # "found" edge for this acquisition
+        self._tracking = False         # target visible on the last frame
+        self._last_seen = None         # monotonic time of last valid pose
+        self._pose_logged = False      # info-log "pose published" once/edge
+        self._camera_info = None       # cached CameraInfo (live intrinsics)
+        self._throttle = {}            # log-throttle timestamps, see below
 
         # --------------------------------------------------------
         # SUBSCRIPTIONS
+        # Camera streams arrive with sensor-data (best-effort) QoS from the
+        # Orbbec driver — subscribing with the matching profile is what makes
+        # the frames actually arrive (reliable subscribers do NOT match a
+        # best-effort publisher and silently receive nothing).
         # --------------------------------------------------------
-        # RGB + depth are synchronized exactly like the proven transport
-        # scripts (folders 22/23): ApproximateTimeSynchronizer, slop 0.5 s.
-        color_sub = Subscriber(self, Image, "/camera/color/image_raw")
-        depth_sub = Subscriber(self, Image, "/camera/depth/image_raw")
+        color_sub = Subscriber(
+            self, Image, self.get_parameter("color_topic").value,
+            qos_profile=qos_profile_sensor_data)
+        depth_sub = Subscriber(
+            self, Image, self.get_parameter("depth_topic").value,
+            qos_profile=qos_profile_sensor_data)
         self._sync = ApproximateTimeSynchronizer(
-            [color_sub, depth_sub], queue_size=1, slop=0.5)
+            [color_sub, depth_sub],
+            queue_size=10,
+            slop=float(self.get_parameter("sync_slop_s").value))
         self._sync.registerCallback(self._on_synced_images)
 
         self.create_subscription(
-            CameraInfo, "/camera/color/camera_info", self._on_camera_info, 10)
+            CameraInfo, self.get_parameter("camera_info_topic").value,
+            self._on_camera_info, qos_profile_sensor_data)
 
         self.create_subscription(
-            String, "eira/vision/request", self._on_request, 10)
-
-        if self.get_parameter("tracker_mode").value == "external":
-            box_topic = self.get_parameter("tracker_box_topic").value
-            self.create_subscription(
-                RegionOfInterest, box_topic, self._on_external_box, 10)
-            self.get_logger().info(
-                f"external tracker mode: listening on {box_topic} "
-                "(remap to smart_tracker's box output on the robot)")
+            String, "/eira/vision/request", self._on_request, 10)
 
         # --------------------------------------------------------
         # PUBLISHERS
         # --------------------------------------------------------
         self._target_pose_pub = self.create_publisher(
-            PoseStamped, "target_pose", 10)
-        self._target_pose_cam_pub = self.create_publisher(
-            PoseStamped, "target_pose_camera", 10)
+            PoseStamped, "/target_pose", 10)
+        self._detect_image_pub = self.create_publisher(
+            Image, "/eira/detect_image", 10)
         self._event_pub = self.create_publisher(
-            String, "eira/vision/event", 10)
-        self._tracker_id_pub = self.create_publisher(Int16, "tracker_id", 10)
-        self._debug_pub = self.create_publisher(Image, "detect_image", 1)
+            String, "/eira/vision/event", 10)
 
-        # Housekeeping timer: emits timeout/lost events.
+        # Housekeeping timer: emits timeout/lost lifecycle events.
         self.create_timer(0.5, self._housekeeping)
 
         self.get_logger().info(
-            f"vision_manager ready (classes={len(self._class_names)}, "
-            f"mode={self.get_parameter('tracker_mode').value})")
+            f"vision_manager ready: model={model_path}, "
+            f"classes={len(self._class_names)}, conf={self._conf}")
+        self.get_logger().info(
+            f"Searching for '{self._target_class}'...")
 
     # ========================================================
     # CALLBACKS
     # ========================================================
 
     def _on_camera_info(self, msg: CameraInfo):
-        # K arrives row-major: fx 0 cx / 0 fy cy / 0 0 1 (grasp_transport.py
-        # hardcodes the same intrinsics; we read them live instead).
+        # K arrives row-major: fx 0 cx / 0 fy cy / 0 0 1. The audited grasp
+        # code hardcodes these intrinsics; we read them live instead.
         self._camera_info = msg
 
     def _on_request(self, msg: String):
-        """The brain asks for an object; (re)start acquisition."""
+        """The brain asks for an object: (re)arm the search session."""
         label = msg.data.strip().lower()
         if not label:
             return
-        self._target_label = label
+        self._target_class = label
         self._announced_found = False
-        self._announced_lost = False
-        self._track_id = -1
-        # Deadline for acquisition; lost-tracking handling is separate.
+        self._pose_logged = False
+        self._searching = True
         self._search_deadline = time.monotonic() + \
             float(self.get_parameter("find_timeout_s").value)
-        self.get_logger().info(f"acquiring target: '{label}'")
-
-    def _on_external_box(self, msg: RegionOfInterest):
-        self._external_box = (msg, time.monotonic())
+        self.get_logger().info(f"Searching for {label}...")
 
     def _on_synced_images(self, color_msg: Image, depth_msg: Image):
-        """Main perception tick: detect → deproject → transform → publish."""
-        if self._target_label is None:
-            return  # idle: no inference cost until the brain asks (edge-friendly)
+        """Main perception tick: detect → depth → deproject → TF → publish.
 
-        frame_rgb = self._bridge.imgmsg_to_cv2(color_msg, "rgb8")
-        depth = self._bridge.imgmsg_to_cv2(depth_msg, "passthrough")
-
-        box, confidence, track_id = self._acquire_box(frame_rgb)
-        if box is None:
-            return  # housekeeping timer will emit lost/timeout events
-
-        u, v = self._box_center(box)
-
-        # ---- depth at the centroid (robust ROI median) ----
-        depth_m = self._median_depth(depth, u, v)
-        if depth_m is None:
+        Never raises: every failure path logs (throttled) and returns, so a
+        bad frame or a missing transform costs one frame, not the node.
+        """
+        try:
+            frame = self._bridge.imgmsg_to_cv2(
+                color_msg, desired_encoding="bgr8")
+            depth = self._bridge.imgmsg_to_cv2(
+                depth_msg, desired_encoding="passthrough")
+        except CvBridgeError as exc:
+            if self._log_ready("cvbridge", 5.0):
+                self.get_logger().warning(f"frame decode failed: {exc}")
             return
 
-        # ---- pixel → camera frame (pinhole, folder-23 math) ----
+        # ---- 1. detection (folder-31/32 call, unchanged semantics) ----
+        detections = self._collect_detections(
+            self._model.track(
+                frame, persist=True, conf=self._conf, verbose=False))
+
+        target = self._select_target(detections)
+        depth_m = None
+        if target is not None:
+            box, name, conf, track_id = target
+            u, v = self._box_center(box)
+            # ---- 2. depth at the bounding-box center (ROI median) ----
+            depth_m = self._depth_at_center(depth, u, v)
+            if depth_m is None and self._log_ready("depth", 5.0):
+                self.get_logger().warning(
+                    f"no valid depth at box center for '{name}' "
+                    "(all-zero/NaN ROI or out of "
+                    f"{self.get_parameter('min_depth_m').value}-"
+                    f"{self.get_parameter('max_depth_m').value} m range)")
+
+        # ---- visual feedback FIRST: the stream never goes dark ----
+        self._publish_annotated(frame, detections, target, depth_m,
+                                color_msg)
+
+        if target is None or depth_m is None:
+            self._tracking = False
+            return
+
+        # ---- 3. pixel → camera frame (pinhole, live intrinsics) ----
         point_cam = self._deproject(u, v, depth_m)
         if point_cam is None:
-            self._publish_event("tf_error", detail="camera_info not received")
+            if self._log_ready("camera_info", 5.0):
+                self.get_logger().warning(
+                    f"no CameraInfo yet on "
+                    f"'{self.get_parameter('camera_info_topic').value}' "
+                    "- cannot deproject; waiting for intrinsics")
+                self._publish_event("tf_error", detail="camera_info missing")
             return
 
-        # ---- camera frame → base_link (live TF, eye-in-hand aware) ----
-        pose_base = self._transform_to_base(point_cam, color_msg.header.stamp)
+        # ---- 4. camera frame → base_link (live TF, eye-in-hand) ----
+        pose_base = self._transform_to_base(point_cam, color_msg)
         if pose_base is None:
-            return  # warning already logged once
+            self._tracking = False
+            return  # warning already throttled inside
 
-        # ---- publish the contract topics ----
-        self._publish_pose(self._target_pose_cam_pub, point_cam,
-                           self._optical_frame(color_msg),
-                           color_msg.header.stamp)
-        self._publish_pose(self._target_pose_pub, pose_base.point,
-                           pose_base.header.frame_id, pose_base.header.stamp)
-
-        if track_id is not None and track_id >= 0 and track_id != self._track_id:
-            self._track_id = int(track_id)
-            tracker_id = Int16()
-            tracker_id.data = self._track_id
-            self._tracker_id_pub.publish(tracker_id)  # smart_tracker handoff
+        # ---- 5. publish the 3-D contract topic ----
+        self._target_pose_pub.publish(pose_base)
+        if self._pose_logged:
+            self.get_logger().debug("Target pose published")
+        else:
+            self._pose_logged = True
+            self.get_logger().info("Target pose published")
 
         if not self._announced_found:
             self._announced_found = True
-            self._announced_lost = False
+            self._searching = False
             self._publish_event(
-                "found", confidence=confidence, depth_m=depth_m,
-                pixel=[int(u), int(v)], track_id=self._track_id)
+                "found", label=name, confidence=conf, depth_m=depth_m,
+                pixel=[int(u), int(v)], track_id=track_id)
             self.get_logger().info(
-                f"target '{self._target_label}' found: "
-                f"depth={depth_m:.3f} m, conf={confidence:.2f}")
+                f"{name.capitalize()} found! Distance: {depth_m:.2f}m")
 
+        self._tracking = True
         self._last_seen = time.monotonic()
 
-        if self.get_parameter("publish_debug_image").value:
-            self._publish_debug(frame_rgb, box, u, v, depth_m)
-
     # ========================================================
-    # ACQUISITION / TRACKING
+    # DETECTION
     # ========================================================
 
-    def _acquire_box(self, frame_rgb: np.ndarray):
-        """Return (box_xyxy, confidence, track_id) for the requested label.
+    def _collect_detections(self, results):
+        """Flatten ultralytics results → [(box_xyxy, name, conf, track_id)].
 
-        * yolov8 mode   — the exact ``model.track(persist=True)`` call of the
-          course nodes (folders 31/32); picks the highest-confidence match of
-          the requested class, keeps its track ID.
-        * external mode — YOLOv8 only *verifies* the class every few frames;
-          the transformer tracker (folder 33) supplies the box continuously.
+        Track IDs are metadata, not a gate: a detection batch whose IDs have
+        not been assigned yet is still used (dropping such batches made the
+        previous version miss fresh detections after startup/target loss).
         """
-        if self.get_parameter("tracker_mode").value == "external":
-            return self._acquire_external(frame_rgb)
-        return self._acquire_yolov8(frame_rgb)
-
-    def _acquire_yolov8(self, frame_rgb):
-        results = self._model.track(
-            frame_rgb, persist=True, conf=self._conf, verbose=False)
-        best = None                       # (area, box, conf, tid)
+        detections = []
         for result in results:
-            boxes = result.boxes
-            if boxes is None or boxes.id is None:
+            boxes = getattr(result, "boxes", None)
+            if boxes is None:
                 continue
-            class_ids = boxes.cls.cpu().numpy().astype(int)
-            confidences = boxes.conf.cpu().numpy()
-            xyxys = boxes.xyxy.cpu().numpy()
-            track_ids = boxes.id.cpu().numpy().astype(int)
-            for box, class_id, conf, tid in zip(
-                    xyxys, class_ids, confidences, track_ids):
-                name = str(self._class_names.get(class_id, "")).lower()
-                if not self._label_matches(name):
-                    continue
-                # When several instances match, track the closest one
-                # (largest bounding-box area ≈ smallest range).
-                area = float((box[2] - box[0]) * (box[3] - box[1]))
-                if best is None or area > best[0]:
-                    best = (area, box, float(conf), int(tid))
+            xyxys = self._to_np(boxes.xyxy).reshape(-1, 4)
+            if xyxys.shape[0] == 0:
+                continue
+            class_ids = self._to_np(boxes.cls).reshape(-1).astype(int)
+            confs = self._to_np(boxes.conf).reshape(-1)
+            if boxes.id is not None:
+                track_ids = self._to_np(boxes.id).reshape(-1).astype(int)
+            else:
+                track_ids = [-1] * len(class_ids)
+            names = getattr(result, "names", None) or self._class_names
+            for box, class_id, conf, track_id in zip(
+                    xyxys, class_ids, confs, track_ids):
+                name = str(names.get(int(class_id), "?")) \
+                    if isinstance(names, dict) else str(names[int(class_id)])
+                detections.append(
+                    (box, name.lower(), float(conf), int(track_id)))
+        return detections
+
+    def _select_target(self, detections):
+        """Best matching detection: case-insensitive containment, both ways
+        ("red cup" request ↔ COCO "cup" class). Several instances → track
+        the closest one (largest box area ≈ smallest range)."""
+        best = None                       # (area, box, name, conf, track_id)
+        for box, name, conf, track_id in detections:
+            if not self._class_matches(name):
+                continue
+            area = float((box[2] - box[0]) * (box[3] - box[1]))
+            if best is None or area > best[0]:
+                best = (area, box, name, conf, track_id)
         if best is None:
-            return None, None, None
-        return best[1], best[2], best[3]
+            return None
+        return best[1], best[2], best[3], best[4]
 
-    def _acquire_external(self, frame_rgb):
-        """Transformer-tracker path: external box, YOLOv8 class verification."""
-        if self._external_box is None:
-            return None, None, None
-        box_msg, stamp = self._external_box
-        if time.monotonic() - stamp > 1.0:            # stale tracker output
-            return None, None, None
-
-        # Occasional YOLOv8 verification pass on the full frame.
-        results = self._model.track(
-            frame_rgb, persist=True, conf=self._conf, verbose=False)
-        confidence = 0.0
-        verified = False
-        for result in results:
-            boxes = result.boxes
-            if boxes is None or len(boxes) == 0:
-                continue
-            for box, class_id, conf in zip(
-                    boxes.xyxy.cpu().numpy(),
-                    boxes.cls.cpu().numpy().astype(int),
-                    boxes.conf.cpu().numpy()):
-                name = str(self._class_names.get(class_id, "")).lower()
-                if self._label_matches(name):
-                    confidence = float(conf)
-                    verified = True
-                    break
-            if verified:
-                break
-
-        box = np.array([
-            float(box_msg.x_offset), float(box_msg.y_offset),
-            float(box_msg.x_offset + box_msg.width),
-            float(box_msg.y_offset + box_msg.height)])
-        return box, confidence, None
-
-    def _label_matches(self, class_name: str) -> bool:
-        """Bidirectional containment: request "red cup" matches class "cup"."""
-        request = self._target_label or ""
-        if not class_name:
+    def _class_matches(self, class_name: str) -> bool:
+        request = self._target_class or ""
+        if not class_name or not request:
             return False
+        # Both sides lowered → case-insensitive; containment both ways so a
+        # request of "red cup" matches class "cup" and vice versa.
         return (class_name in request) or (request in class_name)
+
+    @staticmethod
+    def _to_np(tensor) -> np.ndarray:
+        """torch tensor OR numpy array → float64 numpy (stub-friendly)."""
+        if hasattr(tensor, "cpu"):        # torch → cpu first
+            tensor = tensor.cpu()
+        if hasattr(tensor, "numpy"):      # torch → numpy
+            tensor = tensor.numpy()
+        return np.asarray(tensor, dtype=np.float64)
 
     # ========================================================
     # GEOMETRY
@@ -345,25 +372,33 @@ class VisionManager(Node):
         v = (float(box[1]) + float(box[3])) / 2.0
         return u, v
 
-    def _median_depth(self, depth_image: np.ndarray, u: float, v: float):
-        """Median depth over a small ROI; None when no valid samples.
+    def _depth_at_center(self, depth_image: np.ndarray, u: float, v: float):
+        """Depth [m] at the bounding-box center or None when unusable.
 
-        Handles both encodings produced by the Dabai_DCW2 driver: 16UC1
-        (millimetres) and 32FC1 (metres), exactly as the depth-measurement
-        course nodes (folders 26/27/28) do.
+        A (2r+1)² window around the exact center is median-filtered: depth
+        cameras return zeros/NaNs at depth discontinuities, and a single
+        center pixel would drop the target far too often. Handles both
+        encodings produced by the Dabai_DCW2 driver: 16UC1 (mm, folders
+        26-28 course nodes) and 32FC1 (m).
         """
         height, width = depth_image.shape[:2]
-        ui, vi = int(u), int(v)
-        half = int(self.get_parameter("depth_roi_half").value)
+        ui, vi = int(round(u)), int(round(v))
         if not (0 <= ui < width and 0 <= vi < height):
             return None
 
+        half = int(self.get_parameter("depth_roi_half").value)
         u0, u1 = max(0, ui - half), min(width, ui + half + 1)
         v0, v1 = max(0, vi - half), min(height, vi + half + 1)
         roi = np.asarray(depth_image[v0:v1, u0:u1], dtype=np.float64)
 
         if depth_image.dtype == np.uint16:
             roi = roi / 1000.0                       # mm → m
+        elif depth_image.dtype not in (np.float32, np.float64):
+            if self._log_ready("depth_dtype", 10.0):
+                self.get_logger().warning(
+                    f"unsupported depth encoding {depth_image.dtype} "
+                    "(expected 16UC1 mm or 32FC1 m)")
+            return None
 
         lo = float(self.get_parameter("min_depth_m").value)
         hi = float(self.get_parameter("max_depth_m").value)
@@ -373,131 +408,193 @@ class VisionManager(Node):
         return float(np.median(valid))
 
     def _deproject(self, u: float, v: float, depth_m: float):
-        """Pixel + depth → camera-frame point using the live camera_info K."""
+        """Pixel + depth → camera-frame point using the live camera_info K.
+
+        Standard pinhole model (same math as the folder-23 grasp code, but
+        with live intrinsics): x = (u-cx)·z/fx, y = (v-cy)·z/fy, z = depth.
+        """
         if self._camera_info is None:
             return None
         k = self._camera_info.k                        # row-major 3x3
         fx, fy, cx, cy = k[0], k[4], k[2], k[5]
+        if fx <= 0.0 or fy <= 0.0:
+            return None
         x = (u - cx) * depth_m / fx
         y = (v - cy) * depth_m / fy
-        z = depth_m
-        return x, y, z
+        return x, y, depth_m
 
-    def _transform_to_base(self, point_cam, stamp):
-        """camera-optical point → target_frame via the live TF tree.
+    def _transform_to_base(self, point_cam, color_msg: Image):
+        """Camera-optical point → target_frame via the live TF tree.
 
-        Returns a PointStamped in the target frame, or None when the tree is
-        unavailable (logged once — a TF-free fallback belongs to future work
-        because the eye-in-hand chain genuinely needs the arm joint states).
+        Returns a PoseStamped in the target frame, or None when the tree is
+        unavailable (throttled warning — the robot keeps running; the grasp
+        stage simply gets no fresh pose until TF recovers).
         """
         source = PointStamped()
-        source.header.frame_id = self._optical_frame_from_info()
-        source.header.stamp = stamp
+        source.header.frame_id = self._optical_frame(color_msg)
+        # Zero stamp = "latest available transform": robust against clock
+        # skew between camera stamps and the TF tree on the eye-in-hand
+        # chain (the arm moves, so we always want the freshest extrinsic).
+        source.header.stamp = Time().to_msg()
         source.point.x, source.point.y, source.point.z = point_cam
 
         target_frame = self.get_parameter("target_frame").value
+        timeout = rclpy.duration.Duration(
+            seconds=float(self.get_parameter("tf_timeout_s").value))
         try:
-            return self._tf_buffer.transform(
-                source, target_frame,
-                timeout=rclpy.duration.Duration(seconds=0.15))
-        except tf2_ros.TransformException as exc:
-            if not self._tf_warned:
-                self._tf_warned = True
+            point_base = self._tf_buffer.transform(
+                source, target_frame, timeout=timeout)
+        except Exception as exc:  # noqa: BLE001 — TF must never kill the node
+            # TransformException (lookup/extrapolation) is the expected
+            # member; tf2.TypeException and friends are not its subclasses,
+            # so the catch is deliberately broad — one bad frame costs one
+            # skipped pose, never the process.
+            if self._log_ready("tf", 5.0):
                 self.get_logger().warning(
                     f"TF {source.header.frame_id} → {target_frame} "
-                    f"unavailable ({exc}). Is robot_state_publisher "
-                    "(car_base.launch.py) running?")
+                    f"unavailable ({exc}). Is the base bringup "
+                    "(car_base.launch.py / robot_state_publisher) running?")
             return None
 
-    def _optical_frame(self, color_msg: Image) -> str:
-        return color_msg.header.frame_id or \
-            self.get_parameter("camera_optical_frame").value
+        pose = PoseStamped()
+        pose.header = point_base.header
+        pose.header.stamp = color_msg.header.stamp   # real measurement time
+        pose.pose.position = point_base.point
+        pose.pose.orientation.w = 1.0
+        return pose
 
-    def _optical_frame_from_info(self) -> str:
+    def _optical_frame(self, color_msg: Image) -> str:
+        """Color optical frame: camera_info > image header > parameter."""
         if self._camera_info is not None and self._camera_info.header.frame_id:
             return self._camera_info.header.frame_id
+        if color_msg.header.frame_id:
+            return color_msg.header.frame_id
         return self.get_parameter("camera_optical_frame").value
 
     # ========================================================
-    # PUBLISHING
+    # ANNOTATED VIDEO FEEDBACK (always on — never headless)
     # ========================================================
 
-    @staticmethod
-    def _publish_pose(publisher, point, frame_id, stamp):
-        pose = PoseStamped()
-        pose.header.frame_id = frame_id
-        pose.header.stamp = stamp
-        pose.pose.position.x = float(point[0])
-        pose.pose.position.y = float(point[1])
-        pose.pose.position.z = float(point[2])
-        pose.pose.orientation.w = 1.0
-        publisher.publish(pose)
+    def _publish_annotated(self, frame, detections, target, depth_m,
+                           color_msg: Image):
+        """Draw every detection; highlight the target with live distance."""
+        annotated = frame.copy()
+
+        for box, name, conf, _track_id in detections:
+            is_target = target is not None and box is target[0]
+            x0, y0 = int(box[0]), int(box[1])
+            x1, y1 = int(box[2]), int(box[3])
+            if is_target:
+                cv2.rectangle(annotated, (x0, y0), (x1, y1),
+                              (0, 255, 0), thickness=3)
+                u, v = self._box_center(box)
+                cv2.drawMarker(
+                    annotated, (int(u), int(v)), (0, 0, 255),
+                    markerType=cv2.MARKER_CROSS, markerSize=20, thickness=2)
+                label = f"{name} {conf:.2f}"
+                if depth_m is not None:
+                    label += f" {depth_m:.2f}m"      # e.g. "cup 0.85m"
+            else:
+                cv2.rectangle(annotated, (x0, y0), (x1, y1),
+                              (128, 128, 128), thickness=1)
+                label = f"{name} {conf:.2f}"
+            cv2.putText(
+                annotated, label, (x0, max(14, y0 - 6)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+
+        # Status HUD (top-left): mirrors the node's own logs.
+        if target is not None and depth_m is not None:
+            status = f"TRACKING {target[1]} {depth_m:.2f}m"
+            status_color = (0, 255, 0)
+        elif target is not None:
+            status = f"TARGET {target[1]} (no valid depth)"
+            status_color = (0, 165, 255)
+        else:
+            status = f"Searching for '{self._target_class}'..."
+            status_color = (0, 215, 255)
+        cv2.rectangle(annotated, (0, 0), (420, 28), (0, 0, 0), thickness=-1)
+        cv2.putText(
+            annotated, status, (8, 20),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, status_color, 2)
+
+        message = self._bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
+        message.header.stamp = self.get_clock().now().to_msg()
+        message.header.frame_id = self._optical_frame(color_msg)
+        self._detect_image_pub.publish(message)
+
+    # ========================================================
+    # EVENTS / HOUSEKEEPING
+    # ========================================================
 
     def _publish_event(self, event: str, **fields):
         message = String()
-        payload = {"event": event, "label": self._target_label,
+        payload = {"event": event, "label": self._target_class,
                    "wall_time": time.time()}
         payload.update(fields)
         message.data = json.dumps(payload)
         self._event_pub.publish(message)
 
-    def _publish_debug(self, frame_rgb, box, u, v, depth_m):
-        annotated = frame_rgb.copy()
-        cv2.rectangle(
-            annotated,
-            (int(box[0]), int(box[1])), (int(box[2]), int(box[3])),
-            color=(0, 255, 0), thickness=2)
-        cv2.drawMarker(
-            annotated, (int(u), int(v)), color=(255, 0, 0),
-            markerType=cv2.MARKER_CROSS, markerSize=18, thickness=2)
-        cv2.putText(
-            annotated, f"{self._target_label} {depth_m:.2f}m",
-            (int(box[0]), max(12, int(box[1]) - 6)),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
-        self._debug_pub.publish(
-            self._bridge.cv2_to_imgmsg(annotated, encoding="rgb8"))
-
-    # ========================================================
-    # HOUSEKEEPING (timeout / lost detection)
-    # ========================================================
-
     def _housekeeping(self):
-        if self._target_label is None:
-            return
-
+        """Lifecycle events: acquisition timeout and tracking loss."""
         now = time.monotonic()
 
-        # Acquisition timeout — brain moves on (retry policy lives there).
-        if (not self._announced_found and self._search_deadline is not None
+        # Acquisition timeout — the brain retries or aborts (its policy).
+        if (self._searching and self._search_deadline is not None
                 and now > self._search_deadline):
+            self._searching = False
             self._publish_event("timeout")
             self.get_logger().warning(
-                f"target '{self._target_label}' not found within deadline")
-            self._target_label = None
-            return
+                f"no '{self._target_class}' found within "
+                f"{self.get_parameter('find_timeout_s').value:.0f} s")
 
         # Tracking lost — stop feeding stale poses to the PID.
         lost_after = float(self.get_parameter("lost_after_s").value)
-        if (self._announced_found and not self._announced_lost
+        if (self._announced_found and not self._tracking
                 and self._last_seen is not None
                 and now - self._last_seen > lost_after):
-            self._announced_lost = True
+            self._announced_found = False
+            self._pose_logged = False
             self._publish_event("lost")
             self.get_logger().warning(
-                f"target '{self._target_label}' lost")
+                f"target '{self._target_class}' lost")
+
+    # ========================================================
+    # UTILITIES
+    # ========================================================
+
+    def _log_ready(self, key: str, period: float) -> bool:
+        """True at most once per `period` seconds per key (log throttling)."""
+        now = time.monotonic()
+        due = self._throttle.get(key)
+        if due is None or now >= due:
+            self._throttle[key] = now + period
+            return True
+        return False
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = VisionManager()
+    try:
+        node = VisionManager()
+    except RuntimeError as exc:
+        # Actionable startup failure (missing ultralytics / weights):
+        # message, clean shutdown, non-zero exit — no traceback.
+        print(f"[vision_manager] FATAL: {exc}", file=sys.stderr, flush=True)
+        rclpy.try_shutdown()
+        return 1
+
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (ExternalShutdownException, KeyboardInterrupt):
+        pass  # SIGTERM/Ctrl-C — context is already shutting down
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            # On SIGTERM rclpy's signal handler shuts the context itself;
+            # a second shutdown call raises RCLError and spams a traceback.
+            rclpy.shutdown()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

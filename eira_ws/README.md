@@ -129,20 +129,22 @@ for the H1 ablation.
 ### 3.2 Multimodal perception (`eira_perception`)
 
 YOLOv8 (`yolov8n.pt`, the exact audited weights path) runs
-`model.track(persist=True)` for acquisition and — in the default
-`tracker_mode: yolov8` — for continuous following, mirroring the proven
-folder-31/32 inference path. Setting `tracker_mode: external` switches the
-box source to the transformer tracker of folder 33 (`smart_tracker`),
-consumed as `sensor_msgs/RegionOfInterest` on a configurable topic, with
-YOLOv8 retained as periodic class verifier. Label matching is bidirectional
-("red cup" ↔ COCO `cup`).
+`model.track(persist=True, conf=0.4)` on every synchronized color+depth
+pair — the proven folder-31/32 inference path, subscribed with sensor-data
+QoS so best-effort camera publishers actually match. The target class is a
+parameter (default `cup`) with case-insensitive bidirectional label
+matching ("red cup" ↔ COCO `cup`); the brain's `find` request re-arms the
+search session and overrides the class. The pipeline is never headless:
+every frame is annotated (boxes, class, confidence, live distance) and
+published on `/eira/detect_image`.
 
 3-D estimation follows the audited grasp pipeline: pinhole deprojection with
 the **live** `camera_info` K (rather than the course code's hard-coded
-intrinsics), robust ROI-median depth handling both `16UC1`(mm) and
-`32FC1`(m), and a live TF lookup through the eye-in-hand chain to
-`base_link`. `/target_pose` is only published while the target is visible;
-`lost`/`timeout` events let downstream stages abort safely.
+intrinsics), ROI-median depth at the bounding-box center handling both
+`16UC1` (mm) and `32FC1` (m), and a live TF lookup through the eye-in-hand
+chain to `base_link`. `/target_pose` publishes whenever the target is
+visible with valid depth; `lost`/`timeout` events let downstream stages
+abort safely.
 
 ### 3.3 Manipulation (`eira_manipulation`)
 
@@ -183,14 +185,16 @@ ros2 run eira_brain eira_cli "bring me a cup from the kitchen"
 ```
 
 Monitoring: `ros2 topic echo /eira/status`, `ros2 topic echo /eira/plan`,
-RViz on `/target_pose` + `detect_image`. Driver-only development machines:
-all robot-driver includes degrade to warnings (`use_base:=false` …).
+RViz on `/target_pose` + `/eira/detect_image`. Driver-only development
+machines: all robot-driver includes degrade to warnings
+(`use_base:=false` …).
 
 ## 5. Limitations
 
-- The transformer tracker's output topic name inside the pre-built
-  `smart_tracker` package must be confirmed on the robot
-  (`ros2 topic list`) and remapped onto `tracker_box_topic`.
+- The transformer tracker of folder 33 (`smart_tracker`) is not yet in the
+  loop; YOLOv8's own tracking carries both acquisition and following.
+  Re-adding it as an external box source is future work once its output
+  topic is confirmed on the robot.
 - `arm_base_frame` (or the static mount offset) must be calibrated once;
   the audited TF tree from `car_base.launch.py` is expected to provide it.
 - No active search: `find` does not sweep the base when the object is out

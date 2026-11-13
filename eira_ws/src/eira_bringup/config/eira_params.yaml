@@ -27,13 +27,8 @@
     ros__parameters:
       # Model exactly as used by the working folder-31 node.
       model_path: "/home/jetson/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/yolov8n.pt"
-      confidence: 0.5
-      # yolov8 (default): self-contained YOLOv8 tracking (folder 32).
-      # external: transformer tracker (folder 33 smart_tracker) supplies
-      #           the box on tracker_box_topic — remap it to the tracker's
-      #           real output topic on the robot.
-      tracker_mode: "yolov8"
-      tracker_box_topic: "/tracker/box"
+      target_class: "cup"               # default hunt; /eira/vision/request overrides
+      confidence: 0.4                   # folder-31/32 working threshold
       target_frame: "base_link"
       camera_optical_frame: "camera_color_optical_frame"
       depth_roi_half: 3
@@ -41,7 +36,7 @@
       max_depth_m: 3.0
       find_timeout_s: 20.0
       lost_after_s: 1.5
-      publish_debug_image: true
+      tf_timeout_s: 0.15
 
   grasp_executor:
     ros__parameters:
