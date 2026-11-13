@@ -105,9 +105,11 @@ class GraspExecutor(Node):
         self.declare_parameter("gripper_carry", 115)
         self.declare_parameter("arm_runtime_ms", 2000)
 
-        # Joint poses verbatim from grasp_transport.py (folder 23).
+        # init_joints: user-defined default home pose (2026-11-13; was the
+        # folder-23 verbatim [90,120,0,0,90,90]). transport_joints remains
+        # verbatim from grasp_transport.py (folder 23).
         self._init_joints = [int(j) for j in self.declare_parameter(
-            "init_joints", [90, 120, 0, 0, 90, 90]).value]
+            "init_joints", [90, 140, 20, 10, 90, 180]).value]
         self._transport_joints = [int(j) for j in self.declare_parameter(
             "transport_joints", [90, 150, 12, 20, 90, 120]).value]
 

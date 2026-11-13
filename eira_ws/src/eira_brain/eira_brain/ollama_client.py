@@ -21,7 +21,7 @@ Design notes
       find     -> YOLOv8 acquisition + transformer tracker (folders 31/32/33)
       grasp    -> get_kinemarics IK + arm6_joints          (folder 23)
       release  -> arm_joint / arm6_joints
-      home     -> arm6_joints (init pose [90,120,0,0,90,90])
+      home     -> arm6_joints (init pose [90,140,20,10,90,180])
       speak    -> beep topic (UInt16, folder 22 convention)
       stop     -> cancel everything
 
