@@ -16,7 +16,7 @@ workspace; E-AIRA only adds the three cognition nodes on top:
     │  tracker: smart_tracker super_tracker.launch.py (optional)        │
     │  ──────────────────────────────────────────────────────────────── │
     │  eira_brain.llm_task_planner + eira_perception.vision_manager +   │
-    │  eira_manipulation.grasp_executor                                 │
+    │  eira_manipulation.grasp_executor + eira_brain.safety_monitor     │
     └────────────────────────────────────────────────────────────────────┘
 
 Every robot-driver include is guarded: if a package is missing (e.g. running
@@ -236,6 +236,15 @@ def generate_launch_description():
         package="eira_manipulation",
         executable="grasp_executor",
         name="grasp_executor",
+        **eira_common,
+    ))
+
+    # Safety watchdog: pins cmd_vel to zero if the brain heartbeat dies
+    # while motion commands are still flowing (see safety_monitor.py).
+    actions.append(Node(
+        package="eira_brain",
+        executable="safety_monitor",
+        name="safety_monitor",
         **eira_common,
     ))
 

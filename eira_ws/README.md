@@ -61,7 +61,8 @@ E-AIRA contributes:
                          ┌──────────────────────────────┐
    user (CLI / voice) ──►│        eira_brain            │
    /eira/command         │  LLM (Ollama/Phi-3) ⇄ rules  │
-                         │  plan validation · FSM        │
+   (queued while busy)   │  plan validation · FSM        │
+                         │  mission queue · SCAN search  │
                          └───┬──────────┬──────────┬───┘
              NavigateThroughPoses   /eira/vision_target /eira/manipulation/req
                   (action)              │  ▲                │        ▲
@@ -79,13 +80,16 @@ E-AIRA contributes:
         │ base stack (IMU→LiDAR merge→filter→EKF) · orbbec camera │
         │ arm_kin (kin_ik_fk) · arm_util  — all UNCHANGED drivers │
         └─────────────────────────────────────────────────────────┘
+
+        safety_monitor (eira_brain) ── watches the brain heartbeat and pins
+        cmd_vel to zero if the brain dies while motion commands flow.
 ```
 
 ### 2.1 Package map
 
 | Package | Role | Key files |
 |---|---|---|
-| `eira_brain` | LLM task planner, plan validation, action sequencing, Nav2 client | `llm_task_planner.py`, `ollama_client.py`, `eira_cli.py` |
+| `eira_brain` | LLM task planner, plan validation, action sequencing, Nav2 client, mission queue, active scan, speech, safety watchdog | `llm_task_planner.py`, `ollama_client.py`, `eira_cli.py`, `safety_monitor.py` |
 | `eira_perception` | YOLOv8 acquisition + tracker handoff + 3-D centroid | `vision_manager.py` |
 | `eira_manipulation` | PID base alignment, IK grasp via existing service | `grasp_executor.py`, `pid.py` |
 | `eira_bringup` | One-command master launch + parameters + waypoints | `launch/eira_master.launch.py`, `config/*.yaml` |
@@ -94,14 +98,17 @@ E-AIRA contributes:
 
 | Interface | Type | Producer → Consumer | Provenance |
 |---|---|---|---|
-| `/eira/command` | `std_msgs/String` | CLI/voice → brain | new |
-| `/eira/plan`, `/eira/status` | `String` (JSON) | brain → world | new |
+| `/eira/command` | `std_msgs/String` | CLI/voice → brain (queued while busy; `stop` preempts) | new |
+| `/eira/plan`, `/eira/status` | `String` (JSON, incl. `queue` depth) | brain → world | new |
 | `navigate_through_poses` | `nav2_msgs/action/NavigateThroughPoses` | brain → Nav2 | folder 22 |
 | `/eira/vision_target` · `/eira/vision/event` | `String` | brain → perception / perception → brain | new |
 | `/target_pose` | `geometry_msgs/PoseStamped` (`base_link`) | perception → manipulation | new |
 | `/camera/{color,depth}/image_raw`, `camera_info` | `sensor_msgs` | orbbec → perception | folders 25–33 |
 | `/eira/manipulation/request` · `…/event` | `String` | brain ↔ manipulation | new |
-| `cmd_vel` | `geometry_msgs/Twist` | manipulation → base | folders 22–23 |
+| `cmd_vel` | `geometry_msgs/Twist` | manipulation (align) / brain (SCAN rotation) / safety_monitor (zero) → base | folders 22–23 |
+| `/eira/heartbeat` | `std_msgs/Empty` (2 Hz) | brain → safety watchdog | new |
+| `/eira/safety/event` | `String` (JSON) | safety watchdog → world | new |
+| `/eira/speech` | `std_msgs/String` (+ espeak audio when available) | brain → speakers / log | new |
 | `arm6_joints` / `arm_joint` | `arm_msgs/ArmJoints` / `ArmJoint` | manipulation → arm driver | folder 23 |
 | `get_kinemarics` | `arm_interface/srv/ArmKinemarics` | manipulation → `kin_ik_fk` | folder 23 |
 | `grasp_done`, `Curjoints`, `beep`, `set_joint5` | `Bool`/`CurJoints`/`UInt16`/`Int16` | legacy ecosystem | folders 22–23 |
@@ -161,6 +168,30 @@ static mount offset otherwise) and sends the **unchanged** IK request to
 wrap rules. Grasp completion re-publishes the legacy `grasp_done` topic so
 the pre-existing transport ecosystem remains composable.
 
+### 3.4 Resilience and interaction features
+
+- **Mission queue.** Commands arriving while a task is running are queued
+  (FIFO, default depth 4) instead of rejected; each is acknowledged on
+  `/eira/status` (`queued '…' (position N of M)`) and runs when the
+  current mission reaches a terminal state. A `stop` command always
+  preempts: cancel motion, drop the queue, report `preempted`.
+- **Active scan (`SCAN` state).** When `find` times out with the target
+  not in view, the brain rotates the base (default 60° at 0.4 rad/s,
+  alternating direction, up to 3 sweeps) and re-issues the search before
+  declaring failure — turning "not found" from a dead end into a search
+  behaviour. The rotation is published on `cmd_vel` and zeroed on exit.
+- **Safety watchdog (`safety_monitor`).** The brain heartbeats at 2 Hz on
+  `/eira/heartbeat`; if the heartbeat goes stale while motion commands
+  are still flowing, the watchdog pins `cmd_vel` to zero at 5 Hz and
+  emits `brain_heartbeat_lost` / `heartbeat_restored` JSON events on
+  `/eira/safety/event`. A startup grace window prevents false trips.
+- **Speech.** `speak` actions (and unknown-command acknowledgements) are
+  published on `/eira/speech`; when `espeak` is installed they are also
+  voiced locally, otherwise a buzzer beep acknowledges.
+- **Compound fallback parsing.** The deterministic planner splits
+  commands on "and (then)" and plans each clause — "go to the kitchen
+  and then find a cup" yields `navigate → find` without any LLM.
+
 ## 4. Reproduction
 
 ```bash
@@ -183,6 +214,13 @@ ros2 launch eira_bringup eira_master.launch.py map:=$HOME/map/map.yaml
 
 # 5. Issue a task:
 ros2 run eira_brain eira_cli "bring me a cup from the kitchen"
+
+# CLI helpers:
+ros2 run eira_brain eira_cli --list-waypoints        # inspect the DB
+ros2 run eira_brain eira_cli --plan-only "go to the kitchen and find a cup"
+
+# 6. Unit tests (no robot needed):
+python3 -m pytest src/eira_brain/test/ src/eira_manipulation/test/
 ```
 
 Monitoring: `ros2 topic echo /eira/status`, `ros2 topic echo /eira/plan`,
@@ -198,10 +236,13 @@ machines: all robot-driver includes degrade to warnings
   topic is confirmed on the robot.
 - `arm_base_frame` (or the static mount offset) must be calibrated once;
   the audited TF tree from `car_base.launch.py` is expected to provide it.
-- No active search: `find` does not sweep the base when the object is out
-  of view (planned extension — rotational scan behaviour in the brain).
-- Nav2 and the alignment stage both write `cmd_vel`; the brain sequences
-  them so they never overlap, but a mux (twist_mux) would harden this.
+- Three writers share `cmd_vel` (Nav2, the alignment stage, and the
+  brain's SCAN rotation); the brain sequences them so they never overlap
+  in time, but a priority mux (twist_mux) would harden this. The safety
+  watchdog is deliberately the *last* writer: it only ever publishes
+  zeros.
+- SCAN sweeps are open-loop rotations (velocity × duration), not
+  odometry-closed loops; on slippery floors the swept angle may drift.
 
 ## 6. Evaluation Plan
 
@@ -234,9 +275,11 @@ count; mean Jetson power draw (telemetry `tegrastats`) for the edge claim.
 eira_ws/
 ├── README.md                      ← this document
 └── src/
-    ├── eira_brain/                LLM planning + sequencing + CLI
+    ├── eira_brain/                LLM planning + sequencing + CLI +
+    │                              safety watchdog  (test/: 35 unit tests)
     ├── eira_perception/           YOLOv8 + tracker + 3-D target pose
     ├── eira_manipulation/         PID alignment + IK grasping
+    │                              (test/: 10 PID unit tests)
     └── eira_bringup/              master launch, parameters, waypoints
 ```
 

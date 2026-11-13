@@ -22,6 +22,28 @@
       grasp_timeout_s: 90.0
       misc_timeout_s: 15.0
       action_retries: 1
+      # --- mission queue ------------------------------------------------
+      # Commands arriving while a task is busy are queued (FIFO) instead of
+      # being rejected; 'stop' always preempts and drains the queue.
+      mission_queue_len: 4
+      # --- active scan (find behaviour when nothing is in view) -----------
+      scan_enabled: true                # rotate the base to search
+      scan_arc_deg: 60.0                # total rotation per sweep [deg]
+      scan_speed_radps: 0.4             # gentle sweep, mecanum-safe
+      scan_max_sweeps: 3                # alternating direction, then FAIL
+      # --- speech output --------------------------------------------------
+      # Phrases are always published on /eira/speech; when espeak is on
+      # PATH they are additionally spoken through the robot speakers.
+      tts_enabled: true
+
+  safety_monitor:
+    ros__parameters:
+      # Watchdog: if the brain heartbeat (/eira/heartbeat, 2 Hz) goes stale
+      # while motion commands are still flowing, pin cmd_vel to zero.
+      heartbeat_timeout_s: 5.0
+      startup_grace_s: 10.0             # no intervention before this
+      motion_window_s: 2.0              # 'recent motion' definition
+      intervene_rate_hz: 5.0            # zero-Twist rate while intervening
 
   vision_manager:
     ros__parameters:

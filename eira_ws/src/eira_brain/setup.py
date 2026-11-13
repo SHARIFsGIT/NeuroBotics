@@ -28,6 +28,7 @@ setup(
             'llm_task_planner = eira_brain.llm_task_planner:main',
             'eira_cli = eira_brain.eira_cli:main',
             'waypoint_recorder = eira_brain.waypoint_recorder:main',
+            'safety_monitor = eira_brain.safety_monitor:main',
         ],
     },
 )

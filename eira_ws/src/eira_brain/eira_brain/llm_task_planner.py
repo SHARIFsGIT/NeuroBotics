@@ -33,6 +33,8 @@ the execution state machine is advanced by a wall-clock timer.
 import json
 import math
 import re
+import shutil
+import subprocess
 import threading
 import time
 
@@ -43,8 +45,8 @@ from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped
-from std_msgs.msg import String, UInt16
+from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped, Twist
+from std_msgs.msg import Empty, String, UInt16
 
 from eira_brain.ollama_client import (
     ACTIONS_WITH_TARGET,
@@ -81,6 +83,7 @@ class LLMTaskPlanner(Node):
     WAIT_FIND = "WAIT_FIND"
     WAIT_GRASP = "WAIT_GRASP"
     WAIT_MISC = "WAIT_MISC"
+    SCAN = "SCAN"          # active search: rotating the base for the camera
     DONE = "DONE"
     FAILED = "FAILED"
 
@@ -104,6 +107,15 @@ class LLMTaskPlanner(Node):
         self.declare_parameter("grasp_timeout_s", 90.0)
         self.declare_parameter("misc_timeout_s", 15.0)
         self.declare_parameter("action_retries", 1)
+        # --- mission queue: commands arriving while busy are queued -------
+        self.declare_parameter("mission_queue_len", 4)
+        # --- active search: rotate the base when `find` comes up empty ---
+        self.declare_parameter("scan_enabled", True)
+        self.declare_parameter("scan_arc_deg", 60.0)
+        self.declare_parameter("scan_speed_radps", 0.4)
+        self.declare_parameter("scan_max_sweeps", 3)
+        # --- spoken feedback (espeak when present, beep otherwise) --------
+        self.declare_parameter("tts_enabled", True)
 
         self._ollama = OllamaClient(
             url=self.get_parameter("ollama_url").value,
@@ -127,6 +139,18 @@ class LLMTaskPlanner(Node):
         self._nav_result = None    # GoalStatus value once navigation settles
         self._nav_goal_handle = None
         self._planner_source = "none"   # "llm" | "fallback" — logged per task
+        # Mission queue: commands that arrive while a task is running are
+        # executed in order once the current mission reaches a terminal
+        # state (a 'stop' command preempts and drops the whole queue).
+        # The lock serialises queue mutation + the IDLE→PLANNING transition
+        # between the command callback and the tick thread (reentrant
+        # callback group → true concurrency).
+        self._mission_queue = []
+        self._mission_lock = threading.Lock()
+        # Active-search bookkeeping (SCAN state).
+        self._scans_done = 0
+        self._scan_until = None
+        self._scan_direction = 1        # alternates: left, right, left...
 
         self._cb_group = ReentrantCallbackGroup()
 
@@ -167,6 +191,13 @@ class LLMTaskPlanner(Node):
             String, "eira/manipulation/request", 10)
         # Folder 22 (apriltag_transport_V2) beeps with UInt16 milliseconds.
         self._beep_pub = self.create_publisher(UInt16, "beep", 10)
+        # Spoken-feedback event tap (consumed by any TTS/voice front-end)
+        # and the scan rotation channel — the brain only writes cmd_vel
+        # during SCAN, never while Nav2 or the grasp stage own the base.
+        self._speech_pub = self.create_publisher(String, "eira/speech", 10)
+        self._cmd_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
+        # Liveness heartbeat: safety_monitor stops the base if this stops.
+        self._heartbeat_pub = self.create_publisher(Empty, "eira/heartbeat", 10)
 
         # --------------------------------------------------------
         # NAV2 ACTION CLIENT  (NavigateThroughPoses — proven on this robot)
@@ -181,9 +212,11 @@ class LLMTaskPlanner(Node):
                 "support; `navigate` actions will fail with a clear status.")
 
         # --------------------------------------------------------
-        # STATE-MACHINE TICKER
+        # STATE-MACHINE TICKER + LIVENESS HEARTBEAT
         # --------------------------------------------------------
         self.create_timer(0.1, self._tick, callback_group=self._cb_group)
+        self.create_timer(
+            0.5, self._publish_heartbeat, callback_group=self._cb_group)
 
         self._publish_status("node started, waiting for /eira/command")
         self.get_logger().info(
@@ -235,17 +268,66 @@ class LLMTaskPlanner(Node):
         command = msg.data.strip()
         if not command:
             return
-        if self._state not in (self.IDLE, self.DONE, self.FAILED):
-            self._publish_status(
-                f"rejected '{command}': planner busy in state {self._state}")
-            self._beep(80)  # short refusal beep
+
+        # A stop ALWAYS preempts: cancel motion and drop the whole queue.
+        if self._state != self.IDLE and self._RX_STOP.search(command.lower()):
+            with self._mission_lock:
+                self._mission_queue.clear()
+                self._stop_everything()
+                self._state = self.IDLE
+                self._publish_status(f"preempted by '{command}'")
             return
 
-        self._state = self.PLANNING
+        with self._mission_lock:
+            if self._state in (self.IDLE, self.DONE, self.FAILED):
+                # Reserve the planner slot so a concurrent command cannot
+                # also enter _spawn_plan_worker.
+                self._scans_done = 0
+                self._plan = []
+                self._plan_idx = 0
+                self._planner_source = "none"
+                self._state = self.PLANNING
+                start = True
+            else:
+                start = False
+                # Mission queue: instead of rejecting, remember the command
+                # and start it when the running mission finishes.
+                limit = int(self.get_parameter("mission_queue_len").value)
+                if len(self._mission_queue) >= limit:
+                    self._publish_status(
+                        f"rejected '{command}': mission queue full ({limit})")
+                    self._beep(80)
+                    return
+                self._mission_queue.append(command)
+                position = len(self._mission_queue)
+        if start:
+            self._spawn_plan_worker(command)
+        else:
+            self._beep(120)  # short acknowledgement beep
+            self._publish_status(
+                f"queued '{command}' (position {position} of {limit})")
+
+    def _spawn_plan_worker(self, command: str):
+        """(Caller holds no lock.) Announce + launch the planning thread."""
         self._publish_status(f"planning '{command}'")
         worker = threading.Thread(
             target=self._plan_worker, args=(command,), daemon=True)
         worker.start()
+
+    def _finish_mission(self):
+        """Terminal state reached — start the next queued mission, if any."""
+        with self._mission_lock:
+            if self._state != self.IDLE:
+                return  # a concurrent command already started the next one
+            if not self._mission_queue:
+                return
+            command = self._mission_queue.pop(0)
+            self._scans_done = 0
+            self._plan = []
+            self._plan_idx = 0
+            self._planner_source = "none"
+            self._state = self.PLANNING
+        self._spawn_plan_worker(command)
 
     def _plan_worker(self, command: str):
         """Query the LLM, validate, and hand the plan to the FSM."""
@@ -268,6 +350,10 @@ class LLMTaskPlanner(Node):
             self._state = self.FAILED
             self._publish_status(
                 f"no valid plan for '{command}'; nothing executed")
+            with self._mission_lock:
+                if self._state == self.FAILED:   # not preempted/restarted
+                    self._state = self.IDLE
+            self._finish_mission()
             return
 
         self._plan = plan
@@ -340,12 +426,33 @@ class LLMTaskPlanner(Node):
     _RX_STOP = re.compile(r"\b(?:stop|halt|cancel|abort)\b", re.IGNORECASE)
 
     def _fallback_plan(self, command: str) -> list:
-        """Template-based plan extraction used when the LLM is unavailable."""
-        text = command.lower()
-        plan = []
+        """Template-based plan extraction used when the LLM is unavailable.
+
+        Compound commands are supported by splitting on ' and ' / ' and
+        then ' and concatenating each clause's plan: "find the cup and the
+        bottle" becomes two find actions; "fetch a cup and go home" becomes
+        a full fetch chain followed by a return home. A stop anywhere in
+        the command still preempts everything.
+        """
+        text = command.lower().strip()
 
         if self._RX_STOP.search(text):
             return [{"action": "stop"}]
+
+        clauses = re.split(r"\s+and\s+(?:also\s+|then\s+)?", text)
+        if len(clauses) > 1:
+            plan = []
+            for clause in clauses:
+                clause = clause.strip()
+                if clause:
+                    plan.extend(self._fallback_plan_single(clause))
+            return plan or [{"action": "speak",
+                             "target": "command not understood"}]
+        return self._fallback_plan_single(text)
+
+    def _fallback_plan_single(self, text: str) -> list:
+        """Plan one imperative clause (no stop handling — see above)."""
+        plan = []
 
         fetch = self._RX_FETCH.search(text)
         if fetch:
@@ -412,12 +519,17 @@ class LLMTaskPlanner(Node):
                 self.WAIT_FIND: self._check_find,
                 self.WAIT_GRASP: self._check_grasp,
                 self.WAIT_MISC: self._check_misc,
+                self.SCAN: self._check_scan,
             }.get(self._state)
             if handler:
                 handler()
         except Exception as exc:  # noqa: BLE001 — FSM must never die silently
             self.get_logger().error(f"FSM error: {exc}")
             self._abort_task(f"internal error: {exc}")
+
+    def _publish_heartbeat(self):
+        """2 Hz liveness signal for the safety watchdog."""
+        self._heartbeat_pub.publish(Empty())
 
     # -- dispatch ------------------------------------------------
 
@@ -428,7 +540,10 @@ class LLMTaskPlanner(Node):
             self._publish_status(
                 f"task complete ({len(self._plan)} actions, planner="
                 f"{self._planner_source})")
-            self._state = self.IDLE
+            with self._mission_lock:
+                if self._state == self.DONE:    # not preempted/restarted
+                    self._state = self.IDLE
+            self._finish_mission()
             return
 
         action = self._plan[self._plan_idx]
@@ -472,8 +587,10 @@ class LLMTaskPlanner(Node):
             self._send_manip(kind)
             self._state = self.WAIT_MISC
         elif kind == "speak":
-            self._beep(200)
-            self._state = self.WAIT_MISC
+            # Fire-and-forget: TTS/beep runs outside the FSM, so the plan
+            # advances immediately (no artificial WAIT_MISC timeout).
+            self._speak(target or "acknowledged")
+            self._advance()
         elif kind == "stop":
             self._stop_everything()
             # Publish a terminal status: `eira_cli` (and any harness)
@@ -483,7 +600,10 @@ class LLMTaskPlanner(Node):
             self._publish_status(
                 f"stopped by command ({self._plan_idx} of "
                 f"{len(self._plan)} actions had completed)")
-            self._state = self.IDLE
+            with self._mission_lock:
+                if self._state == self.DONE:    # not preempted/restarted
+                    self._state = self.IDLE
+            self._finish_mission()
             return
         else:  # unreachable — validator already dropped unknowns
             self._action_failed(f"unhandled action {kind}")
@@ -518,12 +638,63 @@ class LLMTaskPlanner(Node):
         event = self._last_vision_event
         if event:
             if event.get("event") == "found":
+                self._scans_done = 0        # found it — reset the sweep count
                 self._advance()
-            elif event.get("event") in ("timeout", "tf_error"):
-                self._action_failed(f"vision: {event.get('event')}")
+                return
+            if event.get("event") in ("timeout", "tf_error"):
+                self._find_failed(f"vision: {event.get('event')}")
                 return
         if self._timed_out():
-            self._action_failed("object not found in time")
+            self._find_failed("object not found in time")
+
+    def _find_failed(self, reason: str):
+        """`find` came up empty: sweep the base before burning a retry.
+
+        Active search — instead of repeating an identical doomed query,
+        rotate the base ~scan_arc_deg so the camera FOV covers fresh ground,
+        then re-send the vision target. Only after scan_max_sweeps do we
+        fall through to the ordinary retry/abort policy.
+        """
+        sweeps_left = (
+            bool(self.get_parameter("scan_enabled").value)
+            and self._scans_done < int(
+                self.get_parameter("scan_max_sweeps").value))
+        if sweeps_left:
+            self._begin_scan()
+            return
+        self._action_failed(reason)
+
+    def _begin_scan(self):
+        """Enter SCAN: rotate in place (alternating direction) for the
+        time that covers scan_arc_deg at scan_speed_radps."""
+        self._scans_done += 1
+        self._scan_direction *= -1            # left, right, left, ...
+        arc = math.radians(float(self.get_parameter("scan_arc_deg").value))
+        speed = abs(float(self.get_parameter("scan_speed_radps").value))
+        speed = max(speed, 0.05)              # sane floor
+        duration = arc / speed
+
+        twist = Twist()
+        twist.angular.z = self._scan_direction * speed
+        self._cmd_vel_pub.publish(twist)
+        self._scan_until = time.monotonic() + duration
+        self._state = self.SCAN
+
+        target = self._plan[self._plan_idx].get("target", "?") \
+            if self._plan_idx < len(self._plan) else "?"
+        self._publish_status(
+            f"scanning for '{target}' — sweep {self._scans_done}/"
+            f"{self.get_parameter('scan_max_sweeps').value} "
+            f"({self.get_parameter('scan_arc_deg').value:.0f}° rotation)")
+
+    def _check_scan(self):
+        if self._scan_until is not None and time.monotonic() < self._scan_until:
+            return                             # still rotating
+        self._zero_cmd_vel()
+        # Re-dispatch the SAME find action: publishing the vision target
+        # again re-arms vision's search session, and the retry stamp keeps
+        # the budget untouched (scans are free, retries are not).
+        self._state = self.EXECUTING
 
     def _check_grasp(self):
         event = self._last_manip_event
@@ -577,12 +748,17 @@ class LLMTaskPlanner(Node):
         self._state = self.FAILED
         self._publish_status(f"task aborted: {reason}")
         self.get_logger().warning(f"Task aborted: {reason}")
-        self._state = self.IDLE
+        with self._mission_lock:
+            if self._state == self.FAILED:      # not preempted/restarted
+                self._state = self.IDLE
+        self._finish_mission()
 
     def _stop_everything(self):
         if self._nav_goal_handle is not None:
             self._nav_goal_handle.cancel_goal_async()
             self._nav_goal_handle = None
+        self._scan_until = None
+        self._zero_cmd_vel()                      # brain-owned scan rotation
         self._send_manip("stop")                  # zeroes cmd_vel on the base
         self._nav_result = None
 
@@ -595,6 +771,37 @@ class LLMTaskPlanner(Node):
         beep = UInt16()
         beep.data = max(0, min(60000, int(duration_ms)))
         self._beep_pub.publish(beep)
+
+    def _zero_cmd_vel(self):
+        """Stop the brain-owned rotation channel (SCAN / preemption)."""
+        self._cmd_vel_pub.publish(Twist())        # all-zero Twist
+
+    def _speak(self, phrase: str):
+        """Announce a phrase: espeak TTS when installed, beep otherwise.
+
+        The phrase is always published on /eira/speech so a future voice
+        front-end (or the evaluation bag recorder) sees it regardless of
+        the audio backend.
+        """
+        message = String()
+        message.data = phrase
+        self._speech_pub.publish(message)
+        self.get_logger().info(f"speak: {phrase}")
+        if not bool(self.get_parameter("tts_enabled").value):
+            self._beep(200)
+            return
+        executable = shutil.which("espeak")
+        if executable is None:
+            self._beep(200)                      # no TTS engine on this box
+            return
+        try:
+            subprocess.Popen(                     # non-blocking, fire-and-forget
+                [executable, "-v", "en-us", phrase],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
+        except OSError as exc:
+            self.get_logger().warning(f"espeak failed ({exc}); beeping")
+            self._beep(200)
 
     # -- Nav2 plumbing -------------------------------------------
 
@@ -675,6 +882,7 @@ class LLMTaskPlanner(Node):
             "action": (self._plan[self._plan_idx].get("action", "")
                        if self._plan_idx < len(self._plan) else ""),
             "planner": self._planner_source,
+            "queue": len(self._mission_queue),
             "detail": detail,
             "wall_time": time.time(),
         })
