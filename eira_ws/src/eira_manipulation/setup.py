@@ -1,4 +1,9 @@
-from glob import glob
+"""Package support for E-AIRA manipulation.
+
+Author: E-AIRA maintainers.
+Hardware target: ROSMASTER M3 Pro / Jetson Orin NX.
+"""
+
 import os
 
 from setuptools import find_packages, setup
@@ -15,6 +20,7 @@ setup(
         (os.path.join('share', package_name), ['package.xml']),
     ],
     install_requires=['setuptools'],
+    tests_require=['pytest'],
     zip_safe=True,
     maintainer='Shariful',
     maintainer_email='shariful@example.com',

@@ -1,34 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-safety_monitor.py — E-AIRA watchdog: stop the base if the brain dies.
+"""Publish a fail-closed heartbeat interlock for the velocity gate.
 
-Rationale
----------
-The brain orchestrates every motion channel (Nav2 goals, the grasp
-alignment stage, and its own active-scan rotations). If that process
-crashes mid-motion, whatever velocity command was last published keeps
-being executed by the base controller — a classic single-point-of-failure
-in LLM-driven robots. This node closes that gap:
-
-* the brain publishes a 2 Hz heartbeat on ``/eira/heartbeat``;
-* this watchdog listens to it **and** to ``cmd_vel`` (to know whether the
-  base is actually being commanded to move);
-* when the heartbeat goes stale while motion commands are still flowing
-  (or were flowing moments ago), the watchdog publishes zero-velocity
-  Twists on ``cmd_vel`` at 5 Hz until the heartbeat returns, and emits a
-  JSON event on ``/eira/safety/event`` for the evaluation log.
-
-Deliberately conservative: it only intervenes on *staleness + motion*,
-never on any other heuristic, and it stands down the moment the heartbeat
-resumes.
-
-Topic contract
---------------
-  subscribe  /eira/heartbeat   std_msgs/Empty      (brain liveness, 2 Hz)
-  subscribe  /cmd_vel          geometry_msgs/Twist (motion observation)
-  publish    /cmd_vel          geometry_msgs/Twist (zeros, intervention only)
-  publish    /eira/safety/event std_msgs/String    (JSON events)
+Author: E-AIRA maintainers.
+Hardware target: Yahboom ROSMASTER M3 Pro / Jetson Orin NX, ROS 2 Humble.
 """
 
 import json
@@ -38,127 +11,103 @@ import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Empty, String
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from std_msgs.msg import Bool, Empty, String
 
-_MOTION_EPS = 1e-4          # below this a Twist counts as "stopped"
+from eira_brain.console import format_line
 
 
 class SafetyMonitor(Node):
-    """Heartbeat watchdog with motion-gated zero-velocity intervention."""
+    """Observe Brain liveness independently of the last command's age."""
 
-    def __init__(self):
-        super().__init__("safety_monitor")
+    def __init__(self) -> None:
+        """Declare watchdog timing and create the interlock interfaces.
 
-        self.declare_parameter("heartbeat_timeout_s", 5.0)
-        self.declare_parameter("startup_grace_s", 10.0)
-        self.declare_parameter("motion_window_s", 2.0)
-        self.declare_parameter("intervene_rate_hz", 5.0)
-
-        self._last_heartbeat = None          # monotonic, None until first
-        self._last_motion = None             # monotonic of last non-zero cmd
-        self._intervening = False
+        Raises:
+            ValueError: If a timeout or publishing rate is invalid.
+        """
+        super().__init__('safety_monitor')
+        for name, default in {
+                'heartbeat_timeout_s': 5.0, 'startup_grace_s': 10.0,
+                'motion_window_s': 5.0, 'intervene_rate_hz': 20.0}.items():
+            self.declare_parameter(name, default)
+        self._timeout = float(self.get_parameter('heartbeat_timeout_s').value)
+        self._grace = float(self.get_parameter('startup_grace_s').value)
+        self._motion_window = max(self._timeout,
+                                  float(self.get_parameter('motion_window_s').value))
+        rate = float(self.get_parameter('intervene_rate_hz').value)
+        if self._timeout <= 0 or self._grace < 0 or rate <= 0:
+            raise ValueError('invalid watchdog timeout, grace, or rate')
+        self._last_heartbeat: float | None = None
+        self._last_motion: float | None = None
         self._started_at = time.monotonic()
+        self._intervening = False
+        self._context: dict[str, object] = {'mission_id': None, 'action_id': None}
+        self.create_subscription(Empty, '/eira/heartbeat', self._on_heartbeat, 10)
+        self.create_subscription(Twist, '/cmd_vel', self._on_cmd_vel, 10)
+        self.create_subscription(String, '/eira/motion_owner', self._on_owner, 10)
+        self._cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 1)
+        self._event_pub = self.create_publisher(String, '/eira/safety/event', 10)
+        qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self._stop_pub = self.create_publisher(Bool, '/eira/safety/stop', qos)
+        self.create_timer(1.0 / rate, self._check)
 
-        self.create_subscription(
-            Empty, "/eira/heartbeat", self._on_heartbeat, 10)
-        self.create_subscription(
-            Twist, "/cmd_vel", self._on_cmd_vel, 10)
+    def _on_owner(self, message: String) -> None:
+        """Cache mission identifiers for correlated watchdog events."""
+        try:
+            data = json.loads(message.data)
+            if isinstance(data, dict):
+                self._context = {k: data.get(k) for k in ('mission_id', 'action_id')}
+        except (ValueError, TypeError):
+            self.get_logger().warning(format_line(
+                'SAFETY', 'Ignored invalid motion ownership event', 'warning'))
 
-        self._cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self._event_pub = self.create_publisher(
-            String, "/eira/safety/event", 10)
+    def _on_heartbeat(self, _message: Empty) -> None:
+        """Record a liveness update using monotonic time."""
+        self._last_heartbeat = time.monotonic()
 
-        rate = float(self.get_parameter("intervene_rate_hz").value)
-        self.create_timer(1.0 / max(rate, 0.5), self._check)
-
-        self.get_logger().info(
-            "safety_monitor up: watching /eira/heartbeat "
-            f"(stale after {self.get_parameter('heartbeat_timeout_s').value:.0f} s)"
-            " + /cmd_vel activity")
-
-    # ========================================================
-    # CALLBACKS
-    # ========================================================
-
-    def _on_heartbeat(self, _msg: Empty):
-        now = time.monotonic()
-        if self._intervening:
-            self._intervening = False
-            self._emit("heartbeat_restored",
-                       detail="brain heartbeat returned; watchdog standing down")
-            self.get_logger().info("brain heartbeat restored — standing down")
-        self._last_heartbeat = now
-
-    def _on_cmd_vel(self, msg: Twist):
-        # Only *motion* counts; zero Twists (stop commands) do not.
-        if (abs(msg.linear.x) > _MOTION_EPS
-                or abs(msg.linear.y) > _MOTION_EPS
-                or abs(msg.angular.z) > _MOTION_EPS):
+    def _on_cmd_vel(self, message: Twist) -> None:
+        """Record motion for diagnostics without using it to suppress intervention."""
+        if any(abs(x) > 1e-4 for x in (message.linear.x, message.linear.y,
+                                       message.angular.z)):
             self._last_motion = time.monotonic()
 
-    # ========================================================
-    # WATCHDOG TICK (5 Hz)
-    # ========================================================
-
-    def _check(self):
+    def _check(self) -> None:
+        """Refresh the interlock; a held last velocity is also covered."""
         now = time.monotonic()
-        timeout = float(self.get_parameter("heartbeat_timeout_s").value)
-        grace = float(self.get_parameter("startup_grace_s").value)
-        window = float(self.get_parameter("motion_window_s").value)
-
-        # During startup grace (brain may simply not be launched yet) we
-        # only watch, never intervene.
-        if now - self._started_at < grace:
-            return
-
-        heartbeat_stale = (
-            self._last_heartbeat is None
-            or now - self._last_heartbeat > timeout)
-        motion_recent = (self._last_motion is not None
-                         and now - self._last_motion <= window)
-
-        if heartbeat_stale and motion_recent:
-            if not self._intervening:
-                self._intervening = True
-                age = ("never" if self._last_heartbeat is None
-                       else f"{now - self._last_heartbeat:.1f} s ago")
-                self._emit(
-                    "brain_heartbeat_lost",
-                    detail=f"last heartbeat {age}; zeroing cmd_vel")
-                self.get_logger().error(
-                    "BRAIN HEARTBEAT LOST — publishing zero velocity")
-            # Keep the base pinned while the condition holds.
+        stale = (now - self._started_at >= self._grace and (
+            self._last_heartbeat is None or now - self._last_heartbeat > self._timeout))
+        self._stop_pub.publish(Bool(data=stale))
+        if stale:
             self._cmd_vel_pub.publish(Twist())
-        elif self._intervening and not heartbeat_stale:
-            self._intervening = False
-            self._emit("heartbeat_restored")
-            self.get_logger().info("brain heartbeat restored — standing down")
+        if stale != self._intervening:
+            self._intervening = stale
+            self._emit('brain_heartbeat_lost' if stale else 'heartbeat_restored')
 
-    # ========================================================
-    # EVENTS
-    # ========================================================
+    def _emit(self, event: str) -> None:
+        """Publish a structured watchdog transition.
 
-    def _emit(self, event: str, **fields):
+        Args:
+            event: Machine-readable transition name.
+        """
         message = String()
-        payload = {"event": event, "wall_time": time.time()}
-        payload.update(fields)
-        message.data = json.dumps(payload)
+        message.data = json.dumps({'event': event, **self._context,
+                                   'wall_time': time.time()})
         self._event_pub.publish(message)
+        description = ('Brain heartbeat lost; motion is blocked' if event == 'brain_heartbeat_lost'
+                       else 'Brain heartbeat restored; waiting for a new mission')
+        self.get_logger().info(format_line(
+            'SAFETY', description, 'warning' if event == 'brain_heartbeat_lost' else 'success'))
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
+    """Run the independent watchdog until ROS shuts down."""
     rclpy.init(args=args)
     node = SafetyMonitor()
     try:
         rclpy.spin(node)
-    except (ExternalShutdownException, KeyboardInterrupt):
-        pass  # SIGTERM/Ctrl-C — context is already shutting down
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     finally:
         node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        rclpy.try_shutdown()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-waypoint_recorder.py — interactive waypoint recording from RViz.
+"""waypoint_recorder.py — interactive waypoint recording from RViz.
 
 Workflow
 --------
@@ -36,9 +35,14 @@ background thread — blocking on stdin never stalls ROS callbacks.
 Topic contract
 --------------
   subscribe  /clicked_point   geometry_msgs/PointStamped   (RViz Publish Point)
+
+Author: E-AIRA contributors.
+Hardware target: ROSMASTER M3 Pro / Jetson Orin NX, ROS 2 Humble.
 """
 
 import os
+import math
+import tempfile
 import queue
 import re
 import threading
@@ -49,6 +53,8 @@ import yaml
 from geometry_msgs.msg import PointStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from ament_index_python.packages import PackageNotFoundError
+from eira_brain.waypoint_store import load_waypoints
 
 # This file: <ws>/src/eira_brain/eira_brain/waypoint_recorder.py
 _SOURCE_TREE_CONFIG = Path(__file__).resolve().parents[2] / \
@@ -68,7 +74,8 @@ STARTUP_BANNER = """
 class WaypointRecorder(Node):
     """Records RViz "Publish Point" clicks as named waypoints."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize validated dependencies and local state."""
         super().__init__("waypoint_recorder")
 
         # --------------------------------------------------------
@@ -99,7 +106,7 @@ class WaypointRecorder(Node):
 
         param_path = self.get_parameter("waypoints_file").value
         if param_path:
-            candidates.append(Path(param_path).expanduser())
+            return Path(param_path).expanduser().resolve()
 
         candidates.append(_SOURCE_TREE_CONFIG)
 
@@ -109,12 +116,12 @@ class WaypointRecorder(Node):
             candidates.append(Path(
                 get_package_share_directory("eira_bringup"),
                 "config", "waypoints.yaml"))
-        except Exception:  # package not installed — dev machines
+        except PackageNotFoundError:  # package not installed — dev machines
             pass
 
         for candidate in candidates:
             if candidate.exists():
-                return candidate
+                return candidate.resolve()
 
         # An explicitly requested (but missing) file is still usable: we
         # create it with a fresh skeleton on first save.
@@ -123,38 +130,38 @@ class WaypointRecorder(Node):
         raise RuntimeError("no usable waypoints.yaml location found")
 
     def _load(self) -> dict:
-        """Load the database; never raises on malformed/empty files —
-        a broken file is backed up rather than silently overwritten."""
+        """Load validated data without overwriting malformed content.
+
+        Returns:
+            Existing database or a new map-frame skeleton.
+
+        Raises:
+            OSError: The database cannot be read.
+            ValueError: The database schema is invalid.
+        """
         if not self._path.exists():
             return {
                 "frame": self.get_parameter("map_frame").value,
                 "waypoints": {},
             }
-        try:
-            with open(self._path, "r", encoding="utf-8") as handle:
-                data = yaml.safe_load(handle) or {}
-        except yaml.YAMLError as exc:
-            backup = self._path.with_suffix(".yaml.bak")
-            os.replace(self._path, backup)
-            self.get_logger().error(
-                f"waypoints.yaml is malformed ({exc}); moved to {backup}, "
-                "starting a fresh database")
-            return {"frame": self.get_parameter("map_frame").value,
-                    "waypoints": {}}
-        data.setdefault("frame", self.get_parameter("map_frame").value)
-        data.setdefault("waypoints", {})
-        return data
+        return load_waypoints(self._path)
 
     def waypoint_names(self) -> set:
+        """Return the validated waypoint names currently on disk.
+        Returns:
+            Set of database waypoint names.
+        """
         return set(self._load().get("waypoints", {}).keys())
 
-    def save_waypoint(self, name: str, x: float, y: float, yaw: float = 0.0):
+    def save_waypoint(self, name: str, x: float, y: float, yaw: float = 0.0) -> int:
         """Atomically upsert one waypoint and return the new count.
 
         Note: PyYAML's safe_dump cannot preserve the hand-written comments
         in the committed file — they are replaced by clean (comment-free)
         YAML on first save. Content is preserved; commentary is not.
         """
+        if not _NAME_OK.fullmatch(name) or not all(math.isfinite(v) for v in (x, y, yaw)):
+            raise ValueError("invalid waypoint name or coordinates")
         data = self._load()
         data["waypoints"][name] = {
             "x": round(float(x), 3),
@@ -163,26 +170,47 @@ class WaypointRecorder(Node):
         }
 
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = self._path.with_suffix(self._path.suffix + ".tmp")
-        with open(temp_path, "w", encoding="utf-8") as handle:
-            yaml.safe_dump(
-                data, handle, sort_keys=False, default_flow_style=False,
-                allow_unicode=True)
-        os.replace(temp_path, self._path)      # atomic on POSIX
+        descriptor, filename = tempfile.mkstemp(prefix=".waypoints-", suffix=".yaml",
+                                                dir=self._path.parent)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                yaml.safe_dump(data, handle, sort_keys=False, default_flow_style=False)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(filename, self._path)
+        finally:
+            if os.path.exists(filename):
+                os.unlink(filename)
         return len(data["waypoints"])
 
     # ========================================================
     # ROS CALLBACK (enqueue only — never blocks on stdin)
     # ========================================================
 
-    def _on_clicked_point(self, msg: PointStamped):
+    def _on_clicked_point(self, msg: PointStamped) -> None:
         # RViz "Publish Point" supplies x/y only; z carries no meaning for
         # a ground robot and is ignored.
+        """Queue finite map-frame coordinates and reject other frames.
+
+        Args:
+            msg: Incoming ROS message.
+        """
+        try:
+            expected = self._load()["frame"]
+        except (OSError, ValueError) as exc:
+            self.get_logger().error(f"waypoint database unreadable: {exc}")
+            return
+        if msg.header.frame_id != expected:
+            self.get_logger().warning(
+                f"clicked point frame {msg.header.frame_id!r} differs from {expected!r}")
+            return
+        if not all(math.isfinite(value) for value in (msg.point.x, msg.point.y)):
+            return
         self._points.put((msg.point.x, msg.point.y))
         self.get_logger().debug(
             f"clicked point queued: ({msg.point.x:.3f}, {msg.point.y:.3f})")
 
-    def next_point(self, timeout: float = 0.5):
+    def next_point(self, timeout: float = 0.5) -> tuple[float, float] | None:
         """Block up to ``timeout`` s for the next click; None on timeout."""
         try:
             return self._points.get(timeout=timeout)
@@ -216,7 +244,12 @@ def _ask_name(x: float, y: float) -> str:
               "use letters, digits, '-', '_'.")
 
 
-def _interactive_loop(node: WaypointRecorder):
+def _interactive_loop(node: WaypointRecorder) -> None:
+    """Record clicked points until the user exits.
+
+    Args:
+        node: Active waypoint recorder.
+    """
     while rclpy.ok():
         point = node.next_point(timeout=0.5)
         if point is None:
@@ -231,7 +264,12 @@ def _interactive_loop(node: WaypointRecorder):
             print("    Point discarded.", flush=True)
             continue
 
-        if name in node.waypoint_names():
+        try:
+            exists = name in node.waypoint_names()
+        except (OSError, ValueError) as exc:
+            node.get_logger().error(f"waypoint database unreadable: {exc}")
+            continue
+        if exists:
             try:
                 answer = input(
                     f"    '{name}' already exists — overwrite? [y/N] "
@@ -242,12 +280,16 @@ def _interactive_loop(node: WaypointRecorder):
                 print(f"    Kept existing '{name}'.", flush=True)
                 continue
 
-        count = node.save_waypoint(name, x, y)
+        try:
+            count = node.save_waypoint(name, x, y)
+        except (OSError, ValueError) as exc:
+            node.get_logger().error(f"waypoint save failed: {exc}")
+            continue
         print(f"    Saved '{name}' -> {node._path} "
               f"(now {count} waypoints).", flush=True)
 
 
-def _spin_quietly(node: Node):
+def _spin_quietly(node: Node) -> None:
     """Spin wrapper: SIGTERM-triggered shutdowns exit without a traceback."""
     try:
         rclpy.spin(node)
@@ -255,7 +297,12 @@ def _spin_quietly(node: Node):
         pass
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
+    """Run the terminal waypoint recorder and ROS background executor.
+
+    Args:
+        args: Optional ROS command-line arguments.
+    """
     rclpy.init(args=args)
     node = WaypointRecorder()
 
@@ -270,7 +317,8 @@ def main(args=None):
         print("\nQuitting waypoint recorder.", flush=True)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

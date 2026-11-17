@@ -12,12 +12,22 @@
   <license>MIT</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav2_msgs</depend>
   <depend>action_msgs</depend>
+  <depend>ament_index_python</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>cv_bridge</depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
 
   <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>ros2bag</exec_depend>
+  <exec_depend>rosbag2_transport</exec_depend>
+  <exec_depend>rosbag2_storage_default_plugins</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

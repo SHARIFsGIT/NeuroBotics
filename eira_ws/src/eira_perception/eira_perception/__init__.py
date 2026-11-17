@@ -1,3 +1,4 @@
-# E-AIRA perception package.
-#
-# vision_manager : YOLOv8 acquire → track → depth-fused 3D centroid → /target_pose
+"""E-AIRA RGB-D perception and gesture recognition.
+
+Author: E-AIRA contributors. Hardware target: Jetson Orin NX, ROSMASTER M3 Pro.
+"""

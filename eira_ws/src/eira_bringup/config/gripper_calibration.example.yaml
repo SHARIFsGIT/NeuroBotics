@@ -1,0 +1,14 @@
+# Measured calibration template, not a factory safety table.
+# Author: E-AIRA maintainers. Hardware: ROSMASTER M3 Pro / Jetson Orin NX.
+# No width-angle table exists in the supplied exercise folders.
+# Fill gripper_width_table with measured [width_metres, servo_degrees] pairs,
+# sorted by width; never extrapolate beyond the measured domain.
+/**:
+  grasp_executor:
+    ros__parameters:
+      gripper_mode: width
+      gripper_width_table: '[]'
+      static_mount_calibrated: false
+      require_joint_feedback: true
+      require_actuator_subscribers: true
+      sort_poses: '{}'

@@ -1,294 +1,373 @@
-# E-AIRA: Edge-based AI Robot Assistant for Multimodal Human–Robot Interaction and Autonomous Manipulation
+# E-AIRA — Edge-based AI Robot Assistant
 
-**Target platform:** Yahboom ROSMASTER M3 Pro — Jetson Orin NX, dual 2-D LiDAR, Dabai_DCW2 (Orbbec) RGB-D camera, 6-DoF arm, mecanum base · **Middleware:** ROS 2 Humble
+E-AIRA is the ROS 2 Humble orchestration layer for a Yahboom ROSMASTER M3 Pro
+with Jetson Orin NX. Phi-3 through local Ollama plans missions; a deterministic
+parser supplies a bounded fallback. Existing Yahboom drivers retain ownership
+of hardware transport, inverse kinematics, and servo execution.
 
----
+The six packages implement cognition (`eira_brain`), perception
+(`eira_perception`), manipulation (`eira_manipulation`), system integration
+(`eira_bringup`), reproducible evaluation (`eira_evaluation`), and Gazebo
+simulation (`eira_simulation`). All Python targets Python 3.10 / ARM64; simulation also runs on a compatible development workstation.
 
-## Abstract
+**Starting a new robot test session?** Follow
+[Fresh-start testing: commands, reasons and expected results](docs/FRESH_START_TESTING.md).
+It starts with environment/build checks and stationary depth validation before
+navigation, arm motion and complete missions.
 
-*E-AIRA* is an edge-deployed embodied-AI layer that converts natural-language
-instructions into grounded mobile-manipulation behaviour on a commodity
-research robot. The system adds a **cognitive orchestration layer** on top of
-an existing, fully validated driver and skill stack — Nav2 navigation, YOLOv8
-object detection, a transformer-based visual tracker, and analytic arm
-kinematics — without modifying any low-level driver. A local LLM (Phi-3 via
-Ollama) maps free-form commands onto a closed, seven-action vocabulary that
-is validated against a waypoint database before execution; a deterministic
-rule-based planner serves as the fallback and as the ablation baseline.
-Perception fuses YOLOv8 acquisition, transformer-tracker following and RGB-D
-depth into a 3-D target centroid in `base_link`, which a PID base-alignment
-stage and the robot's existing inverse-kinematics service consume to grasp.
-Every stage publishes machine-readable status events, giving the evaluation
-harness end-to-end observability. This repository contains the complete
-system: four ROS 2 packages, a single-command bringup, an IEEE-style
-evaluation plan, and the audit trail linking every design constant to the
-underlying validated course experiment.
+**RViz shows only a raw image?** Use the
+[YOLO/RViz diagnostic procedure](docs/YOLO_RVIZ_DIAGNOSTICS.md) and its two-image
+preset to check `/eira/detect_image` separately from the raw camera stream.
 
-**Keywords** — embodied AI, edge robotics, LLM task planning, mobile
-manipulation, ROS 2, human–robot interaction
+**Testing a fetch from a named place?** Follow the
+[requested-object fetch test](docs/FETCH_MISSION_TESTING.md). A request such as
+`bring me a bottle from kitchen` navigates there before starting detection,
+grasps the requested object, returns to the pose captured at mission start,
+then releases. The object is selected by the command and must be a class your
+installed detector supports.
 
----
-
-## 1. Introduction
-
-Large language models unlock flexible task specification for household
-robots, but award-winning systems must demonstrate more than prompting: they
-must be *grounded* (plans validated against real robot capabilities),
-*fully on-edge* (no cloud dependency — a privacy and latency claim), and
-*reproducible* (every component measurable on standard hardware).
-
-E-AIRA contributes:
-
-1. **A validated-interface architecture.** The cognitive layer speaks only
-   through ROS 2 interfaces that were first audited and confirmed working on
-   this exact robot (course folders 01–33 of the parent workspace). No driver
-   was rewritten; integration risk is isolated to four new packages.
-2. **Resilient LLM planning with a deterministic baseline.** Phi-3 via
-   Ollama plans; a template parser takes over on any LLM failure, and the
-   same task set run under both planners yields the paper's planning
-   ablation (H1, §6).
-3. **A depth-fused target-pose contract.** YOLOv8 acquisition, transformer
-   tracker following and pinhole depth reprojection converge on a single
-   topic — `/target_pose` in `base_link` — decoupling "where is the object"
-   from "how to grasp it".
-4. **End-to-end observability.** `/eira/status`, `/eira/vision/event` and
-   `/eira/manipulation/event` emit JSON event streams suitable for
-   automatic success-rate and latency scoring.
-
-## 2. System Architecture
-
-```
-                         ┌──────────────────────────────┐
-   user (CLI / voice) ──►│        eira_brain            │
-   /eira/command         │  LLM (Ollama/Phi-3) ⇄ rules  │
-   (queued while busy)   │  plan validation · FSM        │
-                         │  mission queue · SCAN search  │
-                         └───┬──────────┬──────────┬───┘
-             NavigateThroughPoses   /eira/vision_target /eira/manipulation/req
-                  (action)              │  ▲                │        ▲
-                       ▼                ▼  │                ▼        │
-        ┌────────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-        │  Nav2 (existing)   │  │ eira_perception  │  │ eira_manipulation │
-        │  M3Pro_navigation  │  │ YOLOv8 acquire → │  │ PID base align → │
-        │                    │  │ tracker follow → │  │ get_kinemarics   │
-        │                    │  │ depth → TF →     │  │ IK + folder-23   │
-        │                    │  │ /target_pose     │─►│ joint rules      │
-        │                    │  └──────────────────┘  └──────────────────┘
-        └─────────▲──────────┘          │                     │
-                  │                     ▼                     ▼
-        ┌─────────┴───────────────────────────────────────────────┐
-        │ base stack (IMU→LiDAR merge→filter→EKF) · orbbec camera │
-        │ arm_kin (kin_ik_fk) · arm_util  — all UNCHANGED drivers │
-        └─────────────────────────────────────────────────────────┘
-
-        safety_monitor (eira_brain) ── watches the brain heartbeat and pins
-        cmd_vel to zero if the brain dies while motion commands flow.
-```
-
-### 2.1 Package map
-
-| Package | Role | Key files |
-|---|---|---|
-| `eira_brain` | LLM task planner, plan validation, action sequencing, Nav2 client, mission queue, active scan, speech, safety watchdog | `llm_task_planner.py`, `ollama_client.py`, `eira_cli.py`, `safety_monitor.py` |
-| `eira_perception` | YOLOv8 acquisition + tracker handoff + 3-D centroid | `vision_manager.py` |
-| `eira_manipulation` | PID base alignment, IK grasp via existing service | `grasp_executor.py`, `pid.py` |
-| `eira_bringup` | One-command master launch + parameters + waypoints | `launch/eira_master.launch.py`, `config/*.yaml` |
-
-### 2.2 Topic / service contract
-
-| Interface | Type | Producer → Consumer | Provenance |
-|---|---|---|---|
-| `/eira/command` | `std_msgs/String` | CLI/voice → brain (queued while busy; `stop` preempts) | new |
-| `/eira/plan`, `/eira/status` | `String` (JSON, incl. `queue` depth) | brain → world | new |
-| `navigate_through_poses` | `nav2_msgs/action/NavigateThroughPoses` | brain → Nav2 | folder 22 |
-| `/eira/vision_target` · `/eira/vision/event` | `String` | brain → perception / perception → brain | new |
-| `/target_pose` | `geometry_msgs/PoseStamped` (`base_link`) | perception → manipulation | new |
-| `/camera/{color,depth}/image_raw`, `camera_info` | `sensor_msgs` | orbbec → perception | folders 25–33 |
-| `/eira/manipulation/request` · `…/event` | `String` | brain ↔ manipulation | new |
-| `cmd_vel` | `geometry_msgs/Twist` | manipulation (align) / brain (SCAN rotation) / safety_monitor (zero) → base | folders 22–23 |
-| `/eira/heartbeat` | `std_msgs/Empty` (2 Hz) | brain → safety watchdog | new |
-| `/eira/safety/event` | `String` (JSON) | safety watchdog → world | new |
-| `/eira/speech` | `std_msgs/String` (+ espeak audio when available) | brain → speakers / log | new |
-| `arm6_joints` / `arm_joint` | `arm_msgs/ArmJoints` / `ArmJoint` | manipulation → arm driver | folder 23 |
-| `get_kinemarics` | `arm_interface/srv/ArmKinemarics` | manipulation → `kin_ik_fk` | folder 23 |
-| `grasp_done`, `Curjoints`, `beep`, `set_joint5` | `Bool`/`CurJoints`/`UInt16`/`Int16` | legacy ecosystem | folders 22–23 |
-
-## 3. Methodology
-
-### 3.1 LLM task planner (`eira_brain`)
-
-A fixed system prompt exposes the closed action vocabulary
-(`navigate | find | grasp | release | home | speak | stop`) with few-shot
-examples; sampling uses temperature 0.1. The answer passes through a
-defensive JSON extractor (fences, prose, brace salvage) and a validator that
-drops unknown or target-less actions **before** anything executes — the
-vocabulary is the system's safety envelope. `navigate` targets are checked
-against `waypoints.yaml`; unknown places abort with a diagnosable status
-rather than a silent timeout.
-
-The planner runs in a worker thread off the ROS executor; execution is a
-10 Hz non-blocking FSM with per-action deadlines and a retry policy. On any
-LLM failure (server down, timeout, unparseable answer) the deterministic
-template parser takes over transparently — the run is tagged
-`"planner": "fallback"` on `/eira/plan`, which is precisely the data needed
-for the H1 ablation.
-
-### 3.2 Multimodal perception (`eira_perception`)
-
-YOLOv8 (`yolov8n.pt`, the exact audited weights path) runs
-`model.track(persist=True, conf=0.4)` on every synchronized color+depth
-pair — the proven folder-31/32 inference path, subscribed with sensor-data
-QoS so best-effort camera publishers actually match. The target class is a
-parameter (default `cup`) with case-insensitive bidirectional label
-matching ("red cup" ↔ COCO `cup`); each `find` action publishes its target
-on `/eira/vision_target`, re-targeting the search class and re-arming the
-search session dynamically. The handoff is race-proof: the brain re-sends
-the target at 1 Hz while the find is in flight, and the node creates all
-its interfaces *before* the (10–30 s on Jetson) YOLO load, so a target
-published during startup is never lost — the robot always hunts the
-plan's object, not a stale default. The pipeline is never headless:
-every frame is annotated (boxes, class, confidence, live distance) and
-published on `/eira/detect_image`.
-
-3-D estimation follows the audited grasp pipeline: pinhole deprojection with
-the **live** `camera_info` K (rather than the course code's hard-coded
-intrinsics), ROI-median depth at the bounding-box center handling both
-`16UC1` (mm) and `32FC1` (m), and a live TF lookup through the eye-in-hand
-chain to `base_link`. `/target_pose` publishes whenever the target is
-visible with valid depth; `lost`/`timeout` events let downstream stages
-abort safely.
-
-### 3.3 Manipulation (`eira_manipulation`)
-
-Stage 1 aligns the base: angular PID on the target bearing, linear PID on
-the range error to a pre-grasp standoff (0.19 m), SI-rescaled from the
-proven folder-32 gains, with hard velocity clamps, a settle-count exit
-criterion and stale-target/watchdog aborts. Pose gaps from slow edge
-inference are tolerated (1.5 s staleness window plus a hold-still grace
-counter) so a single dropped `/target_pose` frame never aborts a grasp. Stage 2 transforms the target
-into the arm base frame (live TF when `arm_base_frame` is set, calibrated
-static mount offset otherwise) and sends the **unchanged** IK request to
-`get_kinemarics` — including the audited conventions of `grasp_transport.py`
-(folder 23): −1.5 cm X pre-compensation, 1.396 rad grasp pitch, the
-`180 − joint1` base reflection, the joint-4 ≤ 90° clamp, and the joint-5
-wrap rules. Grasp completion re-publishes the legacy `grasp_done` topic so
-the pre-existing transport ecosystem remains composable.
-
-### 3.4 Resilience and interaction features
-
-- **Mission queue.** Commands arriving while a task is running are queued
-  (FIFO, default depth 4) instead of rejected; each is acknowledged on
-  `/eira/status` (`queued '…' (position N of M)`) and runs when the
-  current mission reaches a terminal state. A `stop` command always
-  preempts: cancel motion, drop the queue, report `preempted`.
-- **Active scan (`SCAN` state).** When `find` times out with the target
-  not in view, the brain rotates the base (default 60° at 0.4 rad/s,
-  alternating direction, up to 3 sweeps) and re-issues the search before
-  declaring failure — turning "not found" from a dead end into a search
-  behaviour. The rotation is published on `cmd_vel` and zeroed on exit.
-- **Safety watchdog (`safety_monitor`).** The brain heartbeats at 2 Hz on
-  `/eira/heartbeat`; if the heartbeat goes stale while motion commands
-  are still flowing, the watchdog pins `cmd_vel` to zero at 5 Hz and
-  emits `brain_heartbeat_lost` / `heartbeat_restored` JSON events on
-  `/eira/safety/event`. A startup grace window prevents false trips.
-- **Speech.** `speak` actions (and unknown-command acknowledgements) are
-  published on `/eira/speech`; when `espeak` is installed they are also
-  voiced locally, otherwise a buzzer beep acknowledges.
-- **Compound fallback parsing.** The deterministic planner splits
-  commands on "and (then)" and plans each clause — "go to the kitchen
-  and then find a cup" yields `navigate → find` without any LLM.
-
-## 4. Reproduction
+## Evaluation, simulation, and reproducible replay
 
 ```bash
-# 1. On the Jetson (robot packages + map present):
-cd ~/eira_ws
+ros2 launch eira_bringup eira_master.launch.py use_evaluation:=true use_recording:=true
+ros2 run eira_evaluation benchmark --command "Bring me a cup" --iterations 20
+ros2 run eira_evaluation metrics_calculator ~/eira_ws/results/mission_log_YYYYMMDD.csv
+ros2 launch eira_simulation sim_bringup.launch.py randomize:=true seed:=42
+ros2 run eira_brain mission_replayer ~/eira_ws/bags/mission_UTC_ID --dry-run
+```
+
+The logger writes CSV plus detailed JSON, and exports text, PNG and LaTeX reports.
+Action attempts, recovery and planner latency are correlated by IDs; actual
+held-object accuracy requires explicit evidence. The new prompt is grounded in
+live waypoints/classes and repairs one invalid response before fallback.
+
+See the [research protocol](docs/RESEARCH_PROTOCOL.md),
+[evaluation API/metric definitions](src/eira_evaluation/README.md), and
+[simulation instructions and model limits](src/eira_simulation/README.md).
+Existing hardware launch defaults are preserved: evaluation/recording are opt-in,
+and `use_sim_time` defaults false. Simulation supplies true explicitly.
+
+## Architecture
+
+```text
+ CLI / mobile rosbridge / local Whisper / external voice transcript
+                         |
+                   /eira/command or /eira/voice
+                         v
+       +--------------------------------------------+
+       | Brain: LLM -> grounded plan -> locked FSM   |
+       | mission IDs, action IDs, retries, FIFO      |
+       +-------+----------------+-------------------+
+               |                |                 |
+      NavigateThroughPoses   vision_target    manipulation/request
+               v                v                 v
+       native Nav2       YOLO / transformer   base alignment PID
+       controller ->     + RGB-D + color      -> existing Yahboom IK
+       vel smoother      + pose smoothing     -> feedback-aware arm
+               |           | target_pose          |
+               |           +--------------------->|
+               |                                  |
+       /eira/cmd_vel/nav       /eira/cmd_vel/arm    |
+               +---------------+------------------+
+                               |
+ Brain scan -> /eira/cmd_vel/brain
+                               v
+                     +------------------+
+ motion_owner ------>| velocity gate    |<--- heartbeat watchdog
+ depth floor edge -->| lease + priority |<--- stop command
+                     +--------+---------+
+                              | sole managed output
+                           /cmd_vel
+                              v
+                      existing base driver
+```
+
+All accepted asynchronous results are correlated with a mission and action.
+Stop invalidates planning, navigation and IK generations before releasing motion.
+The gate forwards only the selected source, bounds velocity, expires stale
+Twists, and blocks stale heartbeat or enabled floor-safety input. Revoked
+missions cannot rearm from delayed ownership messages.
+
+Vision defaults to `continuous_mode: false`: only an explicit find request starts
+inference, and found/timeout/failure returns it to `idle (no active search)`.
+During a grasp, the Brain requests bounded one-shot pose refreshes so alignment
+uses current measurements. There is no background YOLO inference during navigation
+or idle. Select `continuous_mode: true` for standalone tracking/occlusion tests.
+Idle has no selected object (`target_class: ''`). Measured RGB-D ranging is the
+default; an optional height estimate requires an explicitly configured
+`bbox_depth_class` and measured height for that class.
+
+The LLM request timeout defaults to 30 seconds. Phi-3 responses have Markdown and
+surrounding prose removed before complete action/target validation; raw replies
+are available as debug-level `Model reply` lines (`llm_log_raw_response` controls
+this). Navigation
+waits 3 seconds after success and uses two retries with 10-second backoff. These
+waits are nonblocking. AMCL planar covariance/age is checked before each goal,
+with an advisory warning when confidence is insufficient. External localization
+can set `amcl_check_enabled: false`; these checks do not reset AMCL or repair an
+incorrect map, odometry, or TF calibration.
+
+PID controls **base alignment**. The existing arm driver executes degree-valued
+servo targets; E-AIRA does not claim to add a joint torque/position controller.
+
+## Hardware and software
+
+- Ubuntu 22.04, ROS 2 Humble, Python 3.10, ARM64 Jetson Orin NX.
+- ROSMASTER M3 Pro mecanum base, native hardware transport/agent, dual 2D LiDAR.
+- Dabai DCW2 RGB-D camera with depth registered to color and valid intrinsics.
+- Six-joint Yahboom arm; `arm_msgs`, `arm_interface`, `arm_kin`, and `arm_util`.
+- Calibrated map/waypoints, camera-to-base TF, arm mount, servo limits and gripper.
+- A fresh **measured** joint stream is required to issue a safe arm hold. The
+  course `Curjoints` topic can contain commanded poses; it is not automatically
+  treated as encoder feedback.
+
+Native mapping/navigation profiles also need the corresponding course packages.
+For RTAB-Map localization, disable AMCL with `use_nav_localization:=false` when
+starting the master navigation stack alongside that localization profile.
+Optional dependencies are not required for the basic deterministic planner.
+
+## Installation
+
+Build on the target; generated `build/`, `install/` and `log/` artifacts contain
+host-specific paths and must not be copied from another machine.
+
+```bash
+source /opt/ros/humble/setup.bash
+# Source the installed Yahboom workspace, including its interface packages.
+source ~/yahboomcar_ws/install/setup.bash
+cd ~/NeuroBotics/eira_ws
+rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 source install/setup.bash
-
-# 2. Local LLM (optional — fallback planner works without it):
-ollama pull phi3 && ollama serve
-
-# 3. Record waypoints interactively from RViz ("Publish Point" tool):
-ros2 run eira_brain waypoint_recorder     # then name each click in the
-                                           # terminal; updates waypoints.yaml
-#    (or edit src/eira_bringup/config/waypoints.yaml by hand, § file header)
-#    Rebuild afterwards so a non-symlinked install picks up the file.
-
-# 4. Full system:
-ros2 launch eira_bringup eira_master.launch.py map:=$HOME/map/map.yaml
-
-# 5. Issue a task:
-ros2 run eira_brain eira_cli "bring me a cup from the kitchen"
-
-# CLI helpers:
-ros2 run eira_brain eira_cli --list-waypoints        # inspect the DB
-ros2 run eira_brain eira_cli --plan-only "go to the kitchen and find a cup"
-
-# 6. Unit tests (no robot needed):
-python3 -m pytest src/eira_brain/test/ src/eira_manipulation/test/
 ```
 
-Monitoring: `ros2 topic echo /eira/status`, `ros2 topic echo /eira/plan`,
-RViz on `/target_pose` + `/eira/detect_image`. Driver-only development
-machines: all robot-driver includes degrade to warnings
-(`use_base:=false` …).
+Vendor-specific packages must be supplied by the robot image when rosdep cannot
+resolve them. Install a JetPack-compatible PyTorch/Ultralytics build for YOLO;
+avoid replacing the Jetson CUDA stack with an unrelated desktop wheel.
 
-## 5. Limitations
+Optional features:
 
-- The transformer tracker of folder 33 (`smart_tracker`) is not yet in the
-  loop; YOLOv8's own tracking carries both acquisition and following.
-  Re-adding it as an external box source is future work once its output
-  topic is confirmed on the robot.
-- `arm_base_frame` (or the static mount offset) must be calibrated once;
-  the audited TF tree from `car_base.launch.py` is expected to provide it.
-- Three writers share `cmd_vel` (Nav2, the alignment stage, and the
-  brain's SCAN rotation); the brain sequences them so they never overlap
-  in time, but a priority mux (twist_mux) would harden this. The safety
-  watchdog is deliberately the *last* writer: it only ever publishes
-  zeros.
-- SCAN sweeps are open-loop rotations (velocity × duration), not
-  odometry-closed loops; on slippery floors the swept angle may drift.
+| Feature | Additional software/assets |
+|---|---|
+| Local LLM | Ollama and locally provisioned `phi3` |
+| Voice | `openai-whisper`, FFmpeg; `sounddevice`/PortAudio for microphone capture; preinstalled Whisper `.pt` weights |
+| Gestures | An ARM64-compatible MediaPipe build exposing `solutions.hands` |
+| Transformer | Compatible OpenCV ViT model/build, or a `module:factory` adapter for the supplied tracker |
+| Mobile commands | `ros-humble-rosbridge-server` |
+| ArUco recovery | OpenCV ArUco module and measured marker map |
 
-## 6. Evaluation Plan
+Model loaders use local files. Whisper does not download missing weights at
+runtime. The exact default YOLO path remains:
 
-**Hypotheses.**
-- **H1** (planning): LLM plans complete unseen task phrasings at a higher
-  end-to-end success rate than the deterministic baseline; both ≥ 90 % on
-  the in-grammar set.
-- **H2** (latency): total planning latency (command → first action) stays
-  under 3 s at the edge for ≥ 95 % of commands.
-- **H3** (perception): depth-fused centroid error ≤ 3 cm RMS against
-  motion-capture / tape-measured ground truth at 0.3–1.5 m.
-- **H4** (manipulation): grasp success ≥ 80 % over 50 trials across 5
-  object classes and 3 placements, with no unsafe base speeds (logged
-  `cmd_vel` envelope).
-
-**Protocol.** 30-command benchmark (10 in-grammar, 10 paraphrase, 10
-out-of-domain — measuring safe refusal); each logged via
-`/eira/plan`, `/eira/status`, `/target_pose` (rosbag2) and scored offline.
-Baselines: rule-based planner (H1), cloud LLM vs. edge Phi-3 (H2,
-connectivity-ablated), flat-icondetector vs. E-AIRA acquisition (H3),
-fixed-pose grasping vs. E-AIRA alignment (H4).
-
-**Metrics.** task success rate; plan validity; command→first-action
-latency; centroid RMSE; grasp success; interventions per task; unsafe-event
-count; mean Jetson power draw (telemetry `tegrastats`) for the edge claim.
-
-## 7. Repository Layout
-
-```
-eira_ws/
-├── README.md                      ← this document
-└── src/
-    ├── eira_brain/                LLM planning + sequencing + CLI +
-    │                              safety watchdog  (test/: 35 unit tests)
-    ├── eira_perception/           YOLOv8 + tracker + 3-D target pose
-    ├── eira_manipulation/         PID alignment + IK grasping
-    │                              (test/: 10 PID unit tests)
-    └── eira_bringup/              master launch, parameters, waypoints
+```text
+/home/jetson/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/yolov8n.pt
 ```
 
-Every non-obvious constant in the code carries a comment naming the audited
-course file it comes from — the audit trail doubles as the reproducibility
-appendix of the paper.
+## Configuration and calibration
+
+The node parameters are in `src/eira_bringup/config/eira_params.yaml`.
+All node defaults are explicitly recorded there. Nav2 uses a separate
+`nav_params_file`; its defaults are resolved from
+`M3Pro_navigation/param/yahboom_M3Pro.yaml`.
+
+Before physical grasping:
+
+1. Supply live `base_link -> arm_base_frame` TF, or measure the static arm
+   mount offsets and explicitly set `static_mount_calibrated: true`.
+2. Check the six joint limits and the actual meaning/provenance of `/Curjoints`.
+   Keep `require_joint_feedback` and `require_actuator_subscribers` enabled.
+   Set `joint_feedback_is_measured: true` only for actual measured joint feedback.
+3. Measure width-to-gripper-angle pairs before selecting `gripper_mode: width`.
+   `gripper_calibration.example.yaml` intentionally contains no fabricated table.
+   Out-of-range widths are rejected; interpolation never extrapolates.
+4. Record real waypoint coordinates. The supplied kitchen/desk/table values
+   are examples, not measurements of your arena. The Brain reloads the database
+   before each mission.
+5. For floor-edge protection, calibrate `floor_z_m`, the protected corridor,
+   camera TF and registered-depth dimensions. Unknown floor or frozen depth
+   blocks motion while this feature is enabled.
+
+A `sort_poses` JSON parameter maps color names to measured six-angle bin poses.
+No bin poses are invented. `marker_map.example.yaml` describes the measured
+fiducial-map format; external AprilTag localization may instead publish a
+map-frame pose on `/eira/visual_pose`.
+
+## Launch and usage
+
+For readable logs, mission text summaries, arm display, RViz markers and buzzer
+patterns, see [the operator interface guide](docs/OPERATOR_INTERFACE.md).
+
+For Dabai depth holes, encoding/resolution diagnostics, separate depth intrinsics
+and the optional cup-height range fallback, see
+[the depth debugging guide](docs/DABAI_DEPTH_DEBUG.md).
+
+For the ordered robot acceptance procedure, commands and expected outcomes, see
+[the robot testing guide](docs/ROBOT_TESTING_GUIDE.md).
+
+The hardware transport/agent and raw sensor drivers must already be available.
+The master composes the existing filters, odometry, registered camera,
+robot/static TF, IK, arm status, and native Nav2 nodes when installed.
+
+```bash
+ros2 launch eira_bringup eira_master.launch.py map:=/absolute/path/map.yaml
+
+# Existing drivers/TF already running:
+ros2 launch eira_bringup eira_master.launch.py \
+  use_base:=false use_robot_tf:=false use_camera:=false use_arm:=false
+
+# Perception/manipulation without Nav2:
+ros2 launch eira_bringup eira_master.launch.py use_nav:=false
+
+ros2 run eira_brain eira_cli "bring me a red cup from the kitchen"
+ros2 run eira_brain eira_cli "sort the blue cup into table1"
+ros2 run eira_brain eira_cli "stop"
+
+# Local planning preview: no ROS initialization or command publication.
+ros2 run eira_brain eira_cli --plan-only "find a blue cup and pick up the blue cup"
+ros2 run eira_brain eira_cli --list-waypoints
+ros2 run eira_brain waypoint_recorder
+```
+
+Optional adapters are disabled by default to avoid unnecessary GPU/CPU load:
+
+```bash
+ros2 launch eira_bringup eira_master.launch.py \
+  use_voice:=true use_gestures:=true use_relocalization:=true use_edge:=true
+
+# Transformer backend; incompatible/missing models explicitly fall back to YOLO.
+ros2 launch eira_bringup eira_master.launch.py tracking_backend:=transformer
+```
+
+`voice_input` defaults to local-file transcription with wake word `eira`.
+Set `voice_input.microphone_enabled: true` in the parameter YAML to enable the
+microphone, and configure the installed model/device. The standalone executable
+alias `voice_activation` uses its own matching YAML selector.
+
+```bash
+ros2 topic pub --once /eira/audio_file std_msgs/msg/String \
+  "{data: '/absolute/path/eira_command.wav'}"
+# Already-transcribed speech can use the planner's voice subscriber directly:
+ros2 topic pub --once /eira/voice std_msgs/msg/String "{data: 'find a red cup'}"
+```
+
+Gesture confirmation is opt-in through
+`grasp_executor.require_gesture_confirmation`. A stable OK gesture confirms the
+matching grasp; Thumb_down cancels. Visual recovery publishes `/initialpose`
+only when AMCL uncertainty is excessive and the visual estimate satisfies age,
+covariance, reprojection and correction-distance limits.
+
+## Mobile/WebSocket commands
+
+```bash
+ros2 launch eira_bringup eira_master.launch.py use_rosbridge:=true
+```
+
+The default endpoint is `ws://127.0.0.1:9090`. Use an SSH tunnel for a remote
+mobile device, or explicitly configure `rosbridge_address` for the robot's LAN.
+The topic allowlist exposes commands, transcripts, plans, status and speech;
+raw velocity, ownership, arm commands and direct Nav2 actions are not exposed.
+A client publishes a standard rosbridge message:
+
+```json
+{"op":"publish","topic":"/eira/command","msg":{"data":"find a red cup"}}
+```
+
+See the upstream [rosbridge protocol implementation](https://github.com/RobotWebTools/rosbridge_suite/tree/humble)
+for client transport details.
+
+## Exercise workflows
+
+The actual numbered directories differ from the feature labels in the request:
+19 is Cartographer relocalization, 20 is RTAB-Map mapping, 29 is MediaPipe, and
+33 is transformer tracking. All 33 are mapped in
+[EXERCISE_INTEGRATION.md](docs/EXERCISE_INTEGRATION.md).
+
+```bash
+ros2 launch eira_bringup exercise_profiles.launch.py profile:=slam_toolbox
+ros2 launch eira_bringup exercise_profiles.launch.py profile:=calibrate_angular
+ros2 launch eira_bringup exercise_profiles.launch.py profile:=keyboard
+ros2 launch eira_bringup exercise_profiles.launch.py profile:=sensor_skills
+```
+
+Use one motion-owning workflow at a time; do not run a second gate/profile
+alongside the master. Mapping/diagnostic profiles assume existing hardware
+bringup. The keyboard profile starts the gate and prints the foreground command; ROS
+launch does not forward stdin to child nodes. Run in an attached second terminal:
+
+```bash
+ros2 run yahboomcar_ctrl yahboom_keyboard --ros-args -r cmd_vel:=/eira/cmd_vel/exercise
+```
+Sensor skills wait for an explicit bounded request:
+
+```bash
+ros2 topic pub --once /eira/skill/request std_msgs/msg/String \
+  '{data: "{\"command\":\"lidar_track\",\"mission_id\":\"demo\",\"action_id\":\"1\",\"duration_s\":10}"}'
+```
+
+## API
+
+Existing public topic names and ROS message types are preserved. String request
+payloads now accept JSON correlation envelopes; legacy plain labels/arm commands
+remain accepted by their skill nodes. The Brain requires correlated results.
+
+| Interface | Type | Contract |
+|---|---|---|
+| `/eira/command`, `/eira/voice` | `std_msgs/msg/String` | Plain instruction or `{command, mission_id}` |
+| `/eira/plan`, `/eira/status` | `std_msgs/msg/String` | JSON with mission identity; status includes action/step/queue |
+| `/eira/vision_target` | `std_msgs/msg/String` | `{mission_id, action_id, target}`, optional `refresh_id`/`cancel`, or legacy label |
+| `/eira/vision/event` | `std_msgs/msg/String` | `found/lost/timeout/tf_error/failed`, identity and measurement metadata |
+| `/target_pose` | `geometry_msgs/msg/PoseStamped` | Finite metric pose in `base_link`, original measurement stamp |
+| `/eira/detect_image`, `/eira/depth_image` | `sensor_msgs/msg/Image` | Annotated color / optional pseudocolor depth |
+| `/eira/depth_distance` | `std_msgs/msg/String` | Optional metric probe JSON |
+| `/eira/manipulation/request` | `std_msgs/msg/String` | `{mission_id, action_id, command, target}` or legacy command |
+| `/eira/manipulation/event` | `std_msgs/msg/String` | `grasped/released/homed/failed/stopped`, IDs and verification fields |
+| `/navigate_through_poses` | `nav2_msgs/action/NavigateThroughPoses` | Existing Nav2 action, no E-AIRA action server |
+| `/get_kinemarics` | `arm_interface/srv/ArmKinemarics` | Existing IK service; spelling preserved |
+| `/arm6_joints`, `/arm_joint` | `arm_msgs/msg/ArmJoints`, `ArmJoint` | Driver angles in degrees, runtime in milliseconds |
+| `/Curjoints`, `/grasp_done`, `/beep` | `CurJoints`, `Bool`, `UInt16` | Existing feedback/completion/buzzer interfaces |
+| `/joint_states` | `sensor_msgs/msg/JointState` | Optional commanded arm display relay; not measured servo feedback |
+| `/eira/visualization_markers` | `visualization_msgs/msg/MarkerArray` | Observed waypoint/object/heading display with frame and age checks |
+| `/eira/heartbeat`, `/eira/safety/stop` | `Empty`, `Bool` | Liveness and independent watchdog interlock |
+| `/eira/safety/edge` | `std_msgs/msg/String` | JSON `blocked`, reason, coverage and mission context |
+| `/eira/motion_owner`, `/eira/motion/event` | `std_msgs/msg/String` | Owner selection and correlated gate state |
+| `/eira/cmd_vel/{brain,arm,nav,teleop,exercise}` | `geometry_msgs/msg/Twist` | Fresh source inputs to the gate |
+| `/cmd_vel` | `geometry_msgs/msg/Twist` | Final gated command in the managed launch |
+| `/eira/audio_file`, `/eira/voice/event` | `std_msgs/msg/String` | Audio-file requests and local ASR diagnostics |
+| `/eira/gesture` | `std_msgs/msg/String` | Debounced OK/Thumb_down event with current identity |
+| `/eira/visual_pose`, `/initialpose` | `geometry_msgs/msg/PoseWithCovarianceStamped` | Visual map-frame estimate / AMCL correction |
+| `/eira/localization/event` | `std_msgs/msg/String` | Recovery diagnostics |
+| `/eira/skill/request`, `/eira/skill/event` | `std_msgs/msg/String` | Explicit bounded line/LiDAR behavior requests/results |
+
+A found event includes `width_m`, `height_m`, `volume_m3`, color/track metadata,
+and the measurement stamp. Volume is a **model-based estimate**: a single frontal
+RGB-D image cannot determine hidden thickness. With the default zero thickness
+prior, volume is null with an uncertainty explanation. Supply a measured
+`volume_thickness_m` and appropriate `volume_shape` for a cuboid/cylinder estimate.
+
+The transformer adapter contract is `initialize(BGR, xyxy)` followed by
+`update(BGR) -> xyxy | None`. Exercise 33 supplies an ONNX path and launch file,
+but no tensor ABI. The implementation does not assume that an arbitrary ONNX
+file is compatible with OpenCV ViT; use `tracker_factory` for a vendor adapter.
+
+## Testing and validation
+
+```bash
+source /opt/ros/humble/setup.bash
+cd ~/NeuroBotics/eira_ws
+PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -p no:cacheprovider -q src
+python3 -m flake8 --max-line-length=99 src
+colcon build --symlink-install
+```
+
+The current suite has **612 passing tests** across six packages, with no failures
+or skips. A clean isolated six-package build and flake8 checks pass. The prior
+orchestration baseline had 174 tests across four packages. Details are recorded in
+[the validation report](docs/SAFETY_AND_VALIDATION.md).
+
+Tests cover pure algorithms and mocked ROS topic/service/action integration,
+including late planning/Nav2/IK results, stop, event identity, CLI preview,
+watchdog/gate precedence, frozen cameras, stale poses, color/track association,
+calibration rejection, edge geometry and launch loading. They start no hardware
+nodes. Build success does not establish ARM64 model availability or physical
+calibration. See [SAFETY_AND_VALIDATION.md](docs/SAFETY_AND_VALIDATION.md) for the
+audit-finding mapping and remaining hardware validation requirements.

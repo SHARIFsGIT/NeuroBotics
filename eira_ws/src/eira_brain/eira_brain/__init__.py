@@ -1,3 +1,9 @@
+"""  init  .
+
+Author: E-AIRA contributors.
+Hardware target: ROSMASTER M3 Pro / Jetson Orin NX, ROS 2 Humble.
+"""
+
 # E-AIRA brain package.
 #
 # llm_task_planner : natural-language -> JSON plan -> sequenced execution

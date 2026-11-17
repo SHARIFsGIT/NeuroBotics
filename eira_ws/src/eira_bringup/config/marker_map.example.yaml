@@ -1,0 +1,6 @@
+# Calibrated fiducial map template. No invented marker poses are supplied.
+# Author: E-AIRA maintainers. Hardware: ROSMASTER M3 Pro / Jetson Orin NX.
+# Each marker ID maps to {x, y, z, quaternion: [x,y,z,w], size_m} in map.
+# Configure visual_relocalization.marker_map_file to this measured map.
+frame: map
+markers: {}

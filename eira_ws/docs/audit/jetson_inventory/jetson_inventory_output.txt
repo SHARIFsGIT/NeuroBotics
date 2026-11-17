@@ -1,0 +1,2333 @@
+
+### 0 RUN
+2026-11-17T14:00:35Z
+user=jetson host=yahboom home=/home/jetson shell=/bin/bash
+
+### 1 PLATFORM
+NVIDIA Jetson Orin NX Engineering Reference Developer Kit Super
+# R36 (release), REVISION: 4.4, GCID: 41062509, BOARD: generic, EABI: aarch64, DATE: Mon Jun 16 16:07:13 UTC 2025
+# KERNEL_VARIANT: oot
+Ubuntu 22.04.5 LTS
+5.15.148-tegra
+cuda-toolkit-12-6	12.6.11-1
+cuda-toolkit-12-6-config-common	12.6.77-1
+cuda-toolkit-12-config-common	12.6.77-1
+cuda-toolkit-config-common	12.6.77-1
+libcudnn8-dev	
+libcudnn9	
+libcudnn9-cross-aarch64	
+libcudnn9-cross-aarch64-cuda-12	9.3.0.75-1
+libcudnn9-cuda-12	9.11.0.98-1
+libcudnn9-dev	
+libcudnn9-dev-cuda-12	9.11.0.98-1
+libcudnn9-headers	
+libcudnn9-headers-cuda-12	9.11.0.98-1
+libcudnn9-jit	
+libcudnn9-jit-dev	
+libcudnn9-samples	9.11.0.98-1
+libcudnn9-static	
+libcudnn9-static-cuda-12	9.11.0.98-1
+libnvinfer-bin	10.7.0.23-1+cuda12.6
+libnvinfer-dev	10.7.0.23-1+cuda12.6
+NV Power Mode: MAXN_SUPER
+0
+NVPM ERROR: Error opening /sys/devices/system/cpu/cpu6/online: 2
+               total        used        free      shared  buff/cache   available
+Mem:            7619        2169        2989          98        2460        5118
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p1  117G   92G   20G  83% /
+/dev/nvme0n1p1  117G   92G   20G  83% /
+cpus=6
+
+### 2 PYTHON LIBRARIES (versions from metadata; packages are not imported)
+Python 3.10.12
+torch                    2.5.0a0+872d972e41.nv24.8
+torchvision              0.20.0a0
+ultralytics              8.3.65
+tensorrt                 10.7.0
+onnxruntime              1.22.1
+onnxruntime-gpu          1.20.0
+opencv-python            -
+opencv-contrib-python    -
+numpy                    1.26.4
+mediapipe                0.10.9
+dt-apriltags             3.1.7
+transforms3d             0.4.2
+pyserial                 3.5
+psutil                   6.1.1
+PyQt5                    5.15.6
+scipy                    1.15.1
+pycuda                   -
+jetson-stats             4.3.1
+openai-whisper           -
+sounddevice              0.5.1
+requests                 2.32.3
+cv2 4.5.4 [] aruco True TrackerVit False
+torch 2.5.0a0+872d972e41.nv24.08 cuda 12.6 available True
+tensorrt 10.7.0
+
+### 3 ROS 2 APT PACKAGES
+humble
+ros-humble-* packages installed: 495
+ros-humble-apriltag	3.4.5-1jammy.20260306.211938
+ros-humble-apriltag-localization	0.0.0-0jammy
+ros-humble-apriltag-msgs	2.0.1-2jammy.20250607.095603
+ros-humble-cartographer	2.0.9004-1jammy.20250522.040257
+ros-humble-cartographer-dbgsym	2.0.9004-1jammy.20250522.040257
+ros-humble-cartographer-ros	2.0.9002-1jammy.20250607.162204
+ros-humble-cartographer-ros-dbgsym	2.0.9002-1jammy.20250607.162204
+ros-humble-cartographer-ros-msgs	2.0.9002-1jammy.20250607.105019
+ros-humble-cartographer-ros-msgs-dbgsym	2.0.9002-1jammy.20250607.105019
+ros-humble-cartographer-rviz	2.0.9002-1jammy.20250607.165948
+ros-humble-cartographer-rviz-dbgsym	2.0.9002-1jammy.20250607.165948
+ros-humble-cv-bridge	3.2.1-1jammy.20241128.024610
+ros-humble-depthimage-to-laserscan	2.5.1-1jammy.20241128.063033
+ros-humble-imu-filter-madgwick	2.1.5-1jammy.20250607.164626
+ros-humble-joint-state-publisher	2.4.0-1jammy.20250607.144720
+ros-humble-joint-state-publisher-gui	2.4.0-1jammy.20250607.155607
+ros-humble-joy	3.3.0-1jammy.20241128.072544
+ros-humble-laser-geometry	2.4.0-2jammy.20250114.164643
+ros-humble-micro-ros-msgs	1.0.0-3jammy.20250719.081657
+ros-humble-nav2-amcl	1.1.18-1jammy.20250607.163554
+ros-humble-nav2-behavior-tree	1.1.18-1jammy.20250607.181822
+ros-humble-nav2-behaviors	1.1.18-1jammy.20250607.192531
+ros-humble-nav2-bringup	1.1.18-1jammy.20250614.110402
+ros-humble-nav2-bt-navigator	1.1.18-1jammy.20250607.194140
+ros-humble-nav2-collision-monitor	1.1.18-1jammy.20250607.194333
+ros-humble-nav2-common	1.1.18-1jammy.20250607.103617
+ros-humble-nav2-constrained-smoother	1.1.18-1jammy.20250607.192732
+ros-humble-nav2-controller	1.1.18-1jammy.20250607.192745
+ros-humble-nav2-core	1.1.18-1jammy.20250607.191909
+ros-humble-nav2-costmap-2d	1.1.18-1jammy.20250607.185342
+ros-humble-nav2-dwb-controller	1.1.18-1jammy.20250607.201130
+ros-humble-nav2-graceful-controller	1.1.18-1jammy.20250607.193646
+ros-humble-nav2-lifecycle-manager	1.1.18-1jammy.20250607.164631
+ros-humble-nav2-map-server	1.1.18-1jammy.20250607.163539
+ros-humble-nav2-mppi-controller	1.1.18-1jammy.20250607.193239
+ros-humble-nav2-msgs	1.1.18-1jammy.20250607.115851
+ros-humble-nav2-navfn-planner	1.1.18-1jammy.20250607.193332
+ros-humble-nav2-planner	1.1.18-1jammy.20250607.193422
+ros-humble-nav2-regulated-pure-pursuit-controller	1.1.18-1jammy.20250607.193421
+ros-humble-nav2-rotation-shim-controller	1.1.18-1jammy.20250607.194119
+ros-humble-nav2-rviz-plugins	1.1.18-1jammy.20250614.094749
+ros-humble-nav2-simple-commander	1.1.18-1jammy.20250607.133209
+ros-humble-nav2-smac-planner	1.1.18-1jammy.20250607.193445
+ros-humble-nav2-smoother	1.1.18-1jammy.20250607.193530
+ros-humble-nav2-theta-star-planner	1.1.18-1jammy.20250607.194012
+ros-humble-nav2-util	1.1.18-1jammy.20250607.162406
+ros-humble-nav2-velocity-smoother	1.1.18-1jammy.20250607.172238
+ros-humble-nav2-voxel-grid	1.1.18-1jammy.20250607.174346
+ros-humble-nav2-waypoint-follower	1.1.18-1jammy.20250614.072200
+ros-humble-navigation2	1.1.18-1jammy.20250614.095709
+ros-humble-rmw-connextdds	
+ros-humble-rmw-cyclonedds-cpp	1.3.4-1jammy.20260307.175012
+ros-humble-rmw-dds-common	1.6.0-2jammy.20241128.010805
+ros-humble-rmw-fastrtps-cpp	6.2.7-1jammy.20241128.022749
+ros-humble-rmw-fastrtps-shared-cpp	6.2.7-1jammy.20241128.015024
+ros-humble-rmw-implementation	2.8.4-1jammy.20241128.023155
+ros-humble-rmw-implementation-cmake	6.1.2-1jammy.20241126.004954
+ros-humble-robot-localization	3.5.3-1jammy.20250607.163325
+ros-humble-robot-state-publisher	3.0.3-2jammy.20250114.190224
+ros-humble-ros2-control-test-assets	2.51.0-1jammy.20250607.054551
+ros-humble-rosbridge-library	2.0.1-1jammy.20250719.143853
+ros-humble-rosbridge-msgs	2.0.1-1jammy.20250719.083413
+ros-humble-rosbridge-server	2.0.1-1jammy.20250719.145105
+ros-humble-rosbridge-suite	2.0.1-1jammy.20250722.080945
+ros-humble-rqt-graph	1.3.1-1jammy.20250721.230305
+ros-humble-rqt-image-overlay	0.1.3-1jammy.20250721.235536
+ros-humble-rqt-image-overlay-dbgsym	0.1.3-1jammy.20250721.235536
+ros-humble-rqt-image-overlay-layer	0.1.3-1jammy.20250721.224314
+ros-humble-rqt-image-view	1.2.0-2jammy.20250721.234009
+ros-humble-rqt-image-view-dbgsym	1.2.0-2jammy.20250721.234009
+ros-humble-rqt-reconfigure	1.1.2-1jammy.20250721.230802
+ros-humble-rtabmap	0.22.0-1jammy.20250610.151410
+ros-humble-rtabmap-conversions	0.22.0-1jammy.20250610.174148
+ros-humble-rtabmap-demos	0.22.0-1jammy.20250614.111312
+ros-humble-rtabmap-examples	0.22.0-1jammy.20250614.100511
+ros-humble-rtabmap-launch	0.22.0-1jammy.20250614.100529
+ros-humble-rtabmap-msgs	0.22.0-1jammy.20250610.173247
+ros-humble-rtabmap-odom	0.22.0-1jammy.20250614.091701
+ros-humble-rtabmap-python	0.22.0-1jammy.20250610.173426
+ros-humble-rtabmap-ros	0.22.0-1jammy.20250614.111736
+ros-humble-rtabmap-rviz-plugins	0.22.0-1jammy.20250614.095204
+ros-humble-rtabmap-slam	0.22.0-1jammy.20250614.091721
+ros-humble-rtabmap-sync	0.22.0-1jammy.20250614.072440
+ros-humble-rtabmap-util	0.22.0-1jammy.20250614.074749
+ros-humble-rtabmap-viz	0.22.0-1jammy.20250614.091821
+ros-humble-rviz2	11.2.16-1jammy.20250114.191753
+ros-humble-slam-toolbox	2.6.10-1jammy.20250614.094833
+ros-humble-teleop-twist-joy	2.4.7-1jammy.20241128.103715
+ros-humble-teleop-twist-keyboard	2.4.0-1jammy.20241128.031948
+ros-humble-tf-transformations	1.1.0-1jammy.20250522.042333
+ros-humble-velodyne-laserscan	2.5.1-1jammy.20250607.183004
+ros-humble-xacro	2.0.13-1jammy.20250522.092437
+
+### 4 SHELL SETUP (ROS-related lines of ~/.bashrc only)
+78:    alias ls='ls --color=auto'
+82:    alias grep='grep --color=auto'
+83:    alias fgrep='fgrep --color=auto'
+84:    alias egrep='egrep --color=auto'
+91:alias ll='ls -alF'
+92:alias la='ls -A'
+93:alias l='ls -CF'
+97:alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+105:    . ~/.bash_aliases
+113:    . /usr/share/bash-completion/bash_completion
+115:    . /etc/bash_completion
+119:export LD_LIBRARY_PATH=/usr/local/cuda-12.6/lib64:$LD_LIBRARY_PATH
+120:#export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+121:export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+122:export PYTHONPATH=/usr/local/lib/python3.10/site-packages/:$PYTHONPATH
+123:source /opt/ros/humble/setup.bash
+124:source /home/jetson/yahboomcar_ws/install/setup.bash
+125:source /home/jetson/M3Pro_ws/install/setup.bash
+126:source /home/jetson/mircoROS_agent/install/setup.bash
+127:export LD_LIBRARY_PATH=$HOME/software/vioce_toolbox_lib:$LD_LIBRARY_PATH
+128:export ROS_DOMAIN_ID=30
+157:echo -e "MACHINE: \033[32m$MACHINE\033[0m             | ROS_DISTRO: \033[32m humble \033[0m    | ROS_DOMAIN_ID: \033[32m $ROS_DOMAIN_ID \033[0m " 
+163:eval $RUN_ROS_AGENT
+166:source "/home/jetson/.openclaw/completions/openclaw.bash"
+171:export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ls: cannot access '/root/M3Pro_ws': Permission denied
+drwx------ 13 root root 4096 May  8  2026 /root
+
+### 5 DEVICES AND UDEV RULES (devices listed, never opened)
+ls: cannot access '/dev/rplidar': No such file or directory
+ls: cannot access '/dev/ttyACM*': No such file or directory
+ls: cannot access '/dev/ttyCH*': No such file or directory
+crw-rw-r--+ 1 root input    13, 0 Jan  1  1970 /dev/input/js0
+lrwxrwxrwx  1 root root         7 Jan  1  1970 /dev/myserial -> ttyUSB0
+crwxrwxrwx  1 root dialout 188, 0 Nov 17 03:29 /dev/ttyUSB0
+crwxrwxrwx  1 root dialout 188, 1 Nov 17 14:59 /dev/ttyUSB1
+crw-rw----+ 1 root video    81, 0 Nov 17 03:18 /dev/video0
+crw-rw----+ 1 root video    81, 1 Nov 17 03:18 /dev/video1
+/dev/serial/by-id:
+total 0
+lrwxrwxrwx 1 root root 13 Nov 17 14:59 usb-1a86_USB_Serial-if00-port0 -> ../../ttyUSB1
+lrwxrwxrwx 1 root root 13 Jan  1  1970 usb-Silicon_Labs_CP2104_USB_to_UART_Bridge_Controller_02C4EA0D-if00-port0 -> ../../ttyUSB0
+
+/dev/v4l/by-id:
+total 0
+lrwxrwxrwx 1 root root 12 Nov 17 03:18 usb-Sonix_Technology_Co.__Ltd._Orbbec_DaBai_DCW2_RGB_Camera_CH82C5200WC-video-index0 -> ../../video0
+lrwxrwxrwx 1 root root 12 Nov 17 03:18 usb-Sonix_Technology_Co.__Ltd._Orbbec_DaBai_DCW2_RGB_Camera_CH82C5200WC-video-index1 -> ../../video1
+Bus 002 Device 002: ID 2109:0822 VIA Labs, Inc. USB3.1 Hub             
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 003: ID 0bda:c822 Realtek Semiconductor Corp. Bluetooth Radio 
+Bus 001 Device 013: ID 2109:8817 VIA Labs, Inc. USB Billboard Device   
+Bus 001 Device 018: ID 1a86:7522 QinHeng Electronics USB Serial
+Bus 001 Device 017: ID 0d8c:0012 C-Media Electronics, Inc. USB Audio Device
+Bus 001 Device 016: ID 1a86:8091 QinHeng Electronics USB HUB
+Bus 001 Device 011: ID 0079:181c DragonRise Inc. Controller
+Bus 001 Device 010: ID 046d:c542 Logitech, Inc. Wireless Receiver
+Bus 001 Device 009: ID 2109:2817 VIA Labs, Inc. USB2.0 Hub             
+Bus 001 Device 007: ID 10c4:ea60 Silicon Labs CP210x UART Bridge
+Bus 001 Device 005: ID 0484:5750 Specialix MPI7003
+Bus 001 Device 008: ID 2bc5:0561 Orbbec 3D Technology International, Inc Orbbec DaBai DCW2 RGB Camera
+Bus 001 Device 006: ID 2bc5:06a0 Orbbec 3D Technology International, Inc ORBBEC Depth Sensor
+Bus 001 Device 004: ID 1a40:0101 Terminus Technology Inc. Hub
+Bus 001 Device 002: ID 2109:2822 VIA Labs, Inc. USB2.0 Hub             
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+== /etc/udev/rules.d/10-nv-jetson-dm.rules
+KERNEL=="device-mapper", NAME="mapper/control"
+SUBSYSTEM!="block", GOTO="dm_end"
+KERNEL!="dm-[0-9]*", GOTO="dm_end"
+ACTION!="add|change", GOTO="dm_end"
+ENV{DM_UDEV_PRIMARY_SOURCE_FLAG}="1"
+LABEL="dm_end"
+== /etc/udev/rules.d/70-snap.chromium.rules
+KERNEL=="rfkill", TAG+="snap_chromium_chromedriver"
+KERNEL=="vchiq", TAG+="snap_chromium_chromedriver"
+KERNEL=="video[0-9]*", TAG+="snap_chromium_chromedriver"
+KERNEL=="event[0-9]*", SUBSYSTEM=="input", ENV{ID_INPUT_JOYSTICK}=="1", TAG+="snap_chromium_chromedriver"
+KERNEL=="full", SUBSYSTEM=="mem", TAG+="snap_chromium_chromedriver"
+KERNEL=="js[0-9]*", TAG+="snap_chromium_chromedriver"
+KERNEL=="dma_buf_te", TAG+="snap_chromium_chromedriver"
+KERNEL=="galcore", TAG+="snap_chromium_chromedriver"
+KERNEL=="mali[0-9]*", TAG+="snap_chromium_chromedriver"
+KERNEL=="nvhost-*", TAG+="snap_chromium_chromedriver"
+KERNEL=="nvmap", TAG+="snap_chromium_chromedriver"
+KERNEL=="pvr_sync", TAG+="snap_chromium_chromedriver"
+KERNEL=="renderD[0-9]*", TAG+="snap_chromium_chromedriver"
+KERNEL=="tegra_dc_[0-9]*", TAG+="snap_chromium_chromedriver"
+KERNEL=="tegra_dc_ctrl", TAG+="snap_chromium_chromedriver"
+KERNEL=="vchiq", TAG+="snap_chromium_chromedriver"
+KERNEL=="vcsm-cma", TAG+="snap_chromium_chromedriver"
+SUBSYSTEM=="dma_heap", KERNEL=="linux,cma", TAG+="snap_chromium_chromedriver"
+SUBSYSTEM=="dma_heap", KERNEL=="system", TAG+="snap_chromium_chromedriver"
+SUBSYSTEM=="drm", KERNEL=="card[0-9]*", TAG+="snap_chromium_chromedriver"
+== /etc/udev/rules.d/70-snap.cups.rules
+SUBSYSTEM=="tty", ENV{ID_BUS}=="usb", TAG+="snap_cups_cupsd"
+SUBSYSTEM=="usb", TAG+="snap_cups_cupsd"
+SUBSYSTEM=="usbmisc", TAG+="snap_cups_cupsd"
+TAG=="snap_cups_cupsd", SUBSYSTEM!="module", SUBSYSTEM!="subsystem", RUN+="/usr/lib/snapd/snap-device-helper $env{ACTION} snap_cups_cupsd $devpath $major:$minor"
+SUBSYSTEM=="tty", ENV{ID_BUS}=="usb", TAG+="snap_cups_ippeveprinter"
+SUBSYSTEM=="usb", TAG+="snap_cups_ippeveprinter"
+SUBSYSTEM=="usbmisc", TAG+="snap_cups_ippeveprinter"
+TAG=="snap_cups_ippeveprinter", SUBSYSTEM!="module", SUBSYSTEM!="subsystem", RUN+="/usr/lib/snapd/snap-device-helper $env{ACTION} snap_cups_ippeveprinter $devpath $major:$minor"
+== /etc/udev/rules.d/70-snap.snapd.rules
+ACTION!="add|change|move|bind", GOTO="mm_cinterion_port_types_end"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e2d", GOTO="mm_cinterion_port_types"
+GOTO="mm_cinterion_port_types_end"
+LABEL="mm_cinterion_port_types"
+SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{.MM_USBIFNUM}="$attr{bInterfaceNumber}"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0053", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="06", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="08", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{ID_MM_CINTERION_MODEM_FAMILY}="imt"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{.MM_USBIFNUM}=="06", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005b", ENV{.MM_USBIFNUM}=="08", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005d", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005d", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="005d", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+== /etc/udev/rules.d/91-xorg-conf-tegra.rules
+SUBSYSTEM!="soc", GOTO="soc_end"
+KERNEL!="soc0", GOTO="soc_end"
+ATTR{machine}=="jetson_e", RUN+="/bin/ln -sf /etc/X11/xorg.conf.jetson_e /etc/X11/xorg.conf"
+LABEL="soc_end"
+== /etc/udev/rules.d/99-gpio.rules
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", \
+    PROGRAM="/bin/sh -c 'chown root:gpio /dev/%k; chmod 660 /dev/%k'"
+SUBSYSTEM=="pwm", KERNEL=="pwmchip*", ACTION=="add", \
+    PROGRAM="/bin/bash -c 'chown root:gpio /sys%p/{,un}export; chmod 220 /sys%p/{,un}export'"
+SUBSYSTEM=="pwm", KERNEL=="pwmchip*", ACTION=="change", \
+    PROGRAM="/bin/bash -c 'chown root:gpio /sys%p/%E{EXPORT}/{period,duty_cycle,enable}; chmod 660 /sys%p/%E{EXPORT}/{period,duty_cycle,enable}'"
+SUBSYSTEM=="spidev", KERNEL=="spidev*", ACTION=="add", \
+    GROUP="gpio", MODE="0660"
+== /etc/udev/rules.d/99-nv-l4t-usb-device-mode.rules
+KERNEL=="android0" SUBSYSTEM=="android_usb" RUN+="/opt/nvidia/l4t-usb-device-mode/nv-l4t-usb-device-mode-state-change.sh"
+SUBSYSTEM=="usb_role" RUN+="/opt/nvidia/l4t-usb-device-mode/nv-l4t-usb-device-mode-state-change.sh"
+== /etc/udev/rules.d/99-nv-l4t-usb-host-config.rules
+ACTION=="add", KERNEL=="1-2", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="5411", RUN+="/bin/sh -c 'echo enabled > /sys/bus/usb/devices/1-2/power/wakeup'"
+ACTION=="add", KERNEL=="2-1", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="0411", RUN+="/bin/sh -c 'echo enabled > /sys/bus/usb/devices/2-1/power/wakeup"
+ACTION=="add", KERNEL=="1-2", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="5489", RUN+="/bin/sh -c 'echo enabled > /sys/bus/usb/devices/1-2/power/wakeup'"
+ACTION=="add", KERNEL=="2-3", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="0489", RUN+="/bin/sh -c 'echo enabled > /sys/bus/usb/devices/2-3/power/wakeup"
+ACTION=="add", KERNEL=="1-3", SUBSYSTEM=="usb", ATTR{idVendor}=="1a40", ATTR{idProduct}=="0801", RUN+="/bin/sh -c 'echo enabled > /sys/bus/usb/devices/1-3/power/wakeup'"
+== /etc/udev/rules.d/99-nv-ufs-mount.rules
+== /etc/udev/rules.d/99-nv-wifibt.rules
+ACTION=="add" SUBSYSTEM=="sdio" ATTR{vendor}=="0x02d0" RUN+="/etc/systemd/nvwifibt-pre.sh register $attr{device}"
+ACTION=="add" SUBSYSTEM=="pci" ATTR{vendor}=="0x14e4" RUN+="/etc/systemd/nvwifibt-pre.sh register $attr{device}"
+ACTION=="change" SUBSYSTEM=="rfkill" ATTR{name}=="bluedroid_pm*" ATTR{state}=="1" RUN+="/bin/systemctl start nvwifibt.service"
+ACTION=="change" SUBSYSTEM=="rfkill" ATTR{name}=="bluedroid_pm*" ATTR{state}=="0" RUN+="/bin/systemctl stop nvwifibt.service"
+== /etc/udev/rules.d/99-obsensor-libusb.rules
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0501", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Bootloader Device"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0635", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Femto"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0638", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Femto-w"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0668", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Femto-live"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0636", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Astra+"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0637", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Astra+s"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0536", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Astra+_rgb"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0537", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Astra+s_rgb"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0669", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Femto-mega"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="066b", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Femto Bolt"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0660", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Astra 2"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0670", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 2"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0671", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 2 XL"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0673", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 2 L"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0675", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 2 VL"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0800", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 335"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0801", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 330"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0802", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini dm330"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0803", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 336"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0804", MODE:="0666",  OWNER:="root", GROUP:="video", SYMLINK+="Orbbec Gemini 335L"
+== /etc/udev/rules.d/99-tegra-devices.rules
+ACTION=="remove" GOTO="nvidia_end"
+KERNEL=="knvrm" OWNER="root" GROUP="root" MODE="0660"
+KERNEL=="knvmap" OWNER="root" GROUP="root" MODE="0660"
+DEVPATH=="/module/nvidia", ACTION=="add", RUN+="/bin/mknod -m 666 /dev/nvidiactl c 195 255"
+DEVPATH=="/module/nvidia", ACTION=="add", RUN+="/bin/mknod -m 666 /dev/nvidia0 c 195 0"
+DEVPATH=="/module/nvidia_modeset", ACTION=="add", RUN+="/bin/mknod -m 666 /dev/nvidia-modeset c 195 254"
+KERNEL=="15480000.nvdec", DRIVER=="tegra-nvdec", ACTION=="bind", RUN+="/bin/mknod -m 666 /dev/v4l2-nvdec c 1 3"
+KERNEL=="154c0000.nvenc", DRIVER=="tegra-nvenc", ACTION=="bind", RUN+="/bin/mknod -m 666 /dev/v4l2-nvenc c 1 3"
+KERNEL=="nvmap" OWNER="root" GROUP="video" MODE="0660"
+SUBSYSTEM=="dma_heap" KERNEL=="system_heap" OWNER="root" GROUP="video" MODE="0660"
+SUBSYSTEM=="dma_heap" KERNEL=="system" OWNER="root" GROUP="video" MODE="0660"
+SUBSYSTEM=="host1x" OWNER="root" GROUP="video" MODE="0660"
+KERNEL=="nvram" OWNER="root" GROUP="video" MODE="0660"
+KERNEL=="nvhdcp*" OWNER="root" GROUP="video" MODE="0660"
+KERNEL=="nvhost*" OWNER="root" GROUP="video" MODE="0660"
+KERNEL=="nvhost-ctxsw-gpu" OWNER="root" GROUP="debug" MODE="0660"
+KERNEL=="nvhost-dbg-gpu" OWNER="root" GROUP="debug" MODE="0660"
+KERNEL=="nvhost-prof-ctx-gpu" OWNER="root" GROUP="debug" MODE="0660"
+KERNEL=="nvhost-prof-dev-gpu" OWNER="root" GROUP="debug" MODE="0660"
+KERNEL=="nvhost-prof-gpu" OWNER="root" GROUP="debug" MODE="0660"
+== /etc/udev/rules.d/99-tegra-mmc-ra.rules
+KERNEL=="mmcblk[0-9]", SUBSYSTEMS=="mmc",ACTION=="add|change", ATTR{bdi/read_ahead_kb}="2048"
+== /etc/udev/rules.d/usb_serial.rules
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7522", MODE="0777",SYMLINK+="mic"
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60",MODE="0777",SYMLINK+="myserial"
+60-serial.rules
+
+### 6 SERVICES, AUTOSTART, CRON, DOCKER
+accounts-daemon.service                enabled enabled
+anacron.service                        enabled enabled
+apparmor.service                       enabled enabled
+avahi-daemon.service                   enabled enabled
+binfmt-support.service                 enabled enabled
+blk-availability.service               enabled enabled
+bluetooth.service                      enabled enabled
+console-setup.service                  enabled enabled
+containerd.service                     enabled enabled
+cron.service                           enabled enabled
+dmesg.service                          enabled enabled
+docker.service                         enabled enabled
+e2scrub_reap.service                   enabled enabled
+getty@.service                         enabled enabled
+haveged.service                        enabled enabled
+jtop.service                           enabled enabled
+jupyterlab.service                     enabled enabled
+kerneloops.service                     enabled enabled
+keyboard-setup.service                 enabled enabled
+l4t-rootfs-validation-config.service   enabled enabled
+lvm2-monitor.service                   enabled enabled
+ModemManager.service                   enabled enabled
+networkd-dispatcher.service            enabled enabled
+NetworkManager-dispatcher.service      enabled enabled
+NetworkManager.service                 enabled enabled
+nv-l4t-bootloader-config.service       enabled enabled
+nv-l4t-usb-device-mode.service         enabled enabled
+nv-late-init.service                   enabled enabled
+nv-ms-tpm-removal.service              enabled enabled
+nv-tee-supplicant.service              enabled enabled
+nv.service                             enabled enabled
+nv_nvsciipc_init.service               enabled enabled
+nvargus-daemon.service                 enabled enabled
+nvcpupowerfix.service                  enabled enabled
+nvfancontrol.service                   enabled enabled
+nvfb-early.service                     enabled enabled
+nvfb-udev.service                      enabled enabled
+nvfb.service                           enabled enabled
+nvgetty.service                        enabled enabled
+nvidia-pva-allowd.service              enabled enabled
+nvmefc-boot-connections.service        enabled enabled
+nvmemwarning.service                   enabled enabled
+nvmf-autoconnect.service               enabled enabled
+nvphs.service                          enabled enabled
+nvpmodel.service                       enabled enabled
+nvpower.service                        enabled enabled
+nvramoopsconfig.service                enabled enabled
+nvs-service.service                    enabled enabled
+nvweston.service                       enabled enabled
+nvzramconfig.service                   enabled enabled
+ollama.service                         enabled enabled
+openvpn.service                        enabled enabled
+power-profiles-daemon.service          enabled enabled
+resolvconf-pull-resolved.service       enabled enabled
+resolvconf.service                     enabled enabled
+rpcbind.service                        enabled enabled
+rsyslog.service                        enabled enabled
+seatd.service                          enabled enabled
+secureboot-db.service                  enabled enabled
+setvtrgb.service                       enabled enabled
+snap.cups.cups-browsed.service         enabled enabled
+snap.cups.cupsd.service                enabled enabled
+snapd.apparmor.service                 enabled enabled
+snapd.autoimport.service               enabled enabled
+snapd.core-fixup.service               enabled enabled
+snapd.recovery-chooser-trigger.service enabled enabled
+snapd.seeded.service                   enabled enabled
+snapd.service                          enabled enabled
+snapd.system-shutdown.service          enabled enabled
+ssh.service                            enabled enabled
+sssd.service                           enabled enabled
+switcheroo-control.service             enabled enabled
+systemd-oomd.service                   enabled enabled
+systemd-pstore.service                 enabled enabled
+systemd-resolved.service               enabled enabled
+systemd-timesyncd.service              enabled enabled
+tailscaled.service                     enabled enabled
+ua-reboot-cmds.service                 enabled enabled
+ubuntu-advantage.service               enabled enabled
+udisks2.service                        enabled enabled
+-- user services
+ubuntu-report.path                           enabled enabled
+gnome-keyring.service                        enabled enabled
+gnome-remote-desktop.service                 enabled enabled
+openclaw-gateway.service                     enabled enabled
+org.freedesktop.IBus.session.GNOME.service   enabled enabled
+pipewire-media-session.service               enabled enabled
+pipewire.service                             enabled enabled
+pulseaudio.service                           enabled enabled
+session-migration.service                    enabled enabled
+tracker-miner-fs-3.service                   enabled enabled
+xdg-desktop-portal-rewrite-launchers.service enabled enabled
+dirmngr.socket                               enabled enabled
+gpg-agent-browser.socket                     enabled enabled
+gpg-agent-extra.socket                       enabled enabled
+gpg-agent-ssh.socket                         enabled enabled
+gpg-agent.socket                             enabled enabled
+pipewire.socket                              enabled enabled
+pk-debconf-helper.socket                     enabled enabled
+pulseaudio.socket                            enabled enabled
+speech-dispatcher.socket                     enabled enabled
+== /etc/systemd/system/jtop.service
+[Unit]
+Description=jtop service
+After=multi-user.target
+[Service]
+Environment="JTOP_SERVICE=True"
+ExecStart=/usr/local/bin/jtop --force
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+[Install]
+WantedBy=multi-user.target
+== /etc/systemd/system/jupyterlab.service
+[Unit]
+Description=jupyterlab
+After=network.target
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/jupyter-lab
+config=/root/.jupyter/jupyter_lab_config.py --no-browser
+User=root
+Group=root
+WorkingDirectory=/home/jetson/
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+== /etc/systemd/system/ollama.service
+[Unit]
+Description=Ollama Service
+After=network-online.target
+[Service]
+ExecStart=/usr/local/bin/ollama serve
+User=ollama
+Group=ollama
+Restart=always
+RestartSec=3
+Environment="PATH=/home/jetson/.local/share/pnpm/bin:/opt/ros/humble/bin:/usr/local/cuda-12.6/bin:/home/jetson/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+[Install]
+WantedBy=default.target
+== /etc/systemd/system/yahboom_oled.service
+[Unit]
+Description=yahboom_oled start service
+After=multi-user.target
+[Service]
+Type=idle
+User=jetson
+ExecStart=/bin/sh -c "python3 /home/jetson/oled_yahboom/yahboom_oled.py"
+WorkingDirectory=/home/jetson
+[Install]
+WantedBy=multi-user.target
+== /home/jetson/.config/systemd/user/openclaw-gateway.service
+[Unit]
+Description=OpenClaw Gateway (v2026.3.13)
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/usr/bin/node /usr/lib/node_modules/openclaw/dist/index.js gateway --port 18789
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+TimeoutStartSec=30
+SuccessExitStatus=0 143
+KillMode=control-group
+Environment=HOME=/home/jetson
+Environment=TMPDIR=/tmp
+Environment=PATH=/home/jetson/.local/bin:/home/jetson/.npm-global/bin:/home/jetson/bin:/home/jetson/.volta/bin:/home/jetson/.asdf/shims:/home/jetson/.bun/bin:/home/jetson/.nvm/current/bin:/home/jetson/.fnm/current/bin:/h
+Environment=OPENCLAW_GATEWAY_PORT=18789
+Environment=OPENCLAW_SYSTEMD_UNIT=openclaw-gateway.service
+Environment="OPENCLAW_WINDOWS_TASK_NAME=OpenClaw Gateway"
+Environment=OPENCLAW_SERVICE_MARKER=openclaw
+Environment=OPENCLAW_SERVICE_KIND=gateway
+Environment=OPENCLAW_SERVICE_VERSION=2026.3.13
+[Install]
+WantedBy=default.target
+-- desktop autostart
+total 20
+drwxrwxr-x  2 jetson jetson 4096 Aug  9 19:25 .
+drwxrwxrwx 32 jetson jetson 4096 Nov  9 04:30 ..
+-rwxrwxr-x  1 jetson jetson  204 Aug  7  2025 agent_autostart .desktop
+-rwxrwxr-x  1 jetson jetson  385 Aug  7  2025 check_sensor.desktop
+-rw-rw-r--  1 jetson jetson  217 Aug  1  2025 set.desktop
+== /home/jetson/.config/autostart/agent_autostart .desktop
+Exec=/home/jetson/start_agent.sh
+Hidden=false
+X-GNOME-Autostart-enabled=true
+Name=agent auto start
+== /home/jetson/.config/autostart/check_sensor.desktop
+Exec=gnome-terminal -- bash -c 'source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=30 && sleep 5 && /usr/bin/python3 /home/jetson/check_sensor.py; read -p "Press Enter to close the window..."'
+Hidden=false
+X-GNOME-Autostart-enabled=true
+Name=joy control Starter
+== /home/jetson/.config/autostart/set.desktop
+Exec=sh /home/jetson/set.sh
+Hidden=false
+X-GNOME-Autostart-enabled=true
+Name=ROS Agent Starter
+-- crontab
+no crontab for jetson
+-- docker
+roadnetwork-roadnet-1	192.168.2.51:5000/roadnet:1.3	Exited (255) 5 months ago
+docker-nginx-1	nginx:latest	Exited (255) 5 months ago
+docker-worker-1	langgenius/dify-api:1.11.1	Exited (255) 5 months ago
+docker-api-1	langgenius/dify-api:1.11.1	Exited (255) 5 months ago
+docker-worker_beat-1	langgenius/dify-api:1.11.1	Exited (255) 5 months ago
+docker-plugin_daemon-1	langgenius/dify-plugin-daemon:0.5.1-local	Exited (255) 5 months ago
+docker-redis-1	redis:6-alpine	Exited (255) 5 months ago
+docker-web-1	langgenius/dify-web:1.11.1	Exited (255) 5 months ago
+docker-db_postgres-1	postgres:15-alpine	Exited (255) 5 months ago
+docker-weaviate-1	semitechnologies/weaviate:1.27.0	Exited (255) 5 months ago
+docker-sandbox-1	langgenius/dify-sandbox:0.2.12	Exited (255) 5 months ago
+docker-ssrf_proxy-1	ubuntu/squid:latest	Exited (255) 5 months ago
+docker-init_permissions-1	busybox:latest	Exited (0) 5 months ago
+elegant_poitras	192.168.2.51:5000/micro-ros-agent:humble	Exited (255) 15 months ago
+192.168.2.51:5000/roadnet:1.3	5.25GB
+postgres:15-alpine	270MB
+langgenius/dify-web:1.11.1	392MB
+langgenius/dify-api:1.11.1	2.39GB
+langgenius/dify-plugin-daemon:0.5.1-local	1.43GB
+nginx:latest	172MB
+ubuntu/squid:latest	236MB
+redis:6-alpine	30.4MB
+langgenius/dify-sandbox:0.2.12	636MB
+semitechnologies/weaviate:1.27.0	160MB
+busybox:latest	4.17MB
+192.168.2.51:5000/micro-ros-agent:humble	404MB
+
+### 7 RUNNING ROS / ROBOT PROCESSES
+    842     981 avahi-daemon: running [yahboom.local]
+    853     981 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+    858     981 python3 /opt/nvidia/pva-allow-2/bin/nvidiaPvaAllowd.py
+   1309     979 /usr/bin/python3 /usr/local/bin/jupyter-lab
+   1319     979 /usr/local/bin/ollama serve
+   1670     979 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1915     978 /usr/bin/python3 /usr/local/bin/jtop --force
+   1917     978 /bin/sh -c python3 /home/jetson/oled_yahboom/yahboom_oled.py
+   2131     978 /usr/bin/python3 /usr/local/bin/jtop --force
+   2147     978 /usr/bin/python3 /usr/local/bin/jtop --force
+   2483     977 python3 /home/jetson/oled_yahboom/yahboom_oled.py
+   3134     973 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3316     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3317     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3318     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3319     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3321     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3323     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3324     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3325     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3333     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3334     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3337     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3338     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3339     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3340     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3342     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3345     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3347     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3348     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+   3349     972 python3 /usr/share/nvpmodel_indicator/nvpmodel_indicator.py
+
+### 8 OLLAMA
+/usr/local/bin/ollama
+ollama version is 0.40.16
+NAME           ID              SIZE      MODIFIED   
+phi3:latest    4f2222927938    2.2 GB    5 days ago    
+
+### 9 WORKSPACES, PACKAGES, INTERFACES AND KEY FILES
+sourced /home/jetson/yahboomcar_ws/install/setup.bash
+sourced /home/jetson/M3Pro_ws/install/setup.bash
+sourced /home/jetson/mircoROS_agent/install/setup.bash
+
+## 9.1 colcon workspaces under $HOME (install/setup.bash present)
+/home/jetson  src=no  git=-
+/home/jetson/M3Pro_ws  src=yes  git=-
+/home/jetson/M3Pro_ws/RoadNetwork/volumes/code_ws  src=yes  git=-
+/home/jetson/eira_ws  src=yes  git=-
+/home/jetson/mircoROS_agent  src=yes  git=-
+/home/jetson/uros_ws  src=yes  git=-
+/home/jetson/yahboomcar_ws  src=yes  git=-
+
+## 9.2 source packages (one line per package.xml)
+ws | path | name | version | build_type | license | maintainer_domain | py/cpp/launch/yaml/urdf/msg+srv+action/so/pyc_only | LICENSE_file | git_origin @ commit
+M3Pro_ws | calibration | calibration | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 9/0/2/0/0/0/0/0 | no | -
+M3Pro_ws | ekf_bringup | ekf_bringup | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 5/0/1/4/0/0/0/0 | no | -
+M3Pro_ws | M3Pro | M3Pro | 2.2.6 | ament_cmake | Apache 2.0 | robotis.com | 0/0/3/2/5/0/0/0 | no | -
+M3Pro_ws | M3Pro_KCF | M3Pro_KCF | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/14/0/0/0/0/0/0 | no | -
+M3Pro_ws | yahboom_mapping | yahboom_mapping | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/0/1/1/0/0/0/0 | no | -
+M3Pro_ws | waste_classify_msg | waste_classify_msg | 0.0.0 | ament_cmake | TODO: License declaration | 168.com | 0/0/0/0/0/5/0/0 | no | -
+M3Pro_ws | multi_brains | multi_brains | 1.0.0 | ament_python | TODO: License declaration | example.com | 23/0/1/4/0/0/0/0 | no | -
+M3Pro_ws | multi_brains_pre | multi_brains_pre | 0.0.0 | ament_python | TODO: License declaration | 168.com | 27/0/0/2/0/0/0/0 | no | -
+M3Pro_ws | text_chat | text_chat | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 6/0/0/0/0/0/0/0 | no | -
+M3Pro_ws | slam_mapping | slam_mapping | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/0/11/5/0/0/0/0 | no | -
+M3Pro_ws | updatecostmap | updatecostmap | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/1/0/0/0/0/0/0 | no | -
+M3Pro_ws | m3pro_bringup | m3pro_bringup | 0.0.0 | ament_cmake | TODO: License declaration | 168.com | 0/0/10/8/0/0/0/0 | no | -
+M3Pro_ws | waste_classify | waste_classify | 0.0.0 | ament_python | TODO: License declaration | 168.com | 6/0/0/0/0/0/0/0 | no | -
+M3Pro_ws | ros_robot_app/yahboom_web_savmap_interfaces | yahboom_web_savmap_interfaces | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/0/0/0/0/1/0/0 | no | -
+M3Pro_ws | ros_robot_app/yahboom_app_save_map | yahboom_app_save_map | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 7/0/1/0/0/0/0/0 | no | -
+M3Pro_ws | ros_robot_app/robot_pose_publisher_ros2 | robot_pose_publisher_ros2 | 0.0.0 | ament_cmake | TODO: License declaration | gmail.com | 1/1/1/0/0/0/0/0 | no | -
+M3Pro_ws | ros_robot_app/laserscan_to_point_publisher | laserscan_to_point_publisher | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 10/0/0/0/0/0/0/0 | no | -
+M3Pro_ws | largemodel | largemodel | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 13/0/1/3/0/0/0/0 | no | -
+M3Pro_ws | arm_util | arm_util | 0.0.0 | ament_cmake | Apache License 2.0 | 168.com | 0/3/1/0/0/1/0/0 | no | -
+M3Pro_ws | yahboom_multi | yahboom_multi | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 7/0/9/6/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_navigation | M3Pro_navigation | 2.1.5 | ament_cmake | Apache 2.0 | robotis.com | 0/0/14/4/0/0/0/0 | no | -
+M3Pro_ws | patrol | patrol | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 6/0/1/0/0/0/0/0 | no | -
+M3Pro_ws | interfaces | interfaces | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/0/0/0/0/5/0/0 | no | -
+M3Pro_ws | largemodel_arm | largemodel_arm | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 20/0/4/0/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/slam_gmapping | slam_gmapping | 0.0.0 | ament_cmake | CreativeCommons-by-nc-sa-2.0 | gmail.com | 0/2/1/1/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/openslam_gmapping | openslam_gmapping | 0.1.2 | ament_cmake | CreativeCommons-by-nc-sa-2.0 | gmail.com | 0/89/0/0/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/ira_laser_tools | ira_laser_tools | 2.0.7 | ament_cmake | BSD | campus.unimib.it;unimib.it | 0/4/4/3/0/0/0/0 | yes | -
+M3Pro_ws | M3Pro_core/yahboom_laser_filter | yahboom_laser_filter | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 1/3/1/1/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/imu_tools/imu_filter_madgwick | imu_filter_madgwick | 2.1.3 | ament_cmake | GPL | dfki.de | 1/14/2/1/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/imu_tools/rviz_imu_plugin | rviz_imu_plugin | 2.1.3 | ament_cmake | BSD | dfki.de | 0/12/0/1/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/imu_tools/imu_complementary_filter | imu_complementary_filter | 2.1.3 | ament_cmake | BSD | dfki.de | 0/5/1/0/0/0/0/0 | no | -
+M3Pro_ws | M3Pro_core/imu_tools/imu_tools | imu_tools | 2.1.3 | ament_cmake | BSD, GPL | dfki.de | 0/0/0/0/0/0/0/0 | no | -
+code_ws | road_net_route | road_net_route | 0.0.0 | ament_python | TODO: License declaration | example.com | 8/0/4/3/0/0/0/0 | no | -
+eira_ws | eira_evaluation | eira_evaluation | 0.1.0 | ament_python | MIT | example.com | 11/0/0/0/0/0/0/0 | no | -
+eira_ws | eira_manipulation | eira_manipulation | 0.1.0 | ament_python | MIT | example.com | 10/0/0/0/0/0/0/0 | no | -
+eira_ws | eira_bringup | eira_bringup | 0.1.0 | ament_python | MIT | example.com | 15/0/3/4/0/0/0/0 | no | -
+eira_ws | eira_brain | eira_brain | 0.1.0 | ament_python | MIT | example.com | 31/0/0/0/0/0/0/0 | no | -
+eira_ws | eira_perception | eira_perception | 0.1.0 | ament_python | MIT | example.com | 16/0/0/0/0/0/0/0 | no | -
+eira_ws | eira_simulation | eira_simulation | 0.1.0 | ament_python | MIT | example.com | 12/0/2/2/0/0/0/0 | no | -
+mircoROS_agent | micro_ros_agent | micro_ros_agent | 3.0.6 | ament_cmake | Apache License 2.0 | eprosima.com | 3/9/1/0/0/0/0/0 | no | -
+uros_ws | micro_ros_setup | micro_ros_setup | 3.1.3 | ament_cmake | Apache-2.0 | eprosima.com | 1/0/0/3/0/0/0/0 | yes | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/android/generic | firmware | 0.0.0 | ament_cmake? | APL2 | oppo.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/zephyr/generic | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/olimex-stm32-e407 | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/nucleo_f446ze | firmware | 0.0.0 | ament_cmake? | APL2 | ku.edu.kw | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/esp32 | firmware | 0.0.0 | ament_cmake? | APL2 | de.bosch.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/nucleo_f767zi | firmware | 0.0.0 | ament_cmake? | APL2 | gmail.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/nucleo_f746zg | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/crazyflie21 | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/freertos/nucleo_f446re | firmware | 0.0.0 | ament_cmake? | APL2 | trioux.ovh | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/generate_lib/generic | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/host/generic | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | micro_ros_setup/config/mbed/generic | firmware | 0.0.0 | ament_cmake? | APL2 | eprosima.com | 0/0/0/0/0/0/0/0 | no | https://github.com/micro-ROS/micro_ros_setup.git @ e0a1765 2025-06-03
+uros_ws | uros/micro-ROS-Agent/micro_ros_agent | micro_ros_agent | 3.0.6 | ament_cmake | Apache License 2.0 | eprosima.com | 3/9/1/0/0/0/0/0 | no | -
+uros_ws | uros/micro_ros_msgs | micro_ros_msgs | 3.0.1 | ament_cmake | Apache License 2.0 | eprosima.com | 0/0/0/0/0/3/0/0 | yes | -
+yahboomcar_ws | arm_msgs | arm_msgs | 0.0.0 | ament_cmake | TODO: License declaration | 163.com | 0/0/0/0/0/3/0/0 | no | -
+yahboomcar_ws | yahboomcar_ctrl | yahboomcar_ctrl | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 11/0/1/0/0/0/0/0 | no | -
+yahboomcar_ws | M3Pro_config | M3Pro_config | 0.3.0 | ament_cmake | BSD | 123.com | 0/0/8/12/2/0/0/0 | no | -
+yahboomcar_ws | yahboomcar_mediapipe | yahboomcar_mediapipe | 0.0.0 | ament_python | TODO: License declaration | sina.cn | 54/0/1/0/0/0/0/0 | no | -
+yahboomcar_ws | M3Pro_demo | M3Pro_demo | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 112/0/1/0/0/0/0/0 | no | -
+yahboomcar_ws | M3Pro_MoveIt_demo | M3Pro_MoveIt_demo | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 10/0/0/0/0/0/0/0 | no | -
+yahboomcar_ws | yahboom_M3Pro_description | yahboom_M3Pro_description | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 6/0/1/0/2/0/0/0 | no | -
+yahboomcar_ws | MoveIt_demo | MoveIt_demo | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/12/0/0/0/0/0/0 | no | -
+yahboomcar_ws | yahboomcar_msgs | yahboomcar_msgs | 0.0.0 | ament_cmake | TODO: License declaration | qq.com | 0/0/0/0/0/5/0/0 | no | -
+yahboomcar_ws | arm_kin | arm_kin | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/3/0/1/0/0/0/0 | no | -
+yahboomcar_ws | arm_driver | arm_driver | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 8/0/0/0/0/0/0/0 | no | -
+yahboomcar_ws | OrbbecSDK_ROS2/orbbec_description | orbbec_description | 0.0.0 | ament_cmake | Apache-2.0 | pobox.com | 1/0/1/0/2/0/0/0 | no | https://github.com/orbbec/OrbbecSDK_ROS2.git @ 5340249 2024-11-07
+yahboomcar_ws | OrbbecSDK_ROS2/orbbec_camera | orbbec_camera | 1.5.11 | ament_cmake | Apache-2.0 | orbbec.com | 9/61/35/1/0/0/20/0 | no | https://github.com/orbbec/OrbbecSDK_ROS2.git @ 5340249 2024-11-07
+yahboomcar_ws | OrbbecSDK_ROS2/orbbec_camera_msgs | orbbec_camera_msgs | 1.2.2 | ament_cmake | Apache-2.0 | orbbec.com | 0/0/0/0/0/12/0/0 | no | https://github.com/orbbec/OrbbecSDK_ROS2.git @ 5340249 2024-11-07
+yahboomcar_ws | test_config | test_config | 0.3.0 | ament_cmake | BSD | 123.com | 1/0/8/8/2/0/0/0 | no | -
+yahboomcar_ws | yahboom_M3Pro_laser | yahboom_M3Pro_laser | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 19/0/1/0/0/0/0/0 | no | -
+yahboomcar_ws | yahboom_yolov8 | yahboom_yolov8 | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 458/135/1/62/0/0/0/0 | no | -
+yahboomcar_ws | test_moveit_config | test_moveit_config | 0.3.0 | ament_cmake | BSD | 163.com | 0/0/8/7/2/0/0/0 | no | -
+yahboomcar_ws | yahboom_M3Pro_DepthCam | yahboom_M3Pro_DepthCam | 0.0.0 | ament_python | TODO: License declaration | todo.todo | 12/0/0/0/0/0/0/0 | no | -
+yahboomcar_ws | arm_interface | arm_interface | 0.0.0 | ament_cmake | TODO: License declaration | todo.todo | 0/0/0/0/0/25/0/0 | no | -
+
+## 9.3 packages present in install/ but without source in src/
+/home/jetson: 1 installed, without source: none
+/home/jetson/M3Pro_ws: 31 installed, without source: testtime
+/home/jetson/M3Pro_ws/RoadNetwork/volumes/code_ws: 2 installed, without source: none
+/home/jetson/eira_ws: 6 installed, without source: none
+/home/jetson/mircoROS_agent: 1 installed, without source: none
+/home/jetson/uros_ws: 3 installed, without source: none
+/home/jetson/yahboomcar_ws: 19 installed, without source: none
+
+## 9.4 all packages NOT under /opt/ros (name -> prefix)
+M3Pro                            /home/jetson/M3Pro_ws/install/M3Pro
+M3Pro_KCF                        /home/jetson/M3Pro_ws/install/M3Pro_KCF
+M3Pro_navigation                 /home/jetson/M3Pro_ws/install/M3Pro_navigation
+calibration                      /home/jetson/M3Pro_ws/install/calibration
+ekf_bringup                      /home/jetson/M3Pro_ws/install/ekf_bringup
+imu_complementary_filter         /home/jetson/M3Pro_ws/install/imu_complementary_filter
+imu_filter_madgwick              /home/jetson/M3Pro_ws/install/imu_filter_madgwick
+imu_tools                        /home/jetson/M3Pro_ws/install/imu_tools
+interfaces                       /home/jetson/M3Pro_ws/install/interfaces
+ira_laser_tools                  /home/jetson/M3Pro_ws/install/ira_laser_tools
+largemodel                       /home/jetson/M3Pro_ws/install/largemodel
+largemodel_arm                   /home/jetson/M3Pro_ws/install/largemodel_arm
+laserscan_to_point_publisher     /home/jetson/M3Pro_ws/install/laserscan_to_point_publisher
+m3pro_bringup                    /home/jetson/M3Pro_ws/install/m3pro_bringup
+multi_brains                     /home/jetson/M3Pro_ws/install/multi_brains
+multi_brains_pre                 /home/jetson/M3Pro_ws/install/multi_brains_pre
+openslam_gmapping                /home/jetson/M3Pro_ws/install/openslam_gmapping
+patrol                           /home/jetson/M3Pro_ws/install/patrol
+robot_pose_publisher_ros2        /home/jetson/M3Pro_ws/install/robot_pose_publisher_ros2
+slam_gmapping                    /home/jetson/M3Pro_ws/install/slam_gmapping
+slam_mapping                     /home/jetson/M3Pro_ws/install/slam_mapping
+testtime                         /home/jetson/M3Pro_ws/install/testtime
+text_chat                        /home/jetson/M3Pro_ws/install/text_chat
+updatecostmap                    /home/jetson/M3Pro_ws/install/updatecostmap
+waste_classify                   /home/jetson/M3Pro_ws/install/waste_classify
+waste_classify_msg               /home/jetson/M3Pro_ws/install/waste_classify_msg
+yahboom_app_save_map             /home/jetson/M3Pro_ws/install/yahboom_app_save_map
+yahboom_laser_filter             /home/jetson/M3Pro_ws/install/yahboom_laser_filter
+yahboom_mapping                  /home/jetson/M3Pro_ws/install/yahboom_mapping
+yahboom_multi                    /home/jetson/M3Pro_ws/install/yahboom_multi
+yahboom_web_savmap_interfaces    /home/jetson/M3Pro_ws/install/yahboom_web_savmap_interfaces
+micro_ros_agent                  /home/jetson/mircoROS_agent/install/micro_ros_agent
+M3Pro_MoveIt_demo                /home/jetson/yahboomcar_ws/install/M3Pro_MoveIt_demo
+M3Pro_config                     /home/jetson/yahboomcar_ws/install/M3Pro_config
+M3Pro_demo                       /home/jetson/yahboomcar_ws/install/M3Pro_demo
+arm_interface                    /home/jetson/yahboomcar_ws/install/arm_interface
+arm_kin                          /home/jetson/yahboomcar_ws/install/arm_kin
+arm_msgs                         /home/jetson/yahboomcar_ws/install/arm_msgs
+orbbec_camera                    /home/jetson/yahboomcar_ws/install/orbbec_camera
+orbbec_camera_msgs               /home/jetson/yahboomcar_ws/install/orbbec_camera_msgs
+orbbec_description               /home/jetson/yahboomcar_ws/install/orbbec_description
+test_config                      /home/jetson/yahboomcar_ws/install/test_config
+test_moveit_config               /home/jetson/yahboomcar_ws/install/test_moveit_config
+yahboom_M3Pro_DepthCam           /home/jetson/yahboomcar_ws/install/yahboom_M3Pro_DepthCam
+yahboom_M3Pro_description        /home/jetson/yahboomcar_ws/install/yahboom_M3Pro_description
+yahboom_M3Pro_laser              /home/jetson/yahboomcar_ws/install/yahboom_M3Pro_laser
+yahboom_yolov8                   /home/jetson/yahboomcar_ws/install/yahboom_yolov8
+yahboomcar_ctrl                  /home/jetson/yahboomcar_ws/install/yahboomcar_ctrl
+yahboomcar_mediapipe             /home/jetson/yahboomcar_ws/install/yahboomcar_mediapipe
+yahboomcar_msgs                  /home/jetson/yahboomcar_ws/install/yahboomcar_msgs
+
+## 9.5 packages used by exercises 01-33: prefix, executables, share contents
+
+M3Pro_demo: prefix=/home/jetson/yahboomcar_ws/install/M3Pro_demo source=/home/jetson/yahboomcar_ws/src/M3Pro_demo
+   executables: Gesture_Moving(script), KCF_follow(script), KCF_follow_desktop(script), KCF_track(script), M3Pro_Dancing(script), apriltagDist_gesture(script), apriltagHeight_gesture(script), apriltagID_gesture(script), apriltag_detect(script), apriltag_follow(script), apriltag_follow_2D(script), apriltag_list(script), apriltag_rotation(script), apriltag_track(script), apriltag_track_desktop(script), apriltag_transport(script), apriltag_transport_V2(script), arm_offset(script), color_follow(script), color_list(script), color_recognize(script), color_track(script), color_track_desktop(script), color_transport(script), estimate_volume(script), follow_line(script), grasp(script), grasp_desktop(script), grasp_joint5(script), grasp_transport(script), mediapipe_detect(script), mediapipe_gesture(script), shape_recognize(script), test_mediapipe(script), volume_calculations(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, camera_arm_kin.launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+M3Pro_navigation: prefix=/home/jetson/M3Pro_ws/install/M3Pro_navigation source=/home/jetson/M3Pro_ws/src/M3Pro_navigation
+   executables: -
+   share: cmake/[M3Pro_navigationConfig-version.cmake, M3Pro_navigationConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, app_Navigation2.xml, base_bringup.launch.py, bringup_mod.launch.py, carto_nav.launch.py, cartographer_bringup_launch.py, cartographer_localization.launch.py, cartographer_localization_launch.py, localization.launch.py, localization_imu_odom.launch.py, nav_rviz.launch.py, navigation2.launch.py, navigation_cartodwb_launch.py, navigation_launch.py, ...] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh map/[carto_map.pgm, carto_map.yaml, cartomap.pgm, cartomap.yaml, gmapping_map.pgm, gmapping_map.yaml, slamtoolbox_map.pgm, slamtoolbox_map.yaml, yahboom_map.pgm, yahboom_map.yaml] package.bash package.dsv package.ps1 package.sh package.
+
+m3pro_bringup: prefix=/home/jetson/M3Pro_ws/install/m3pro_bringup source=/home/jetson/M3Pro_ws/src/m3pro_bringup
+   executables: -
+   share: cmake/[m3pro_bringupConfig-version.cmake, m3pro_bringupConfig.cmake] config/[.multi_brains_pre_example_en.yaml, .multi_brains_pre_example_zh.yaml, aritag_relocation.yaml, common.yaml, followlineHSV.text, laserscan_merge.yaml, map_mapping.yaml, mapper_params_localization.yaml, multi_brains_pre_setting.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, apriltag_relocalization.launch.py, arm_util.launch.py, car_base.launch.py, colorSelect.launch.py, dabai_dcw2.launch.py, mcp_service.launch.py, record_tag.launch.py, record_video.launch.py, static_tf.launch.py, super_tracker.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh rviz/[aritag_record.rviz, record_map_maping.rviz,
+
+M3Pro: prefix=/home/jetson/M3Pro_ws/install/M3Pro source=/home/jetson/M3Pro_ws/src/M3Pro
+   executables: -
+   share: cmake/[M3ProConfig-version.cmake, M3ProConfig.cmake] config/[.ipynb_checkpoints, joint_names_M3.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, display.launch.py, display.launch.py.backup, display_robot1.launch.py, display_robot2.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh meshes/[Camera.STL, DCW2.STL, Gripping.STL, arm1.STL, arm2.STL, arm3.STL, arm4.STL, arm5.STL, arm_base_Link.STL, base_link.STL, llink1.STL, llink2.STL, llink3.STL, lwheel1.STL, ...] package.bash package.dsv package.ps1 package.sh package.xml package.zsh urdf/[M3.csv, M3Pro.urdf, M3Pro.urdf.backup, M3Pro_fixd.urdf, M3Pro_robot1.urdf, M3Pro_robot2.urdf, m3pro.urdf]
+
+yahboomcar_ctrl: prefix=/home/jetson/yahboomcar_ws/install/yahboomcar_ctrl source=/home/jetson/yahboomcar_ws/src/yahboomcar_ctrl
+   executables: yahboom_joy_M3Pro(script), yahboom_joy_R2(script), yahboom_keyboard(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, yahboomcar_joy_launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+calibration: prefix=/home/jetson/M3Pro_ws/install/calibration source=/home/jetson/M3Pro_ws/src/calibration
+   executables: calibrate_angular(script), calibrate_linear(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, calibrate_angular.launch.py, calibrate_linear.launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+patrol: prefix=/home/jetson/M3Pro_ws/install/patrol source=/home/jetson/M3Pro_ws/src/patrol
+   executables: patrol(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, patrol.launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+yahboom_M3Pro_laser: prefix=/home/jetson/yahboomcar_ws/install/yahboom_M3Pro_laser source=/home/jetson/yahboomcar_ws/src/yahboom_M3Pro_laser
+   executables: laser_Avoidance(script), laser_Tracker(script), laser_Warning(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, laser_driver.launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+yahboom_laser_filter: prefix=/home/jetson/M3Pro_ws/install/yahboom_laser_filter source=/home/jetson/M3Pro_ws/src/M3Pro_core/yahboom_laser_filter
+   executables: laser_filter_node(ELF)
+   share: cmake/[yahboom_laser_filterConfig-version.cmake, yahboom_laser_filterConfig.cmake] config/[param.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[.ipynb_checkpoints, __pycache__, laser_filter_node.launch.py, laser_filter_node_multi.xml] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+ira_laser_tools: prefix=/home/jetson/M3Pro_ws/install/ira_laser_tools source=/home/jetson/M3Pro_ws/src/M3Pro_core/ira_laser_tools
+   executables: laserscan_multi_merger(ELF), laserscan_virtualizer(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ira_laser_toolsConfig-version.cmake, ira_laser_toolsConfig.cmake] config/[laserscan_merge.yaml, laserscan_merge_Multi_robot1.yaml, laserscan_merge_Multi_robot2.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, laserscan_merge.yaml, laserscan_merge_Multi_robot1.yaml, laserscan_merge_Multi_robot2.yaml, laserscan_multi_merger.launch, laserscan_virtualizer.launch, merge_multi.launch.py, merge_multi_MultiRobot.launch.py, merge_multi_robot.xml] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+ekf_bringup: prefix=/home/jetson/M3Pro_ws/install/ekf_bringup source=/home/jetson/M3Pro_ws/src/ekf_bringup
+   executables: -
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, ekf.launch.py, ekf_multi.xml] package.bash package.dsv package.ps1 package.sh package.xml package.zsh params/[robot1_ekf.yaml, robot2_ekf.yaml, yahboom_M3Pro_ekf.yaml]
+
+imu_filter_madgwick: prefix=/home/jetson/M3Pro_ws/install/imu_filter_madgwick source=/home/jetson/M3Pro_ws/src/M3Pro_core/imu_tools/imu_filter_madgwick
+   executables: imu_filter_madgwick_node(ELF)
+   share: cmake/[ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_imu_filter_madgwickExport-noconfig.cmake, export_imu_filter_madgwickExport.cmake, imu_filter_madgwickConfig-version.cmake, imu_filter_madgwickConfig.cmake] config/[imu_filter.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh, ld_library_path_lib.dsv, ld_library_path_lib.ps1, ld_library_path_lib.sh] launch/[.ipynb_checkpoints, __pycache__, imu_filter.launch.py, imu_filter_component.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+robot_localization: prefix=/opt/ros/humble source=-
+   executables: ekf_node(ELF), filter_base-test(ELF), navsat_transform_node(ELF), robot_localization_listener_node(ELF), test_ekf(ELF), test_ekf_localization_node_interfaces(ELF), test_filter_base_diagnostics_timestamps(ELF), test_navsat_conversions(ELF), test_robot_localization_estimator(ELF), test_ros_robot_localization_listener(ELF), test_ros_robot_localization_listener_publisher(ELF), test_ukf(ELF), test_ukf_localization_node_interfaces(ELF), ukf_node(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_robot_localization__rosidl_generator_cExport-none.cmake, export_robot_localization__rosidl_generator_cExport.cmake, export_robot_localization__rosidl_generator_cppExport.cmake, export_robot_localization__rosidl_generator_pyExport-none.cmake, export_robot_localization__rosidl_generator_pyExport.cmake, export_robot_localization__rosidl_typesupport_fastrtps_cExport-none.cmake, export_robot_localization__rosidl_typesupport_fastrtps_cExport.cmake, export_robot_localization__rosidl_typesupport_fastrtps_cppExport-none.cmake, export_robot_localization__rosidl_typesupport_fastrtps_cppExport.cmake, robot_localizationConfig-version.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, libr
+
+slam_mapping: prefix=/home/jetson/M3Pro_ws/install/slam_mapping source=/home/jetson/M3Pro_ws/src/slam_mapping
+   executables: -
+   share: cmake/[slam_mappingConfig-version.cmake, slam_mappingConfig.cmake] config/[2d_imu_odom_localization.lua, lds_2d.lua, mapper_params_localization.yaml, mapper_params_online_async.yaml, turtlebot3_lds_2d.lua] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[.ipynb_checkpoints, __pycache__, app_Cartographer.xml, app_Gmapping.xml, app_Slam_Toolbox.xml, app_camera.launch.py, bringup.launch.py, cartographer.launch.py, gmapping.launch.py, localization_launch.py, occupancy_grid_launch.py, online_async_launch.py, save_map.launch.py, save_slamtoolbox_map.launch.py, ...] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh rviz/[rvizconfig1.rviz, rvizconfig2.rviz, slam_rviz.rviz, slam_toolbox_rviz.rviz]
+
+slam_view: NOT FOUND in ament index
+
+slam_gmapping: prefix=/home/jetson/M3Pro_ws/install/slam_gmapping source=/home/jetson/M3Pro_ws/src/M3Pro_core/slam_gmapping
+   executables: slam_gmapping(ELF)
+   share: cmake/[slam_gmappingConfig-version.cmake, slam_gmappingConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, slam_gmapping.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh params/[slam_gmapping.yaml]
+
+openslam_gmapping: prefix=/home/jetson/M3Pro_ws/install/openslam_gmapping source=/home/jetson/M3Pro_ws/src/M3Pro_core/openslam_gmapping
+   executables: -
+   share: cmake/[ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, openslam_gmappingConfig-version.cmake, openslam_gmappingConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+cartographer_ros: prefix=/opt/ros/humble source=-
+   executables: cartographer_assets_writer(ELF), cartographer_node(ELF), cartographer_occupancy_grid_node(ELF), cartographer_offline_node(ELF), cartographer_pbstream_map_publisher(ELF), cartographer_pbstream_to_ros_map(ELF), cartographer_rosbag_validate(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, cartographer_rosConfig-version.cmake, cartographer_rosConfig.cmake] configuration_files/[assets_writer_backpack_2d.lua, assets_writer_backpack_2d_ci.lua, assets_writer_backpack_3d.lua, assets_writer_ros_map.lua, backpack_2d.lua, backpack_2d_localization.lua, backpack_2d_localization_evaluation.lua, backpack_2d_server.lua, backpack_3d.lua, backpack_3d_localization.lua, demo_2d.rviz, demo_3d.rviz, mir-100-mapping.lua, pr2.lua, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] launch/[assets_writer_backpack_2d.launch.py, assets_writer_backpack_3d.launch.py, assets_writer_ros_map.launch.py, backpack_2d.launch.py, backpack_3d.launch.py, demo_backpack_2d.launch.py, demo_backpack_2d
+
+slam_toolbox: prefix=/opt/ros/humble source=-
+   executables: async_slam_toolbox_node(ELF), localization_slam_toolbox_node(ELF), map_and_localization_slam_toolbox_node(ELF), merge_maps_kinematic(ELF), sync_slam_toolbox_node(ELF)
+   share: cmake/[SlamToolboxPluginExport-release.cmake, SlamToolboxPluginExport.cmake, ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_slam_toolbox__rosidl_generator_cExport-release.cmake, export_slam_toolbox__rosidl_generator_cExport.cmake, export_slam_toolbox__rosidl_generator_cppExport.cmake, export_slam_toolbox__rosidl_generator_pyExport-release.cmake, export_slam_toolbox__rosidl_generator_pyExport.cmake, export_slam_toolbox__rosidl_typesupport_fastrtps_cExport-release.cmake, export_slam_toolbox__rosidl_typesupport_fastrtps_cExport.cmake, export_slam_toolbox__rosidl_typesupport_fastrtps_cppExport-release.cmake, ...] config/[mapper_params_lifelong.yaml, mapper_params_localization.yaml, mapper_params_offline.yaml, mapper_params_online_async.yaml, mapper_pa
+
+rtabmap_launch: prefix=/opt/ros/humble source=-
+   executables: -
+   share: cmake/[rtabmap_launchConfig-version.cmake, rtabmap_launchConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] launch/[config, rtabmap.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+rtabmap_ros: prefix=/opt/ros/humble source=-
+   executables: -
+   share: cmake/[rtabmap_rosConfig-version.cmake, rtabmap_rosConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+rtabmap_slam: prefix=/opt/ros/humble source=-
+   executables: rtabmap(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, rtabmap_slamConfig-version.cmake, rtabmap_slamConfig.cmake, rtabmap_slamExport-none.cmake, rtabmap_slamExport.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+nav2_bringup: prefix=/opt/ros/humble source=-
+   executables: -
+   share: cmake/[nav2_bringupConfig-version.cmake, nav2_bringupConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] launch/[bringup_launch.py, cloned_multi_tb3_simulation_launch.py, localization_launch.py, navigation_launch.py, rviz_launch.py, slam_launch.py, tb3_simulation_launch.py, unique_multi_tb3_simulation_launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh maps/[turtlebot3_world.pgm, turtlebot3_world.yaml] package.dsv package.xml params/[nav2_multirobot_params_1.yaml, nav2_multirobot_params_2.yaml, nav2_multirobot_params_all.yaml, nav2_params.yaml] rviz/[nav2_default_view.rviz, nav2_namespaced_view.rviz] urdf/[turtlebot3_waffle.urdf] worlds/[waffle.model, world_only.model]
+
+nav2_map_server: prefix=/opt/ros/humble source=-
+   executables: costmap_filter_info_server(ELF), map_saver_cli(ELF), map_saver_server(ELF), map_server(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, nav2_map_serverConfig-version.cmake, nav2_map_serverConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] launch/[map_saver_server.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+apriltag_localization: prefix=/opt/ros/humble source=-
+   executables: apriltag_node(ELF), apriltag_recorder(ELF), apriltag_relocalization(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, apriltag_localizationConfig-version.cmake, apriltag_localizationConfig.cmake, apriltag_localization__rosidl_typesupport_cExport-none.cmake, apriltag_localization__rosidl_typesupport_cExport.cmake, apriltag_localization__rosidl_typesupport_cppExport-none.cmake, apriltag_localization__rosidl_typesupport_cppExport.cmake, apriltag_localization__rosidl_typesupport_introspection_cExport-none.cmake, apriltag_localization__rosidl_typesupport_introspection_cExport.cmake, apriltag_localization__rosidl_typesupport_introspection_cppExport-none.cmake, apriltag_localization__rosidl_typesupport_introspection_cppExport.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_pat
+
+yahboom_nav2_bringup: NOT FOUND in ament index
+
+updatecostmap: prefix=/home/jetson/M3Pro_ws/install/updatecostmap source=/home/jetson/M3Pro_ws/src/updatecostmap
+   executables: update_costmap(ELF)
+   share: cmake/[updatecostmapConfig-version.cmake, updatecostmapConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+orbbec_camera: prefix=/home/jetson/yahboomcar_ws/install/orbbec_camera source=/home/jetson/yahboomcar_ws/src/OrbbecSDK_ROS2/orbbec_camera
+   executables: frame_latency_node(ELF), list_camera_profile_mode_node(ELF), list_depth_work_mode_node(ELF), list_devices_node(ELF), orbbec_camera_node(ELF), topic_statistics_node(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, orbbec_cameraConfig-version.cmake, orbbec_cameraConfig.cmake] config/[.gitkeep, OrbbecSDKConfig_v1.0.xml, camera_params.yaml, depthfilter] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh, ld_library_path_lib.dsv, ld_library_path_lib.ps1, ld_library_path_lib.sh] launch/[.ipynb_checkpoints, __pycache__, astra.launch.py, astra2.launch.py, astra_adv.launch.py, astra_embedded_s.launch.py, astra_pro2.launch.py, astra_stereo_u3.launch.py, dabai.launch.py, dabai_d1.launch.py, dabai_dcl.py, dabai_dcw.launch.py, dabai_dcw2.launch.py, dabai_dw.launch.py, ...] local_setup.bash local_setup.dsv local_setup.sh local_setup
+
+orbbec_camera_msgs: prefix=/home/jetson/yahboomcar_ws/install/orbbec_camera_msgs source=/home/jetson/yahboomcar_ws/src/OrbbecSDK_ROS2/orbbec_camera_msgs
+   executables: -
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_orbbec_camera_msgs__rosidl_generator_cExport-noconfig.cmake, export_orbbec_camera_msgs__rosidl_generator_cExport.cmake, export_orbbec_camera_msgs__rosidl_generator_cppExport.cmake, export_orbbec_camera_msgs__rosidl_generator_pyExport-noconfig.cmake, export_orbbec_camera_msgs__rosidl_generator_pyExport.cmake, export_orbbec_camera_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake, export_orbbec_camera_msgs__rosidl_typesupport_fastrtps_cExport.cmake, export_orbbec_camera_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake, export_orbbec_camera_msgs__rosidl_typesupport_fastrtps_cppExport.cmake, orbbec_camera_msgsConfig-version.cmake, ...] environment/[ament_prefix_path.dsv, ament_pref
+
+yahboom_M3Pro_DepthCam: prefix=/home/jetson/yahboomcar_ws/install/yahboom_M3Pro_DepthCam source=/home/jetson/yahboomcar_ws/src/yahboom_M3Pro_DepthCam
+   executables: GetDepthColor(script), Measure_Distance(script), edge_detection(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+yahboom_yolov8: prefix=/home/jetson/yahboomcar_ws/install/yahboom_yolov8 source=/home/jetson/yahboomcar_ws/src/yahboom_yolov8
+   executables: yolov8_detect(script), yolov8_track(script)
+   share: hook/[ament_prefix_path.dsv, ament_prefix_path.ps1, ament_prefix_path.sh, pythonpath.dsv, pythonpath.ps1, pythonpath.sh] launch/[__pycache__, yolov8_deep_track.launch.py] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+smart_tracker: prefix=/opt/ros/humble source=-
+   executables: pcl_segment(ELF), super_tracker(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_smart_tracker__rosidl_generator_cExport-none.cmake, export_smart_tracker__rosidl_generator_cExport.cmake, export_smart_tracker__rosidl_generator_cppExport.cmake, export_smart_tracker__rosidl_generator_pyExport-none.cmake, export_smart_tracker__rosidl_generator_pyExport.cmake, export_smart_tracker__rosidl_typesupport_fastrtps_cExport-none.cmake, export_smart_tracker__rosidl_typesupport_fastrtps_cExport.cmake, export_smart_tracker__rosidl_typesupport_fastrtps_cppExport-none.cmake, export_smart_tracker__rosidl_typesupport_fastrtps_cppExport.cmake, rosidl_cmake-extras.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh, pythonpa
+
+arm_kin: prefix=/home/jetson/yahboomcar_ws/install/arm_kin source=/home/jetson/yahboomcar_ws/src/arm_kin
+   executables: kin_srv(ELF)
+   share: cmake/[arm_kinConfig-version.cmake, arm_kinConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh param/[offset_value.yaml]
+
+arm_util: prefix=/opt/ros/humble source=/home/jetson/M3Pro_ws/src/arm_util
+   executables: arm_status(ELF)
+   share: arm_status.launch.py cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, arm_utilConfig-version.cmake, arm_utilConfig.cmake, arm_util__rosidl_typesupport_cExport-none.cmake, arm_util__rosidl_typesupport_cExport.cmake, arm_util__rosidl_typesupport_cppExport-none.cmake, arm_util__rosidl_typesupport_cppExport.cmake, arm_util__rosidl_typesupport_introspection_cExport-none.cmake, arm_util__rosidl_typesupport_introspection_cExport.cmake, arm_util__rosidl_typesupport_introspection_cppExport-none.cmake, arm_util__rosidl_typesupport_introspection_cppExport.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh, pythonpath.dsv, pythonpath.sh] local_setup.bash local_setup.dsv local_setup.sh local
+
+arm_msgs: prefix=/home/jetson/yahboomcar_ws/install/arm_msgs source=/home/jetson/yahboomcar_ws/src/arm_msgs
+   executables: -
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, arm_msgsConfig-version.cmake, arm_msgsConfig.cmake, arm_msgs__rosidl_typesupport_cExport-noconfig.cmake, arm_msgs__rosidl_typesupport_cExport.cmake, arm_msgs__rosidl_typesupport_cppExport-noconfig.cmake, arm_msgs__rosidl_typesupport_cppExport.cmake, arm_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake, arm_msgs__rosidl_typesupport_introspection_cExport.cmake, arm_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake, arm_msgs__rosidl_typesupport_introspection_cppExport.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh, pythonpath.dsv, pythonpath.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_
+
+arm_interface: prefix=/home/jetson/yahboomcar_ws/install/arm_interface source=/home/jetson/yahboomcar_ws/src/arm_interface
+   executables: -
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, arm_interfaceConfig-version.cmake, arm_interfaceConfig.cmake, arm_interface__rosidl_typesupport_cExport-noconfig.cmake, arm_interface__rosidl_typesupport_cExport.cmake, arm_interface__rosidl_typesupport_cppExport-noconfig.cmake, arm_interface__rosidl_typesupport_cppExport.cmake, arm_interface__rosidl_typesupport_introspection_cExport-noconfig.cmake, arm_interface__rosidl_typesupport_introspection_cExport.cmake, arm_interface__rosidl_typesupport_introspection_cppExport-noconfig.cmake, arm_interface__rosidl_typesupport_introspection_cppExport.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh, pythonpath.dsv, pythonpath.sh] hook/[cm
+
+micro_ros_agent: prefix=/home/jetson/mircoROS_agent/install/micro_ros_agent source=/home/jetson/mircoROS_agent/src/micro_ros_agent;/home/jetson/uros_ws/src/uros/micro-ROS-Agent/micro_ros_agent
+   executables: micro_ros_agent(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, micro_ros_agentConfig-version.cmake, micro_ros_agentConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh, ld_library_path_lib.dsv, ld_library_path_lib.ps1, ld_library_path_lib.sh] launch/[micro_ros_agent_launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+micro_ros_msgs: prefix=/opt/ros/humble source=/home/jetson/uros_ws/src/uros/micro_ros_msgs
+   executables: -
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, export_micro_ros_msgs__rosidl_generator_cExport-none.cmake, export_micro_ros_msgs__rosidl_generator_cExport.cmake, export_micro_ros_msgs__rosidl_generator_cppExport.cmake, export_micro_ros_msgs__rosidl_generator_pyExport-none.cmake, export_micro_ros_msgs__rosidl_generator_pyExport.cmake, export_micro_ros_msgs__rosidl_typesupport_fastrtps_cExport-none.cmake, export_micro_ros_msgs__rosidl_typesupport_fastrtps_cExport.cmake, export_micro_ros_msgs__rosidl_typesupport_fastrtps_cppExport-none.cmake, export_micro_ros_msgs__rosidl_typesupport_fastrtps_cppExport.cmake, micro_ros_msgsConfig-version.cmake, ...] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv,
+
+yahboom_mapping: prefix=/home/jetson/M3Pro_ws/install/yahboom_mapping source=/home/jetson/M3Pro_ws/src/yahboom_mapping
+   executables: -
+   share: cmake/[yahboom_mappingConfig-version.cmake, yahboom_mappingConfig.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] hook/[cmake_prefix_path.dsv, cmake_prefix_path.ps1, cmake_prefix_path.sh] launch/[__pycache__, save_map.launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh maps/[yahboom_map.pgm, yahboom_map.yaml] package.bash package.dsv package.ps1 package.sh package.xml package.zsh
+
+joy: prefix=/opt/ros/humble source=-
+   executables: game_controller_node(ELF), joy_enumerate_devices(ELF), joy_node(ELF)
+   share: cmake/[ament_cmake_export_dependencies-extras.cmake, ament_cmake_export_targets-extras.cmake, export_game_controllerExport-none.cmake, export_game_controllerExport.cmake, export_joyExport-none.cmake, export_joyExport.cmake, joyConfig-version.cmake, joyConfig.cmake] config/[joy-params.yaml] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] launch/[joy-composed-launch.py, joy-launch.py] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+rqt_reconfigure: prefix=/opt/ros/humble source=-
+   executables: rqt_reconfigure(script)
+   share: package.xml plugin.xml resource/[editor_bool.ui, editor_enum.ui, editor_number.ui, editor_string.ui, node_selector.ui, param_main.ui, param_timeline.ui, paramedit_pane.ui, singlenode_parameditor.ui, text_filter_widget.ui]
+
+rqt_graph: prefix=/opt/ros/humble source=-
+   executables: rqt_graph(script)
+   share: package.xml plugin.xml resource/[RosGraph.ui]
+
+rqt_image_view: prefix=/opt/ros/humble source=-
+   executables: image_publisher(script), rqt_image_view(script)
+   share: cmake/[ament_cmake_export_include_directories-extras.cmake, ament_cmake_export_libraries-extras.cmake, ament_cmake_export_targets-extras.cmake, rqt_image_viewConfig-version.cmake, rqt_image_viewConfig.cmake, rqt_image_viewExport-none.cmake, rqt_image_viewExport.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, library_path.dsv, library_path.sh, path.dsv, path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml plugin.xml resource/[lena.png]
+
+rviz2: prefix=/opt/ros/humble source=-
+   executables: rviz2(ELF)
+   share: cmake/[rviz2Config-version.cmake, rviz2Config.cmake] environment/[ament_prefix_path.dsv, ament_prefix_path.sh, path.dsv, path.sh] local_setup.bash local_setup.dsv local_setup.sh local_setup.zsh package.dsv package.xml
+
+## 9.6 message / service / action definitions outside /opt/ros
+arm_interface/msg/AprilTagInfo: int16 id | float32 x | float32 y | float32 z
+arm_interface/msg/ArmJoint: int32 id | int32 run_time | float32 angle | float32[] joints
+arm_interface/msg/CenterXY: float32 center_x | float32 center_y
+arm_interface/msg/CurJoints: int16[] joints
+arm_interface/msg/Position: float32 x | float32 y | float32 z
+arm_interface/msg/ShapeInfo: float32[] value
+arm_interface/msg/TargetXYRoll: float32 x | float32 y | float32 roll
+arm_interface/msg/Yolov5Detect: string result | float32 centerx | float32 centery
+arm_interface/srv/ArmKinemarics: float64 tar_x | float64 tar_y | float64 tar_z | float64 roll | float64 pitch | float64 yaw | float64 cur_joint1 | float64 cur_joint2 | float64 cur_joint3 | float64 cur_joint4 | float64 cur_joint5 | float64 cur_joint6 | string  kin_name | --- | float64 joint1 | float64 joint2 | float64 joint3 | float64 joint4 | float64 joint5 | float64 joint6 | float64 x | float64 y | float64 z | float64 roll | flo
+arm_msgs/msg/ArmJoint: uint8    id | int16    joint | int16    time
+arm_msgs/msg/ArmJoints: int16  joint1 | int16  joint2 | int16  joint3 | int16  joint4 | int16  joint5 | int16  joint6 | int16  time
+interfaces/msg/LlmRequest: bool robot_feedback | string llm_request
+interfaces/srv/GetAprilTag: --- | bool success | string message | apriltag_localization/AprilTagDetection[] detections
+interfaces/srv/PlayAudio: string file_path | --- | bool success | string message
+interfaces/action/PlayAudio: string file_path | --- | bool success | string message | --- | float32 progress
+interfaces/action/Rot: string[] actions | string llm_response | --- | bool success | --- | string status
+orbbec_camera_msgs/msg/DeviceInfo: std_msgs/Header header | string name | string serial_number | string firmware_version | string supported_min_sdk_version | string hardware_version
+orbbec_camera_msgs/msg/Extrinsics: std_msgs/Header header | float64[9] rotation | float64[3] translation
+orbbec_camera_msgs/msg/IMUInfo: std_msgs/Header header | float64 noise_density | float64 random_walk | float64 reference_temperature | float64[3] bias | float64[3] gravity | float64[9] scale_misalignment | float64[9] temperature_slope
+orbbec_camera_msgs/msg/Metadata: std_msgs/Header header | string json_data
+orbbec_camera_msgs/msg/RGBD: std_msgs/Header header | sensor_msgs/CameraInfo rgb_camera_info | sensor_msgs/CameraInfo depth_camera_info | sensor_msgs/Image rgb | sensor_msgs/Image depth
+orbbec_camera_msgs/srv/GetBool: --- | bool data | bool success | string message
+orbbec_camera_msgs/srv/GetCameraInfo: --- | sensor_msgs/CameraInfo info
+orbbec_camera_msgs/srv/GetDeviceInfo: --- | DeviceInfo info | bool success | string message
+orbbec_camera_msgs/srv/GetInt32: --- | int32 data | bool success | string message
+orbbec_camera_msgs/srv/GetString: --- | string data | bool success | string message
+orbbec_camera_msgs/srv/SetInt32: int32 data | --- | bool success | string message
+orbbec_camera_msgs/srv/SetString: string data | --- | bool success | string message
+waste_classify_msg/msg/Point: float32 x | float32 y
+waste_classify_msg/msg/WasteDetection: std_msgs/Header header | WasteItem[] waste_detections
+waste_classify_msg/msg/WasteItem: string class_name | string classification | float32 confidence | float32 center_x | float32 center_y | float32 width | float32 height | float32 angle      # (radians) | Point[4] points    #polygon format with 4-points
+waste_classify_msg/srv/GetWaste: --- | bool success   # indicate successful run of triggered service | string message # informational, e.g. for error messages | string image_path | WasteItem[] waste_detections
+waste_classify_msg/srv/WasteEnable: uint8 operation | --- | bool success | bool detect_enable | string message
+yahboom_web_savmap_interfaces/srv/WebSaveMap: string mapname | --- | string response
+yahboomcar_msgs/msg/ImageMsg: int32 height | int32 width | int32 channels | uint8[] data
+yahboomcar_msgs/msg/PointArray: geometry_msgs/Point[] points
+yahboomcar_msgs/msg/Position: float32 anglex | float32 angley | float32 distance
+yahboomcar_msgs/msg/Target: string frame_id | builtin_interfaces/Time stamp | float32 scores | float32 ptx | float32 pty | float32 distw | float32 disth | float32 centerx | float32 centery
+yahboomcar_msgs/msg/TargetArray: yahboomcar_msgs/Target[] data
+
+## 9.7 key configuration and launch files
+
+-- m3pro_bringup/launch/static_tf.launch.py: /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/launch/static_tf.launch.py
+   [47 lines, sha256 a232883d2cf40941]
+   from launch_ros.actions import Node
+   from launch import LaunchDescription
+   def generate_launch_description():
+       base_to_imu_tf = Node(
+           package="tf2_ros",
+           executable="static_transform_publisher",
+           name="base_to_imu_tf",
+           output="log",
+           arguments=["0.06", "0.0", "0.080", "0.0", "0.0", "0.0", "base_link", "imu_frame"],
+       )
+       base_to_laser0_tf = Node(
+           package="tf2_ros",
+           executable="static_transform_publisher",
+           name="base_to_laser0_tf",
+           output="log",
+           arguments=["-0.11617", "0.09156", "0.1253", "0.0", "0.0", "0.0", "base_link", "laser0_frame"],
+       )
+       base_to_laser1_tf = Node(
+           package="tf2_ros",
+           executable="static_transform_publisher",
+           name="base_to_laser1_tf",
+           output="log",
+           arguments=["0.10766", "-0.09078", "0.1253", "0.0", "0.0", "0.0", "base_link", "laser1_frame"],
+       )
+       footprint_to_base_tf = Node(
+           package="tf2_ros",
+           executable="static_transform_publisher",
+           name="footprint_to_base_tf",
+           output="log",
+           arguments=["0.0", "0.0", "0.02", "0.0", "0.0", "0.0", "base_footprint", "base_link"],
+       )
+       return LaunchDescription([
+           base_to_imu_tf,
+           base_to_laser0_tf,
+           base_to_laser1_tf,
+           footprint_to_base_tf
+       ])
+
+-- m3pro_bringup/config/common.yaml: /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/config/common.yaml
+   [134 lines, sha256 5fba51a08e354d42]
+   arm_status:
+     ros__parameters:
+       init_pose: [90,125,3,0,90,0]
+       joint_names: ['arm1_Joint', 'arm2_Joint', 'arm3_Joint', 'arm4_Joint', 'arm5_Joint', 'rlink1_Joint']
+   super_tracker:
+     ros__parameters:
+       enable_mouse : true
+       num_threads : 4
+       confience :  0.1
+       display_windows: false
+       display_windows_only_track: false
+       model_path : /home/jetson/MODELS/tracker/super_track_sim.onnx
+   pcl_segment:
+     ros__parameters:
+       camera.fx: 477.5118408203125
+       camera.fy: 477.4905700683594
+       camera.cx: 322.4493408203125
+       camera.cy: 236.01499938964844
+       distance_threshold: 1.5
+       roi_sample_step: 3
+       cluster_min_size: 100
+       cluster_max_size: 10000
+       enable_center_estimation: true
+   mcp_service:
+     ros__parameters:
+       InitArmPose: [90,125,3,0,90,0]            # Robot arm initial pose
+       GraspKeepPose: [90,125,3,0,90,140]         # Robot arm grasping hold pose
+       grasp_distance: [0.265, 0.0, 0.0]          # [x, y, yaw]
+       place_distance: [0.39, 0.0,0.45, 0.25]     # Placement position and tolerance detection
+       grasp_offset: [0.015,0.015,0.0,2.0]      # Grasping offset x,y,z,grasping angle
+       place_offset: [-0.01,0.00,0.01,1.3]        # Placement position offset
+       waste_grasp_offset: [0.0,0.015,-0.02,1.57]  # Waste sorting grasping offset, different from normal grasping center logic
+       waste_grasp_distance: [0.24, 0.09]           # Waste sorting grasping distance, x,y distance is the threshold for triggering base adjustment, target beyond this range triggers base adjustment
+       waste_place_pose: [90,50,90,50,90,140]      # Waste sorting placement pose, unit: degrees
+       waste_detect_pose: [90,90,50,-30,90,0]      # Waste sorting detection pose, unit: degrees
+       auto_back_dist: 0.13                       # Auto backward distance, unit: meters, automatically backs up a certain distance after grasping and placing to avoid collisions and entering costmap res
+       nav_mode_threshold: 0.8                    #,unit: meters Navigation mode switching threshold, switch to road network navigation mode when exceeding this value, otherwise switch to normal navigati
+       gaze_threshold: 55.0           # Gaze control error threshold, unit: pixels
+       gaze_step: 2                   # Gaze control step size, unit: joint angle
+       enable_auto_back: True          # Whether to enable auto backward function
+       tf_tolerance : 0.5               # TF transform tolerance, unit: seconds
+       linear_speed_factor: 0.5         # Linear speed scaling factor
+       angular_speed_factor: 0.1        # Angular speed scaling factor
+       odom_linear_speed: 0.08
+       odom_angular_speed: 0.5
+       odom_position_tolerance: 0.005
+       odom_angle_tolerance:  0.05
+       odom_timeout: 30.0
+       target_circle : 10                        # When obtaining target point coordinates, circular region radius, unit: pixels
+       precise_adjust_xy_pid : [0.5, 0.0, 0.1]  # X/Y position PID parameters [Kp, Ki, Kd]
+       precise_adjust_theta_pid : [1.0, 0.0, 0.2] # Angle PID parameters [Kp, Ki, Kd]
+       precise_adjust_max_linear_vel : 0.1      # Precise adjustment maximum linear velocity, unit: m/s
+       precise_adjust_max_angular_vel : 0.5     # Precise adjustment maximum angular velocity, unit: rad/s
+       precise_adjust_pos_tolerance : 0.01       # Precise adjustment position tolerance, unit: meters
+       precise_adjust_angle_tolerance : 0.05     # Precise adjustment angle tolerance, unit: radians
+       precise_adjust_max_iteration: 500         # Precise adjustment maximum iteration count
+   apriltag:                 # node name
+     ros__parameters:
+       image_transport: raw  # image format: "raw" or "compressed"
+       family: 36h11         # tag family name: 16h5, 25h9, 36h11
+       size: 0.048             # default tag edge size in meter
+       profile: false        # print profiling information to stdout
+       max_hamming: 0        # maximum allowed hamming distance (corrected bits)
+       detector:
+         threads: 1          # number of threads
+         decimate: 2.0       # decimate resolution for quad detection
+         blur: 0.0           # sigma of Gaussian blur for quad detection
+         refine: true        # snap to strong gradients
+         sharpening: 0.25    # sharpening of decoded images
+         debug: false            # write additional debugging images to current working directory
+       pose_estimation_method: "pnp" # method for estimating the tag pose
+       tag:
+         ids:    [1, 2, 3, 4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]         # tag IDs for which to publish transform
+         frames: [tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13, tag14, tag15, tag16, tag17, tag18, tag19, tag20]   # frame names
+   waste_detect:
+     ros__parameters:
+       detect_enable: False
+       model_path: ''
+       conf: 0.03
+       vid_stride: 1
+       max_det: 20
+       rect: True
+       half: False
+       augment: True
+       verbose: False
+       classes: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]  # 0-15 corresponds to 16 waste categories
+       device: "cuda:0"
+       show_image: True
+       image_save_path: ''
+       auto_shutdown_time: 240.0
+       always_on: False
+   asr_detect:
+     ros__parameters:
+       enable_wakeup_voice: True
+       enable_keybord_wakeup: False
+       enable_kws_wakeup: True
+   openclaw_bridge:
+     ros__parameters:
+       enable_voice_reply: True
+   common_service:
+     ros__parameters:
+       apriltag_size: 0.02
+
+-- m3pro_bringup/config/aritag_relocation.yaml: /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/config/aritag_relocation.yaml
+   [0 lines, sha256 e3b0c44298fc1c14]
+
+-- m3pro_bringup/launch/apriltag_relocalization.launch.py: /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/launch/apriltag_relocalization.launch.py
+   [97 lines, sha256 6e8c84ec27b47cb6]
+   import os
+   from ament_index_python.packages import get_package_share_directory
+   from launch import LaunchDescription
+   from launch.actions import DeclareLaunchArgument
+   from launch.substitutions import LaunchConfiguration
+   from launch_ros.actions import Node
+   from launch.conditions import IfCondition
+   def generate_launch_description():
+       log_level_arg = DeclareLaunchArgument(
+           'log_level',
+           default_value='info',
+           description='Logging level'
+       )
+       default_aritag_record_file = os.path.join(
+           get_package_share_directory("m3pro_bringup"),
+           "config",
+           "aritag_relocation.yaml"
+       )
+       map_file_path_arg = DeclareLaunchArgument(
+           'aritag_record_file',
+           default_value=default_aritag_record_file,
+           description='Path to the AprilTag map YAML file (recorded by apriltag_recorder)'
+       )
+       enable_aritag_detect_arg = DeclareLaunchArgument(
+           'detection_enabled',
+           default_value='false'
+       )
+       cooldown_duration_arg = DeclareLaunchArgument(
+           'cooldown_duration',
+           default_value='5.0',
+           description='Cooldown time (seconds) per tag ID before re-triggering relocalization'
+       )
+       map_frame_arg = DeclareLaunchArgument(
+           'map_frame',
+           default_value='map',
+           description='Map coordinate frame name'
+       )
+       robot_base_frame_arg = DeclareLaunchArgument(
+           'robot_base_frame',
+           default_value='base_footprint',
+           description='Robot base coordinate frame name'
+       )
+       camera_frame_arg = DeclareLaunchArgument(
+           'camera_frame',
+           default_value='camera_color_optical_frame',
+           description='Camera optical frame name'
+       )
+       relocation_arg = DeclareLaunchArgument(
+           'relocation',
+           default_value='false',
+           description='Whether to enable relocation'
+       )
+       relocalization_node = Node(
+           package='apriltag_localization',
+           executable='apriltag_relocalization',
+           name='apriltag_relocalization',
+           output='screen',
+           parameters=[{
+               'aritag_record_file':     LaunchConfiguration('aritag_record_file'),
+               'cooldown_duration': LaunchConfiguration('cooldown_duration'),
+               'map_frame':         LaunchConfiguration('map_frame'),
+               'robot_base_frame':  LaunchConfiguration('robot_base_frame'),
+               'camera_frame':      LaunchConfiguration('camera_frame'),
+           }],
+           condition=IfCondition(LaunchConfiguration('relocation'))
+       )
+       apriltag_detect = Node(
+           package='apriltag_localization',
+           executable='apriltag_node',
+           name='apriltag',
+           parameters=[os.path.join(get_package_share_directory('m3pro_bringup'),'config','common.yaml'),
+                       {"detection_enabled": LaunchConfiguration('detection_enabled')}],
+           remappings=[('/image_rect', '/camera/color/image_raw'),
+                       ('camera_info', '/camera/color/camera_info')],
+           output='screen')
+       return LaunchDescription([
+           relocation_arg,
+           enable_aritag_detect_arg,
+           log_level_arg,
+           map_file_path_arg,
+   ... 7 more non-comment lines
+
+-- M3Pro/launch/display.launch.py: /home/jetson/M3Pro_ws/install/M3Pro/share/M3Pro/launch/display.launch.py
+   [45 lines, sha256 e1c8f4d0d1eab54a]
+   from ament_index_python.packages import get_package_share_path
+   from launch import LaunchDescription
+   from launch.actions import DeclareLaunchArgument
+   from launch.substitutions import Command, LaunchConfiguration
+   from launch_ros.actions import Node
+   from launch_ros.parameter_descriptions import ParameterValue
+   def generate_launch_description():
+       urdf_path = get_package_share_path('M3Pro') / 'urdf' / 'M3Pro.urdf'
+       model_arg = DeclareLaunchArgument(
+           name='model',
+           default_value=str(urdf_path),
+           description='Path to M3Pro URDF'
+       )
+       robot_description = ParameterValue(
+           Command(['xacro ', LaunchConfiguration('model')]),
+           value_type=str
+       )
+       robot_state_publisher_node = Node(
+           package='robot_state_publisher',
+           executable='robot_state_publisher',
+           parameters=[
+               {'robot_description': robot_description}
+           ],
+           output='screen'
+       )
+       joint_state_publisher_node = Node(
+           package='joint_state_publisher',
+           executable='joint_state_publisher'
+       )
+       return LaunchDescription([
+           model_arg,
+           joint_state_publisher_node,
+           robot_state_publisher_node
+       ])
+
+-- ira_laser_tools/config/laserscan_merge.yaml: /home/jetson/M3Pro_ws/install/ira_laser_tools/share/ira_laser_tools/config/laserscan_merge.yaml
+   [13 lines, sha256 fa6421bc5851861f]
+   laserscan_multi_merger:
+     ros__parameters:
+       destination_frame: "base_link"
+       cloud_destination_topic: "/merged_cloud"
+       scan_destination_topic: "/scan_multi"
+       laserscan_topics: "/scan0 /scan1"
+       angle_min: -3.14
+       angle_max: 3.14
+       angle_increment: 0.017453
+       scan_time: 0.0
+       range_min: 0.05
+       range_max: 4.0
+
+-- yahboom_laser_filter/launch/laser_filter_node.launch.py: /home/jetson/M3Pro_ws/install/yahboom_laser_filter/share/yahboom_laser_filter/launch/laser_filter_node.launch.py
+   [15 lines, sha256 7913aaf728105fa6]
+   from launch import LaunchDescription
+   from launch_ros.actions import Node
+   def generate_launch_description():
+       return LaunchDescription([
+           Node(
+               package='yahboom_laser_filter',
+               executable='laser_filter_node',
+               name='laser_filter_node',
+               parameters=[
+                   {'angle_min': -180.0, 'angle_max': 180.0},
+               ]
+           )
+       ])
+
+-- ekf_bringup/launch/ekf.launch.py: /home/jetson/M3Pro_ws/install/ekf_bringup/share/ekf_bringup/launch/ekf.launch.py
+   [36 lines, sha256 67eff7da6d7ee80e]
+   from launch import LaunchDescription
+   from ament_index_python.packages import get_package_share_directory
+   import launch_ros.actions
+   import os
+   import yaml
+   from launch.substitutions import EnvironmentVariable
+   import pathlib
+   import launch.actions
+   from launch.actions import DeclareLaunchArgument
+   def generate_launch_description():
+       return LaunchDescription([
+           launch_ros.actions.Node(
+               package='robot_localization',
+               executable='ekf_node',
+               name='ekf_filter_node',
+               output='screen',
+               parameters=[os.path.join(get_package_share_directory("ekf_bringup"), 'params', 'yahboom_M3Pro_ekf.yaml')],
+               remappings=[('/odometry/filtered','/odom')]
+              ),
+   ])
+
+-- imu_filter_madgwick/launch/imu_filter.launch.py: /home/jetson/M3Pro_ws/install/imu_filter_madgwick/share/imu_filter_madgwick/launch/imu_filter.launch.py
+   [24 lines, sha256 f5a3fd13e788631a]
+   import os
+   import launch
+   import launch.actions
+   import launch.substitutions
+   import launch_ros.actions
+   from ament_index_python.packages import get_package_share_directory
+   def generate_launch_description():
+       config_dir = os.path.join(get_package_share_directory('imu_filter_madgwick'), 'config')
+       return launch.LaunchDescription(
+           [
+               launch_ros.actions.Node(
+                   package='imu_filter_madgwick',
+                   executable='imu_filter_madgwick_node',
+                   name='imu_filter',
+                   output='screen',
+                   parameters=[os.path.join(config_dir, 'imu_filter.yaml')],
+                   remappings=[('/imu','/imu/data_raw')]
+               )
+           ]
+       )
+
+-- M3Pro_navigation/launch/bringup_mod.launch.py: /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/launch/bringup_mod.launch.py
+   [171 lines, sha256 f7585db62becb54b]
+   import os
+   from ament_index_python.packages import get_package_share_directory
+   from launch import LaunchDescription
+   from launch.actions import (DeclareLaunchArgument, GroupAction,
+                               IncludeLaunchDescription, SetEnvironmentVariable)
+   from launch.conditions import IfCondition
+   from launch.launch_description_sources import PythonLaunchDescriptionSource
+   from launch.substitutions import LaunchConfiguration, PythonExpression
+   from launch_ros.actions import Node
+   from launch_ros.actions import PushRosNamespace
+   from launch_ros.descriptions import ParameterFile
+   from nav2_common.launch import RewrittenYaml, ReplaceString
+   def generate_launch_description():
+       bringup_dir = get_package_share_directory('nav2_bringup')
+       launch_dir = os.path.join(bringup_dir, 'launch')
+       namespace = LaunchConfiguration('namespace')
+       use_namespace = LaunchConfiguration('use_namespace')
+       slam = LaunchConfiguration('slam')
+       map_yaml_file = LaunchConfiguration('map')
+       use_sim_time = LaunchConfiguration('use_sim_time')
+       params_file = LaunchConfiguration('params_file')
+       autostart = LaunchConfiguration('autostart')
+       use_composition = LaunchConfiguration('use_composition')
+       use_respawn = LaunchConfiguration('use_respawn')
+       log_level = LaunchConfiguration('log_level')
+       remappings = [('/tf', 'tf'),
+                     ('/tf_static', 'tf_static')]
+       param_substitutions = {
+           'use_sim_time': use_sim_time,
+           'yaml_filename': map_yaml_file}
+       params_file = ReplaceString(
+           source_file=params_file,
+           replacements={'<robot_namespace>': ('/', namespace)},
+           condition=IfCondition(use_namespace))
+       configured_params = ParameterFile(
+           RewrittenYaml(
+               source_file=params_file,
+               root_key=namespace,
+               param_rewrites=param_substitutions,
+               convert_types=True),
+   ... 83 more non-comment lines
+
+-- slam_mapping/launch/online_async_launch.py: /home/jetson/M3Pro_ws/install/slam_mapping/share/slam_mapping/launch/online_async_launch.py
+   [40 lines, sha256 b582891d836c731d]
+   import os
+   from launch import LaunchDescription
+   from launch.actions import DeclareLaunchArgument
+   from launch.substitutions import LaunchConfiguration
+   from launch_ros.actions import Node
+   from ament_index_python.packages import get_package_share_directory
+   def generate_launch_description():
+       use_sim_time = LaunchConfiguration('use_sim_time')
+       slam_params_file = LaunchConfiguration('slam_params_file')
+       declare_use_sim_time_argument = DeclareLaunchArgument(
+           'use_sim_time',
+           default_value='false',
+           description='Use simulation/Gazebo clock')
+       declare_slam_params_file_cmd = DeclareLaunchArgument(
+           'slam_params_file',
+           default_value=os.path.join(get_package_share_directory("slam_mapping"),
+                                      'config', 'mapper_params_online_async.yaml'),
+           description='Full path to the ROS2 parameters file to use for the slam_toolbox node')
+       start_async_slam_toolbox_node = Node(
+           parameters=[
+             slam_params_file,
+             {'use_sim_time': use_sim_time}
+           ],
+           package='slam_toolbox',
+           executable='async_slam_toolbox_node',
+           name='slam_toolbox',
+           output='screen')
+       ld = LaunchDescription()
+       ld.add_action(declare_use_sim_time_argument)
+       ld.add_action(declare_slam_params_file_cmd)
+       ld.add_action(start_async_slam_toolbox_node)
+       return ld
+
+-- slam_mapping/launch/localization_launch.py: /home/jetson/M3Pro_ws/install/slam_mapping/share/slam_mapping/launch/localization_launch.py
+   [46 lines, sha256 bed1d347738a4a9b]
+   import os
+   from launch import LaunchDescription
+   from launch.actions import DeclareLaunchArgument
+   from launch.substitutions import LaunchConfiguration
+   from launch_ros.actions import Node
+   from ament_index_python.packages import get_package_share_directory
+   def generate_launch_description():
+       use_sim_time = LaunchConfiguration('use_sim_time')
+       slam_params_file = LaunchConfiguration('slam_params_file')
+       declare_use_sim_time_argument = DeclareLaunchArgument(
+           'use_sim_time',
+           default_value='false',
+           description='Use simulation/Gazebo clock')
+       declare_slam_params_file_cmd = DeclareLaunchArgument(
+           'slam_params_file',
+           default_value=os.path.join(get_package_share_directory("m3pro_bringup"),
+                                      'config',
+                                      'mapper_params_localization.yaml'),
+           description='Full path to the ROS2 parameters file to use for the slam_toolbox node')
+       declare_map_file_cmd=DeclareLaunchArgument(
+                   "pose_map",
+                   default_value="",
+                   description="传入的位姿图,用于在地图中定位"
+               )
+       start_localization_slam_toolbox_node = Node(
+           parameters=[
+             slam_params_file,
+             {'use_sim_time': use_sim_time},
+             {'map_file_name': LaunchConfiguration('pose_map')}
+           ],
+           package='slam_toolbox',
+           executable='localization_slam_toolbox_node',
+           name='slam_toolbox',
+           output='screen')
+       ld = LaunchDescription()
+       ld.add_action(declare_map_file_cmd)
+       ld.add_action(declare_use_sim_time_argument)
+       ld.add_action(declare_slam_params_file_cmd)
+       ld.add_action(start_localization_slam_toolbox_node)
+       return ld
+
+-- orbbec_camera/package.xml: /home/jetson/yahboomcar_ws/install/orbbec_camera/share/orbbec_camera/package.xml
+   [40 lines, sha256 1139a27752e267fd]
+   <?xml version="1.0"?>
+   <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+   <package format="3">
+     <name>orbbec_camera</name>
+     <version>1.5.11</version>
+     <description>Orbbec Camera package</description>
+     <maintainer email="mocun@orbbec.com">Joe Dong</maintainer>
+     <license>Apache-2.0</license>
+     <buildtool_depend>ament_cmake</buildtool_depend>
+     <depend>ament_lint_auto</depend>
+     <depend>ament_lint_common</depend>
+     <depend>ament_index_cpp</depend>
+     <depend>image_transport</depend>
+     <depend>image_publisher</depend>
+     <depend>rclcpp_components</depend>
+     <depend>cv_bridge</depend>
+     <depend>backward_ros</depend>
+     <depend>camera_info_manager</depend>
+     <depend>orbbec_camera_msgs</depend>
+     <depend>builtin_interfaces</depend>
+     <depend>rclcpp</depend>
+     <depend>sensor_msgs</depend>
+     <depend>std_msgs</depend>
+     <depend>std_srvs</depend>
+     <depend>statistics_msgs</depend>
+   ... 14 more non-comment lines
+
+## 9.8 parameter and data directories of navigation, mapping and EKF packages
+M3Pro_navigation/param @ /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/param: dwb_nav_params.yaml(10849B,6f74cfa0), yahboom_M3Pro.lua(7754B,bc3e16da), yahboom_M3Pro.yaml(9882B,e6d3ab35), yahboom_M3Pro_carto.yaml(10978B,bb4876db)
+M3Pro_navigation/map @ /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/map: carto_map.pgm(89577B,1d08d9ab), carto_map.yaml(128B,a72d742d), cartomap.pgm(270511B,1fbef7d6), cartomap.yaml(131B,8207c13f), gmapping_map.pgm(147471B,dbb12c31), gmapping_map.yaml(126B,09888f52), slamtoolbox_map.pgm(122861B,fbf4a3cd), slamtoolbox_map.yaml(134B,696547bd), yahboom_map.pgm(12650B,78d6b269), yahboom_map.yaml(130B,3bafd8e9)
+M3Pro_navigation/rviz @ /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/rviz: nav2.rviz(22273B,03bc974a), nav2_default_view.rviz(17491B,3b9e6fb8), route_tool.rviz(8096B,9a5f5514)
+slam_mapping/config @ /home/jetson/M3Pro_ws/install/slam_mapping/share/slam_mapping/config: 2d_imu_odom_localization.lua(7752B,d2ceb2a1), lds_2d.lua(1371B,fb92bc6b), mapper_params_localization.yaml(2335B,e928ceca), mapper_params_online_async.yaml(2471B,c15cce08), turtlebot3_lds_2d.lua(1988B,56418ca9)
+slam_mapping/rviz @ /home/jetson/M3Pro_ws/install/slam_mapping/share/slam_mapping/rviz: rvizconfig1.rviz(10591B,37f26500), rvizconfig2.rviz(6191B,7d5ec69c), slam_rviz.rviz(9893B,aa8c4ba5), slam_toolbox_rviz.rviz(12639B,b7d294e5)
+ekf_bringup/params @ /home/jetson/M3Pro_ws/install/ekf_bringup/share/ekf_bringup/params: robot1_ekf.yaml(18792B,8c9ad176), robot2_ekf.yaml(18792B,d5f34bb9), yahboom_M3Pro_ekf.yaml(18934B,543f1062)
+imu_filter_madgwick/config @ /home/jetson/M3Pro_ws/install/imu_filter_madgwick/share/imu_filter_madgwick/config: imu_filter.yaml(337B,69027eeb)
+m3pro_bringup/config @ /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/config: .multi_brains_pre_example_en.yaml(2825B,a5713d75), .multi_brains_pre_example_zh.yaml(3781B,17154084), aritag_relocation.yaml(0B,e3b0c442), common.yaml(5754B,5fba51a0), followlineHSV.text(107B,88c9e196), laserscan_merge.yaml(333B,fa6421bc), map_mapping.yaml(0B,e3b0c442), mapper_params_localization.yaml(2636B,ceda7532), multi_brains_pre_setting.yaml(3773B,4b7f8fa4)
+m3pro_bringup/rviz @ /home/jetson/M3Pro_ws/install/m3pro_bringup/share/m3pro_bringup/rviz: aritag_record.rviz(12971B,89537940), record_map_maping.rviz(22949B,966a622e), super_tracker.rviz(11474B,21499a20)
+arm_kin/param @ /home/jetson/yahboomcar_ws/install/arm_kin/share/arm_kin/param: offset_value.yaml(95B,202384f1)
+
+## 9.9 Nav2 parameters: key lines
+
+-- M3Pro_navigation/param/yahboom_M3Pro.yaml: /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/param/yahboom_M3Pro.yaml sha256=e6d3ab35ff18a766
+      3     use_sim_time: False
+      9     base_frame_id: "base_footprint"
+     14     global_frame_id: "map"
+     23     odom_frame_id: "odom"
+     29     robot_model_type: "nav2_amcl::DifferentialMotionModel"
+     34     transform_tolerance: 0.2
+     41     scan_topic: scan
+     45     use_sim_time: False
+     49     use_sim_time: False
+     53     use_sim_time: False
+     54     global_frame: map
+     55     robot_base_frame: base_link
+     56     odom_topic: /odom
+     63     plugin_lib_names:
+     98     use_sim_time: False
+    102     use_sim_time: False
+    103     controller_frequency: 5.0
+    108     progress_checker_plugin: "progress_checker"
+    109     goal_checker_plugins: ["general_goal_checker"]
+    110     controller_plugins: ["FollowPath"]
+    114       plugin: "nav2_controller::SimpleProgressChecker"
+    120       plugin: "nav2_controller::SimpleGoalChecker"
+    126       plugin: "dwb_core::DWBLocalPlanner"
+    128       min_vel_x: 0.0
+    129       min_vel_y: 0.0
+    130       max_vel_x: 0.35
+    131       max_vel_y: 0.3
+    132       max_vel_theta: 1.0
+    134       max_speed_xy: 0.22
+    150       transform_tolerance: 0.2
+    169     use_sim_time: False
+    176       global_frame: odom
+    177       robot_base_frame: base_link
+    178       use_sim_time: False
+    182       resolution: 0.05
+    183       robot_radius: 0.15
+    184       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
+    186         plugin: "nav2_costmap_2d::InflationLayer"
+    187         inflation_radius: 0.15
+    190         plugin: "nav2_costmap_2d::ObstacleLayer"
+    194           topic: /scan
+    200         plugin: "nav2_costmap_2d::VoxelLayer"
+    204         z_resolution: 0.05
+    210           topic: /scan
+    224       use_sim_time: False
+    227       use_sim_time: False
+    234       global_frame: map
+    235       robot_base_frame: base_link
+    236       use_sim_time: True
+    237       robot_radius: 0.2
+    238       resolution: 0.05
+    240       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
+    242         plugin: "nav2_costmap_2d::ObstacleLayer"
+    246           topic: /scan
+    256         plugin: "nav2_costmap_2d::VoxelLayer"
+    260         z_resolution: 0.05
+    266           topic: /scan
+    276         plugin: "nav2_costmap_2d::StaticLayer"
+    279         plugin: "nav2_costmap_2d::InflationLayer"
+    281         inflation_radius: 0.15
+    285       use_sim_time: False
+    288       use_sim_time: False
+    292     use_sim_time: False
+    297     use_sim_time: False
+    306     use_sim_time: False
+    307     planner_plugins: ["GridBased"]
+    309       plugin: "nav2_navfn_planner/NavfnPlanner"
+    316     use_sim_time: False
+    320     costmap_topic: local_costmap/costmap_raw
+    321     footprint_topic: local_costmap/published_footprint
+    323     recovery_plugins: ["spin", "backup", "wait"]
+    325       plugin: "nav2_recoveries/Spin"
+    327       plugin: "nav2_recoveries/BackUp"
+    329       plugin: "nav2_recoveries/Wait"
+    330     global_frame: odom
+    331     robot_base_frame: base_link
+    333     use_sim_time: False
+    341     use_sim_time: False
+    349     waypoint_task_executor_plugin: "wait_at_waypoint"
+    351       plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+
+-- M3Pro_navigation/param/yahboom_M3Pro_carto.yaml: /home/jetson/M3Pro_ws/install/M3Pro_navigation/share/M3Pro_navigation/param/yahboom_M3Pro_carto.yaml sha256=bb4876db8870f3e0
+      3     use_sim_time: False
+      9     base_frame_id: "base_footprint"
+     14     global_frame_id: "map"
+     23     odom_frame_id: "odom"
+     29     robot_model_type: "nav2_amcl::DifferentialMotionModel"
+     33     transform_tolerance: 1.25
+     40     scan_topic: scan
+     44     use_sim_time: False
+     45     global_frame: map
+     46     robot_base_frame: base_link
+     47     odom_topic: /odom
+     55     plugin_lib_names:
+    106     use_sim_time: False
+    110     use_sim_time: False
+    114     use_sim_time: False
+    115     controller_frequency: 20.0
+    121     progress_checker_plugin: "progress_checker"
+    122     goal_checker_plugins: ["general_goal_checker"]
+    123     controller_plugins: ["FollowPath"]
+    127       plugin: "nav2_controller::SimpleProgressChecker"
+    132      plugin: "nav2_controller::SimpleGoalChecker"
+    138       plugin: "nav2_controller::SimpleGoalChecker"
+    143       plugin: "dwb_core::DWBLocalPlanner"
+    145       min_vel_x: 0.0
+    146       min_vel_y: 0.0
+    147       max_vel_x: 0.45
+    148       max_vel_y: 0.0
+    149       max_vel_theta: 3.0
+    151       max_speed_xy: 0.3
+    165       transform_tolerance: 0.25
+    187       global_frame: odom
+    188       robot_base_frame: base_link
+    189       use_sim_time: False
+    193       resolution: 0.05
+    194       robot_radius: 0.15
+    195       plugins: ["voxel_layer", "inflation_layer"]
+    197         plugin: "nav2_costmap_2d::InflationLayer"
+    199         inflation_radius: 0.18
+    201         plugin: "nav2_costmap_2d::VoxelLayer"
+    205         z_resolution: 0.05
+    211           topic: /scan
+    221         plugin: "nav2_costmap_2d::StaticLayer"
+    230       global_frame: map
+    231       robot_base_frame: base_link
+    232       use_sim_time: False
+    233       robot_radius: 0.2
+    234       resolution: 0.05
+    237       plugins: [ "obstacle_layer", "static_layer","inflation_layer"]
+    239         plugin: "nav2_costmap_2d::ObstacleLayer"
+    243           topic: /scan
+    254         plugin: "nav2_costmap_2d::StaticLayer"
+    257         plugin: "nav2_costmap_2d::InflationLayer"
+    259         inflation_radius: 0.30
+    263       use_sim_time: False
+    266       use_sim_time: False
+    270     use_sim_time: False
+    277     use_sim_time: False
+    286     use_sim_time: False
+    287     planner_plugins: ["GridBased"]
+    289       plugin: "nav2_navfn_planner/NavfnPlanner"
+    295     use_sim_time: False
+    296     smoother_plugins: ["simple_smoother"]
+    298       plugin: "nav2_smoother::SimpleSmoother"
+    305     costmap_topic: local_costmap/costmap_raw
+    306     footprint_topic: local_costmap/published_footprint
+    308     behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    310       plugin: "nav2_behaviors/Spin"
+    312       plugin: "nav2_behaviors/BackUp"
+    314       plugin: "nav2_behaviors/DriveOnHeading"
+    316       plugin: "nav2_behaviors/Wait"
+    318       plugin: "nav2_behaviors/AssistedTeleop"
+    319     global_frame: odom
+    320     robot_base_frame: base_link
+    321     transform_tolerance: 0.15
+    322     use_sim_time: False
+    330     use_sim_time: False
+    334     use_sim_time: False
+    337     waypoint_task_executor_plugin: "wait_at_waypoint"
+    339       plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+    345     use_sim_time: False
+    349     max_velocity: [0.35, 0.0, 3.0]
+    350     min_velocity: [-0.35, 0.0, -3.0]
+    351     max_accel: [2.5, 0.0, 3.2]
+    353     odom_topic: "odom"
+
+## 9.10 EKF / IMU filter / merger parameter files (full, without comments)
+
+-- ekf_bringup/params/robot1_ekf.yaml
+   [237 lines, sha256 8c9ad1763dc4a6cc]
+   robot1/ekf_filter_node:
+       ros__parameters:
+           use_sim_time: false
+           frequency: 30.0
+           sensor_timeout: 1.0
+           two_d_mode: true
+           transform_time_offset: 0.0
+           transform_timeout: 0.0
+           print_diagnostics: false
+           debug: false
+           debug_out_file: /path/to/debug/file.txt
+           publish_tf: true
+           publish_acceleration: false
+           map_frame: map                   # Defaults to "map" if unspecified
+           odom_frame: robot1/odom                 # Defaults to "odom" if unspecified
+           base_link_frame: robot1/base_footprint  # Defaults to "base_link" if unspecified
+           world_frame: robot1/odom                # Defaults to the value of odom_frame if unspecified
+           odom0: /robot1/odom_raw
+           odom0_config: [false, false, false,
+                          false, false, false,
+                          true,  true,  false,
+                          false, false, true,
+                          false, false, false]
+           odom0_queue_size: 100
+           odom0_nodelay: false
+           odom0_differential: true
+           odom0_relative: false
+           imu0: /robot1/imu/data #/imu/data
+           imu0_config: [false, false, false,
+                         false, false, true ,
+                         false, false, false,
+                         false, false, true,
+                         false, false, false]
+           imu0_nodelay: false
+           imu0_differential: false
+           imu0_relative: true
+           imu0_queue_size: 100
+           imu0_pose_rejection_threshold: 20.0                 # Note the difference in parameter names     # 0.8
+           imu0_twist_rejection_threshold: 1.542               # 0.8
+           imu0_linear_acceleration_rejection_threshold: 10.0  #
+           imu0_remove_gravitational_acceleration: true
+           use_control: false      # false
+           stamped_control: false
+           control_timeout: 0.2
+           control_config: [true, false, false, false, false, true]
+           acceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 3.4]
+           deceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 4.5]
+           acceleration_gains: [0.8, 0.0, 0.0, 0.0, 0.0, 0.9]
+           deceleration_gains: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+           process_noise_covariance: [0.05,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.05,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.06,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.03,   0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.03,   0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.06,   0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025,   0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01,   0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01,   0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02,   0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01,   0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01,   0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015]
+           initial_estimate_covariance: [1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,    0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,    0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,    0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9,   0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9,   0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
+
+-- ekf_bringup/params/robot2_ekf.yaml
+   [237 lines, sha256 d5f34bb9fda33019]
+   robot2/ekf_filter_node:
+       ros__parameters:
+           use_sim_time: false
+           frequency: 30.0
+           sensor_timeout: 1.0
+           two_d_mode: true
+           transform_time_offset: 0.0
+           transform_timeout: 0.0
+           print_diagnostics: false
+           debug: false
+           debug_out_file: /path/to/debug/file.txt
+           publish_tf: true
+           publish_acceleration: false
+           map_frame: map                   # Defaults to "map" if unspecified
+           odom_frame: robot2/odom                 # Defaults to "odom" if unspecified
+           base_link_frame: robot2/base_footprint  # Defaults to "base_link" if unspecified
+           world_frame: robot2/odom                # Defaults to the value of odom_frame if unspecified
+           odom0: /robot2/odom_raw
+           odom0_config: [false, false, false,
+                          false, false, false,
+                          true,  true,  false,
+                          false, false, true,
+                          false, false, false]
+           odom0_queue_size: 100
+           odom0_nodelay: false
+           odom0_differential: true
+           odom0_relative: false
+           imu0: /robot2/imu/data #/imu/data
+           imu0_config: [false, false, false,
+                         false, false, true ,
+                         false, false, false,
+                         false, false, true,
+                         false, false, false]
+           imu0_nodelay: false
+           imu0_differential: false
+           imu0_relative: true
+           imu0_queue_size: 100
+           imu0_pose_rejection_threshold: 20.0                 # Note the difference in parameter names     # 0.8
+           imu0_twist_rejection_threshold: 1.542               # 0.8
+           imu0_linear_acceleration_rejection_threshold: 10.0  #
+           imu0_remove_gravitational_acceleration: true
+           use_control: false      # false
+           stamped_control: false
+           control_timeout: 0.2
+           control_config: [true, false, false, false, false, true]
+           acceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 3.4]
+           deceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 4.5]
+           acceleration_gains: [0.8, 0.0, 0.0, 0.0, 0.0, 0.9]
+           deceleration_gains: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+           process_noise_covariance: [0.05,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.05,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.06,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.03,   0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.03,   0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.06,   0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025,   0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01,   0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01,   0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02,   0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01,   0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01,   0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015]
+           initial_estimate_covariance: [1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,    0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,    0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,    0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9,   0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9,   0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
+
+-- ekf_bringup/params/yahboom_M3Pro_ekf.yaml
+   [237 lines, sha256 543f10628107fc3f]
+   ekf_filter_node:
+       ros__parameters:
+           use_sim_time: false
+           frequency: 6.0
+           sensor_timeout: 1.0
+           two_d_mode: true
+           transform_time_offset: 0.0
+           transform_timeout: 0.0
+           print_diagnostics: false
+           debug: false
+           debug_out_file: /path/to/debug/file.txt
+           publish_tf: true
+           publish_acceleration: false
+           map_frame: map                   # Defaults to "map" if unspecified
+           odom_frame: odom                 # Defaults to "odom" if unspecified
+           base_link_frame: base_footprint  # Defaults to "base_link" if unspecified
+           world_frame: odom                # Defaults to the value of odom_frame if unspecified
+           odom0: /odom_raw
+           odom0_config: [false, false, false,
+                          false, false, false,
+                          true,  true,  false,
+                          false, false, true,
+                          false, false, false]
+           odom0_queue_size: 200
+           odom0_nodelay: false
+           odom0_differential: true
+           odom0_relative: false
+           imu0: /imu/data #/imu/data
+           imu0_config: [false, false, false,
+                         false, false, true ,
+                         false, false, false,
+                         false, false, true,
+                         false, false, false]
+           imu0_nodelay: false
+           imu0_differential: false
+           imu0_relative: true
+           imu0_queue_size: 100
+           imu0_pose_rejection_threshold: 20.0                 # Note the difference in parameter names     # 0.8
+           imu0_twist_rejection_threshold: 1.542               # 0.8
+           imu0_linear_acceleration_rejection_threshold: 10.0  #
+           imu0_remove_gravitational_acceleration: true
+           use_control: false      # false
+           stamped_control: false
+           control_timeout: 0.2
+           control_config: [true, false, false, false, false, true]
+           acceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 3.4]
+           deceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 4.5]
+           acceleration_gains: [0.8, 0.0, 0.0, 0.0, 0.0, 0.9]
+           deceleration_gains: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+           process_noise_covariance: [0.05,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.05,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.06,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.03,   0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.03,   0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.06,   0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025,   0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01,   0.0,    0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01,   0.0,    0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02,   0.0,    0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01,   0.0,    0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01,   0.0,
+                                      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015]
+           initial_estimate_covariance: [1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,   0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,    0.0,     0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,    0.0,     0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,    0.0,    0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9,   0.0,    0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9,   0.0,
+                                         0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
+
+-- imu_filter_madgwick/config/imu_filter.yaml
+   [16 lines, sha256 69027eeb7c578c14]
+   imu_filter:
+     ros__parameters:
+       stateless: false
+       use_mag: false
+       publish_tf: false
+       reverse_tf: false
+       fixed_frame: "base_link"
+       constant_dt: 0.0
+       publish_debug_topics: false
+       world_frame: "enu"
+       gain: 0.1
+       zeta: 0.0
+       mag_bias_x: 0.0
+       mag_bias_y: 0.0
+       mag_bias_z: 0.0
+       orientation_stddev: 0.05
+
+## 9.11 URDF of the real robot (M3Pro): joint summary
+path=/home/jetson/M3Pro_ws/install/M3Pro/share/M3Pro/urdf/m3pro.urdf sha256=4fa682b6788108a3
+robot=m3pro links=18
+   arm1_Joint             revolute   base_link        -> arm1             xyz=0.033617 -1.2421E-05 0.185 rpy=0 0 1.5708 lim=('0', '3.1416')
+   arm2_Joint             revolute   arm1             -> arm2             xyz=-0.0021522 6.1185E-05 0.033 rpy=0 1.5708 0 lim=('-0.2618', '3.1416')
+   arm3_Joint             revolute   arm2             -> arm3             xyz=0 0 0.08285 rpy=0 1.5708 0 lim=('-0.2618', '3.7525')
+   arm4_Joint             revolute   arm3             -> arm4             xyz=0 0 0.08285 rpy=0 1.5708 0 lim=('-0.2618', '3.4907')
+   arm5_Joint             revolute   arm4             -> arm5             xyz=0.00057305 0 0.074815 rpy=0 0 -1.5708 lim=('0', '3.1416')
+   rlink1_Joint           revolute   arm5             -> rlink1           xyz=-0.0047503 -0.012625 0.029275 rpy=1.5708 -0.60409 -1.5708 lim=('0', '3.14159')
+   rlink2_Joint           continuous rlink1           -> rlink2           xyz=0.03 0 0.001 rpy=0 0 0.9667 lim=None
+   rlink3_Joint           continuous arm5             -> rlink3           xyz=-0.0045001 -0.0044999 0.047275 rpy=1.5708 -0.61261 -1.5708 lim=None
+   llink1_Joint           continuous arm5             -> llink1           xyz=-0.0044997 0.012375 0.029275 rpy=-1.5708 -0.60318 1.5708 lim=None
+   llink2_Joint           continuous llink1           -> llink2           xyz=0.03 0 0.00125 rpy=0 0 -0.96762 lim=None
+   llink3_Joint           continuous arm5             -> llink3           xyz=-0.0044999 0.0045001 0.047275 rpy=-1.5708 -0.61516 1.5708 lim=None
+   Gripping_Joint         fixed      arm5             -> Gripping         xyz=-0.00062499 0.00023987 0.093235 rpy=-0.041648 -1.5708 0.041619 lim=None
+   DCW2_Joint             fixed      arm4             -> camera_link      xyz=-0.0483883323542816 0.00245180097510241 0.0671900000306381 rpy=1.84287098025439 -1.57079631189374 -1.81447538896515 lim=None
+   lwheel1_Joint          fixed      base_link        -> lwheel1          xyz=0.0775753787975409 0.09775 0.0399999999999998 rpy=1.5707963267949 0 0 lim=None
+   lwheel2_Joint          fixed      base_link        -> lwheel2          xyz=-0.0814246212024597 0.0977499999999995 0.0399976951545867 rpy=1.5707963267949 0 0 lim=None
+   rwheel1_Joint          fixed      base_link        -> rwheel1          xyz=0.0775753787975429 -0.0977499999999993 0.0400000000000004 rpy=-1.5707963267949 0 0 lim=None
+   rwheel2_Joint          fixed      base_link        -> rwheel2          xyz=-0.0814246212024577 -0.0977500000000009 0.0399976951545873 rpy=-1.5707963267949 0 0 lim=None
+
+## 9.12 who uses the raw robot topics (static search of workspace sources)
+
+-- 'scan0': 4 hit(s)
+   m3pro_bringup:config/laserscan_merge.yaml:6: laserscan_topics: "/scan0 /scan1"
+   ira_laser_tools:config/laserscan_merge_Multi_robot2.yaml:6: laserscan_topics: "/robot2/scan0 /robot2/scan1"
+   ira_laser_tools:config/laserscan_merge.yaml:6: laserscan_topics: "/scan0 /scan1"
+   ira_laser_tools:config/laserscan_merge_Multi_robot1.yaml:6: laserscan_topics: "/robot1/scan0 /robot1/scan1"
+
+-- 'scan1': 10 hit(s) (first 10)
+   m3pro_bringup:config/laserscan_merge.yaml:6: laserscan_topics: "/scan0 /scan1"
+   patrol:patrol/patrol.py:65: LaserScan, "/scan1", self.LaserScanCallback, 1
+   largemodel_arm:largemodel_arm/follow_line.py:39: self.sub_laser = self.create_subscription(LaserScan,"/scan1",self.registerScan,1)
+   ira_laser_tools:config/laserscan_merge_Multi_robot2.yaml:6: laserscan_topics: "/robot2/scan0 /robot2/scan1"
+   ira_laser_tools:config/laserscan_merge.yaml:6: laserscan_topics: "/scan0 /scan1"
+   ira_laser_tools:config/laserscan_merge_Multi_robot1.yaml:6: laserscan_topics: "/robot1/scan0 /robot1/scan1"
+   M3Pro_demo:M3Pro_demo/follow_line.py:37: self.sub_laser = self.create_subscription(LaserScan,"/scan1",self.registerScan,1)
+   M3Pro_demo:M3Pro_demo/.ipynb_checkpoints/follow_line-checkpoint.py:37: self.sub_laser = self.create_subscription(LaserScan,"/scan1",self.registerScan,1)
+   yahboom_M3Pro_laser:yahboom_M3Pro_laser/laser_Warning-Copy1.py:20: self.sub_laser = self.create_subscription(LaserScan,"/scan1",self.registerScan,1)
+   yahboom_M3Pro_laser:yahboom_M3Pro_laser/laser_Avoidance-Copy1.py:20: self.sub_laser = self.create_subscription(LaserScan,"/scan1",self.registerScan,1)
+
+-- 'imu/data_raw': 10 hit(s) (first 10)
+   ekf_bringup:launch/ekf_multi.xml:10: <remap from="/imu/data_raw" to="imu/data_raw" />
+   ekf_bringup:params/yahboom_M3Pro_ekf.yaml:138: imu0: /imu/data_raw #/imu/data
+   slam_mapping:launch/gmapping.launch.py:58: # But the robot's brain expects the data on a topic called '/imu/data_raw'.
+   slam_mapping:launch/gmapping.launch.py:60: remappings=[('/imu','/imu/data_raw')],
+   imu_filter_madgwick:launch/imu_filter.launch.py:21: remappings=[('/imu','/imu/data_raw')]
+   imu_filter_madgwick:launch/.ipynb_checkpoints/imu_filter.launch-checkpoint.py:21: remappings=[('/imu','/imu/data_raw')]
+   imu_filter_madgwick:src/imu_filter_ros.cpp:205: imu_subscriber_.reset(new ImuSubscriber(this, "/imu/data_raw", qos));
+   imu_filter_madgwick:src/imu_filter_ros.cpp:549: "Still waiting for data on topics /imu/data_raw and /imu/mag...");
+   imu_filter_madgwick:src/imu_filter_ros.cpp:552: "Still waiting for data on topic /imu/data_raw...");
+   imu_filter_madgwick:src/.ipynb_checkpoints/imu_filter_ros-checkpoint.cpp:205: imu_subscriber_.reset(new ImuSubscriber(this, "/imu/data_raw", qos));
+
+-- 'odom_raw': 4 hit(s)
+   ekf_bringup:params/robot2_ekf.yaml:83: odom0: /robot2/odom_raw
+   ekf_bringup:params/yahboom_M3Pro_ekf-copy.yaml:83: odom0: /odom_raw
+   ekf_bringup:params/yahboom_M3Pro_ekf.yaml:83: odom0: /odom_raw
+   ekf_bringup:params/robot1_ekf.yaml:83: odom0: /robot1/odom_raw
+
+-- 'vel_raw': 0 hit(s)
+
+-- 'arm6_joints': 10 hit(s) (first 10)
+   multi_brains:multi_brains/action_service.py:165: # 创建机械臂角度发布者，用于发布arm6_joints，控制机械臂 / Create arm angle publisher to publish arm6_joints and control the arm
+   multi_brains:multi_brains/action_service.py:166: self.TargetAngle_pub = self.create_publisher(ArmJoints, "arm6_joints", 100)
+   multi_brains_pre:multi_brains_pre/action_controller.py:234: self.SixJoint_pub = self.create_publisher(ArmJoints, "arm6_joints", 10)
+   largemodel:largemodel/action_service.py:123: # 创建机械臂角度发布者，用于发布arm6_joints，控制机械臂 / Create arm angle publisher to publish arm6_joints and control the arm
+   largemodel:largemodel/action_service.py:124: self.TargetAngle_pub = self.create_publisher(ArmJoints, "arm6_joints", 100)
+   arm_util:src/arm_status.cpp:16: arm_joints_publisher_ = this->create_publisher<arm_msgs::msg::ArmJoints>("/arm6_joints", 10);
+   arm_util:src/arm_status.cpp:19: "/arm6_joints", 10,
+   largemodel_arm:largemodel_arm/grasp_desktop.py:45: self.pub_SixTargetAngle = self.create_publisher(ArmJoints, "arm6_joints", 10)
+   largemodel_arm:largemodel_arm/grasp.py:47: self.pub_SixTargetAngle = self.create_publisher(ArmJoints, "arm6_joints", 10)
+   largemodel_arm:largemodel_arm/apriltag_remove_higher.py:65: self.TargetAngle_pub = self.create_publisher(ArmJoints, "arm6_joints", 10)
+
+-- 'arm_status': 10 hit(s) (first 10)
+   m3pro_bringup:launch/car_base.launch.py:166: # /arm_status/arm_joint
+   m3pro_bringup:launch/car_base.launch.py:176: "/arm_status/arm_joint"
+   m3pro_bringup:launch/car_base.launch.py:300: # Start the arm_status node.
+   m3pro_bringup:launch/car_base.launch.py:306: # arm_status
+   m3pro_bringup:launch/car_base.launch.py:309: # arm_status
+   m3pro_bringup:launch/car_base.launch.py:316: arm_status_node = Node(
+   m3pro_bringup:launch/car_base.launch.py:318: executable='arm_status',
+   m3pro_bringup:launch/car_base.launch.py:319: name='arm_status',
+   m3pro_bringup:launch/car_base.launch.py:413: arm_status_node,
+   m3pro_bringup:config/common.yaml:1: arm_status:
+
+-- 'Curjoints': 10 hit(s) (first 10)
+   multi_brains:multi_brains/action_service.py:180: self.pub_cur_joints = self.create_publisher(CurJoints, "Curjoints", 1)
+   largemodel:largemodel/action_service.py:138: self.pub_cur_joints = self.create_publisher(CurJoints, "Curjoints", 1)
+   largemodel_arm:largemodel_arm/grasp_desktop.py:47: self.sub_cur_joints = self.create_subscription(CurJoints,"Curjoints",self.get_cur_joint_callback,1)
+   largemodel_arm:largemodel_arm/grasp.py:49: self.sub_cur_joints = self.create_subscription(CurJoints,"Curjoints",self.get_cur_joint_callback,1)
+   largemodel_arm:largemodel_arm/grasp.py:53: self.sub_cur_joints = self.create_subscription(CurJoints,"Curjoints",self.get_cur_joint_callback,1)
+   largemodel_arm:largemodel_arm/apriltag_remove_higher.py:62: self.pub_cur_joints = self.create_publisher(CurJoints,"Curjoints",1)
+   largemodel_arm:largemodel_arm/KCF_follow.py:80: self.pub_CurJoints = self.create_publisher(CurJoints,"Curjoints",1)
+   largemodel_arm:largemodel_arm/KCF_follow.py:86: self.pub_cur_joints = self.create_publisher(CurJoints,"Curjoints",1)
+   largemodel_arm:largemodel_arm/color_sort.py:88: self.pub_cur_joints = self.create_publisher(CurJoints,"Curjoints",1)
+   largemodel_arm:largemodel_arm/KCF_track.py:64: self.pub_CurJoints = self.create_publisher(CurJoints,"Curjoints",1)
+
+-- 'JoyState': 10 hit(s) (first 10)
+   M3Pro_KCF:include/M3Pro_KCF/KCF_Tracker.h:84: Joy_sub_=this->create_subscription<std_msgs::msg::Bool>("JoyState",1,std::bind(&ImageConverter::JoyCb,this,_1));
+   multi_brains:multi_brains/action_service.py:178: self.joy_pub = self.create_publisher(Bool, "JoyState", 1)
+   largemodel:largemodel/action_service.py:136: self.joy_pub = self.create_publisher(Bool, "JoyState", 1)
+   patrol:patrol/patrol.py:68: Bool, "/JoyState", self.JoyStateCallback, 1
+   patrol:patrol/patrol.py:560: def JoyStateCallback(self, msg):
+   largemodel_arm:largemodel_arm/follow_line.py:38: self.sub_JoyState = self.create_subscription(Bool,"/JoyState",self.JoyStateCallback,1)
+   largemodel_arm:largemodel_arm/follow_line.py:40: self.sub_JoyState = self.create_subscription(Bool,'/JoyState', self.JoyStateCallback,1)
+   largemodel_arm:largemodel_arm/follow_line.py:118: def JoyStateCallback(self, msg):
+   largemodel_arm:largemodel_arm/follow_line.py:397: def JoyStateCallback(self,msg):
+   eira_bringup:eira_bringup/exercise_skills.py:192: self.create_subscription(Bool, '/JoyState', self._on_manual, 10)
+
+-- '/beep': 10 hit(s) (first 10)
+   multi_brains_pre:multi_brains_pre/external_action/follow_line.py:38: self.pub_Buzzer = self.create_publisher(Bool,"/beep",1)
+   largemodel_arm:largemodel_arm/follow_line.py:36: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+   eira_bringup:eira_bringup/exercise_skills.py:189: self._beep_pub = self.create_publisher(UInt16, '/beep', 1)
+   eira_brain:eira_brain/mission_replayer.py:34: ACTUATOR_TOPICS = {'/cmd_vel', '/arm6_joints', '/arm_joint', '/beep', '/set_joint5', '/set_joint6'}
+   yahboomcar_ctrl:yahboomcar_ctrl/yahboom_joy_M3Pro.py:54: self.pub_Buzzer = self.create_publisher(UInt16, "/beep", 1)
+   yahboomcar_ctrl:yahboomcar_ctrl/.ipynb_checkpoints/yahboom_joy_M3Pro-checkpoint.py:42: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+   M3Pro_demo:M3Pro_demo/follow_line.py:34: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+   M3Pro_demo:M3Pro_demo/.ipynb_checkpoints/follow_line-checkpoint.py:34: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+   yahboom_M3Pro_laser:yahboom_M3Pro_laser/laser_Warning-Copy1.py:24: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+   yahboom_M3Pro_laser:yahboom_M3Pro_laser/laser_Warning.py:32: self.pub_Buzzer = self.create_publisher(UInt16,'/beep',1)
+
+-- 'edition': 8 hit(s)
+   multi_brains_pre:multi_brains_pre/external_action/follow_line.py:20: cv_edition = cv.__version__
+   multi_brains_pre:multi_brains_pre/external_action/follow_line.py:21: print("cv_edition: ",cv_edition)
+   largemodel_arm:largemodel_arm/follow_line.py:14: cv_edition = cv.__version__
+   largemodel_arm:largemodel_arm/follow_line.py:15: print("cv_edition: ",cv_edition)
+   M3Pro_demo:M3Pro_demo/follow_line.py:14: cv_edition = cv.__version__
+   M3Pro_demo:M3Pro_demo/follow_line.py:15: print("cv_edition: ",cv_edition)
+   M3Pro_demo:M3Pro_demo/.ipynb_checkpoints/follow_line-checkpoint.py:14: cv_edition = cv.__version__
+   M3Pro_demo:M3Pro_demo/.ipynb_checkpoints/follow_line-checkpoint.py:15: print("cv_edition: ",cv_edition)
+
+-- 'voltage': 0 hit(s)
+
+LiDAR-like source packages: none
+
+## 9.13 arm kinematics, arm status, calibration and laser filter sources (key lines)
+
+-- arm_kin @ /home/jetson/yahboomcar_ws/src/arm_kin
+   include/arm_kin/fk_ik_kin.h
+        27 * @param urdf_file ģ���ļ�·��  model file path
+        31 bool arm_getFK(const char *urdf_file, vector<double> &joints, vector<double> &currentPos);
+        36 * @param urdf_file  ģ���ļ�·��    model file path
+        41 bool arm_getIK(const char *urdf_file, vector<double> &targetXYZ, vector<double> &targetRPY, vector<double> &outjoints);
+   src/kin_srv.cpp
+        26 const char *urdf_file = "/home/jetson/yahboomcar_ws/src/yahboom_M3Pro_description/urdf/M3Pro.urdf";
+        51 arm_getFK(urdf_file, initjoints, initpos);
+        86 arm_getIK(urdf_file, targetXYZ, targetRPY, outjoints);
+       107 rcutils_logging_set_logger_level("kdl_parser", RCUTILS_LOG_SEVERITY_ERROR);
+       110 auto service = node->create_service<arm_interface::srv::ArmKinemarics>("get_kinemarics", handle_service);
+   src/.ipynb_checkpoints/kin_srv-checkpoint.cpp
+        25 const char *urdf_file = "/root/yahboomcar_ws/src/yahboom_M3Pro_description/urdf/M3Pro.urdf";
+        30 * @param urdf_file 模型文件路径
+        34 bool arm_getFK(const string &urdf_file, vector<double> &joints, vector<double> &currentPos) {
+        37 kdl_parser::treeFromFile(urdf_file, my_tree);
+        74 * @param urdf_file  模型文件路径
+        80 bool arm_getIK(const string &urdf_file,
+        88 kdl_parser::treeFromFile(urdf_file, my_tree);
+       162 arm_getFK(urdf_file, initjoints, initpos);
+       197 arm_getIK(urdf_file, targetXYZ, targetRPY, outjoints);
+       218 auto service = node->create_service<arm_interface::srv::ArmKinemarics>("get_kinemarics", handle_service);
+
+-- arm_util @ /home/jetson/M3Pro_ws/src/arm_util
+   launch/arm_status.launch.py
+        11 'arm_util.yaml'
+   src/arm_status.cpp
+        14 joints_status_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/arm_status/arm_joint", 10);
+        16 arm_joints_publisher_ = this->create_publisher<arm_msgs::msg::ArmJoints>("/arm6_joints", 10);
+        18 arm_joints_subscriber_ = this->create_subscription<arm_msgs::msg::ArmJoints>(
+        22 arm_joint_subscriber_ = this->create_subscription<arm_msgs::msg::ArmJoint>(
+        26 update_position_service_ = this->create_service<ArmPosition>(
+        31 get_position_service_ = this->create_service<ArmPosition>(
+        84 this->declare_parameter<std::vector<int64_t>>("init_pose", std::vector<int64_t>(6, 0));
+        85 this->declare_parameter<std::vector<std::string>>("joint_names", std::vector<std::string>());
+
+-- calibration @ /home/jetson/M3Pro_ws/src/calibration
+   calibration/calibrate_angular.py
+        18 self.cmd_vel = self.create_publisher(Twist,"/cmd_vel",5)
+        20 self.declare_parameter('test_angle',360.0)
+        24 self.declare_parameter('speed',0.5)
+        27 self.declare_parameter('tolerance',0.05)
+        30 self.declare_parameter('odom_angular_scale_correction',1.0)
+        31 self.odom_angular_scale_correction = self.get_parameter('odom_angular_scale_correction').get_parameter_value().double_value
+        33 self.declare_parameter('start_test',False)
+        35 self.declare_parameter('base_frame','base_footprint')
+        38 self.declare_parameter('odom_frame','odom')
+        63 self.odom_angular_scale_correction = self.get_parameter('odom_angular_scale_correction').get_parameter_value().double_value
+        75 delta_angle = self.odom_angular_scale_correction * self.normalize_angle(original_angle - self.last_angle)
+   calibration/calibrate_linear.py
+        15 self.cmd_vel = self.create_publisher(Twist,"/cmd_vel",5)
+        17 self.declare_parameter('rate',20.0)
+        20 self.declare_parameter('test_distance',1.0)
+        23 self.declare_parameter('speed',0.3)
+        26 self.declare_parameter('tolerance',0.03)
+        29 self.declare_parameter('odom_linear_scale_correction',1.0)
+        30 self.odom_linear_scale_correction = self.get_parameter('odom_linear_scale_correction').get_parameter_value().double_value
+        32 self.declare_parameter('start_test',False)
+        34 self.declare_parameter('direction',True)
+        37 self.declare_parameter('base_frame','base_footprint')
+        40 self.declare_parameter('odom_frame','odom')
+        64 self.odom_linear_scale_correction = self.get_parameter('odom_linear_scale_correction').get_parameter_value().double_value
+        81 distance *= self.odom_linear_scale_correction
+
+-- yahboom_laser_filter @ /home/jetson/M3Pro_ws/src/M3Pro_core/yahboom_laser_filter
+   src/laser_filter_processor.cpp
+         6 this->declare_parameter<double>("angle_min", -180.0); // 屏蔽范围起始角度 (单位: 度)
+         7 this->declare_parameter<double>("angle_max", 180.0);  // 屏蔽范围结束角度 (单位: 度)
+         9 laser_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
+        11 laser_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("/scan", 10);
+
+-- updatecostmap @ /home/jetson/M3Pro_ws/src/updatecostmap
+   src/update_costmap.cpp
+        12 global_client_ = this->create_client<nav2_msgs::srv::ClearCostmapExceptRegion>(
+        25 local_client_ = this->create_client<nav2_msgs::srv::ClearCostmapExceptRegion>(
+
+## 9.14 calibration, map, model and helper files used by the exercises
+
+-- /home/jetson/yahboomcar_ws/src/arm_kin/param/offset_value.yaml
+   [3 lines, sha256 50c516853398a0c8]
+   x_offset: 0.09773479832223887
+   y_offset: -0.048820167292250444
+   z_offset: -0.09796627508228345
+
+-- /home/jetson/yahboomcar_ws/src/M3Pro_demo/M3Pro_demo/LineFollowHSV.text
+   [1 lines, sha256 6b1290ab6eec1c36]
+   11, 137, 126, 125, 253, 255
+~/start_agent.sh : file 2718 B, sha256 a22f2fedc49e42ae
+~/joy_control/ : joy.sh(2111B), start_joy_controller.py(5676B)
+~/mircoROS_agent/ : build/, install/, log/, src/
+~/map/ : 
+~/MODELS/ : asr/, tracker/, tts/, vad/, waste_classify/
+~/MODELS/tracker/ : super_track.onnx(65765776B), super_track_sim.onnx(64950790B)
+~/yahboom_map.pbstream : file 374418 B, sha256 80bcd8b747484ed7
+~/rtabmap.db : file 86614016 B, sha256 556ddab9eb85ebbb
+~/.ros/rtabmap.db : file 86614016 B, sha256 556ddab9eb85ebbb
+~/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/ : best-obb-20241101.engine(25276215B), best-obb.engine(25704336B), best-obb20241031.engine(25873563B), best20241101.onnx(45813900B), best20241102.onnx(45813900B), yolov8l.onnx(74763281B), yolov8l.pt(75189096B), yolov8l.trt(19521980B), yolov8m.onnx(8516300B), yolov8m.pt(52117635B), yolov8m.trt(27482066B), yolov8n-batch4.onnx(10039401B), yolov8n-cal-batch4-int8.trt(4579452B), yolov8n-seg.pt(7054355B), yolov8n.onnx(12802356B), yolov8n.pt(6534387B), yolov8s.onnx(44825782B), yolov8s.pt(22573363B), yolov8s.trt(13163444B), yolov8x.onnx(43318481B), yolov8x.pt(28644241B)
+
+-- ~/start_agent.sh (non-comment lines)
+   [54 lines, sha256 a22f2fedc49e42ae]
+   sleep 5
+   gnome-terminal --title=mircoROS_Agent -- bash -c "export ROS_DOMAIN_ID=30 && source /opt/ros/humble/setup.bash && source /home/jetson/mircoROS_agent/install/setup.bash && ros2 run micro_ros_agent micr
+
+## 9.15 E-AIRA already on this machine (~/eira_ws): file hashes for comparison with the laptop
+git origin: -  commit: -
+   c0de255b9895 eira_brain/package.xml
+   1fc0b64cb767 eira_brain/setup.cfg
+   ed32af4e6722 eira_brain/setup.py
+   27a7071ba39c eira_brain/.pytest_cache/README.md
+   583f2ba4bff8 eira_brain/eira_brain/__init__.py
+   be8b2eb1086b eira_brain/eira_brain/console.py
+   23e5374ea612 eira_brain/eira_brain/eira_cli.py
+   9eead837e7c4 eira_brain/eira_brain/llm_task_planner.py
+   332ee47585a5 eira_brain/eira_brain/mission_recorder.py
+   10776d639964 eira_brain/eira_brain/mission_replayer.py
+   b39d7ea896bd eira_brain/eira_brain/mission_reporter.py
+   03f8b35fe535 eira_brain/eira_brain/ollama_client.py
+   21c0208d6c86 eira_brain/eira_brain/safety_monitor.py
+   570a6318b983 eira_brain/eira_brain/velocity_gate.py
+   8574382fa659 eira_brain/eira_brain/visual_relocalization.py
+   82b1882c1833 eira_brain/eira_brain/voice_activation.py
+   5936e9905145 eira_brain/eira_brain/waypoint_recorder.py
+   cedce5bd9363 eira_brain/eira_brain/waypoint_store.py
+   540a9d1cd729 eira_brain/test/conftest.py
+   48dacb80db26 eira_brain/test/test_cli_fetch.py
+   ddf5714ecdea eira_brain/test/test_cli_output.py
+   2d73901e9a98 eira_brain/test/test_console.py
+   170315c0b996 eira_brain/test/test_error_hints.py
+   0e1e18256b88 eira_brain/test/test_fallback_planner.py
+   bdc53c3939d3 eira_brain/test/test_fetch_planner.py
+   720d9075704d eira_brain/test/test_grounded_prompt.py
+   7ba34edf4dd4 eira_brain/test/test_logger_severity.py
+   8ac5fb7dee8f eira_brain/test/test_mission_recording.py
+   d8e785c47313 eira_brain/test/test_mission_reporter.py
+   3df0271d5b3a eira_brain/test/test_mission_safety.py
+   8664ca36e3aa eira_brain/test/test_navigation_recovery.py
+   1dcece5070ef eira_brain/test/test_ollama_client.py
+   877b6ddf31ed eira_brain/test/test_sound_feedback.py
+   d8d5c2b81c92 eira_brain/test/test_velocity_gate.py
+   15f11c39f3ab eira_bringup/package.xml
+   40c6e065d75f eira_bringup/setup.cfg
+   e74c76e7d56a eira_bringup/setup.py
+   27a7071ba39c eira_bringup/.pytest_cache/README.md
+   61537e132f31 eira_bringup/config/eira_params.yaml
+   c7d1a850c470 eira_bringup/config/gripper_calibration.example.yaml
+   a047927dd3f6 eira_bringup/config/marker_map.example.yaml
+   0d70934de203 eira_bringup/config/vision_debug.rviz
+   39421891d5b6 eira_bringup/config/waypoints.yaml
+   a72caf92e852 eira_bringup/eira_bringup/__init__.py
+   a751992789d3 eira_bringup/eira_bringup/arm_state_relay.py
+   72e8c72cc762 eira_bringup/eira_bringup/edge_geometry.py
+   aede8c56fc44 eira_bringup/eira_bringup/edge_monitor.py
+   21af1355b679 eira_bringup/eira_bringup/exercise_skills.py
+   6ce882d05710 eira_bringup/eira_bringup/profiles.py
+   5f9f87cca6af eira_bringup/eira_bringup/visualization_markers.py
+   356b8930f8b0 eira_bringup/launch/eira_master.launch.py
+   9c22517f320e eira_bringup/launch/exercise_profiles.launch.py
+   90942e833ffe eira_bringup/test/conftest.py
+   8388f22764c0 eira_bringup/test/test_arm_state_relay.py
+   4c4cac5a5b5b eira_bringup/test/test_edge_geometry.py
+   d3b98c7cec60 eira_bringup/test/test_exercise_skills.py
+   e79f4521036c eira_bringup/test/test_launch.py
+   cc5963fabebb eira_bringup/test/test_profiles.py
+   72d9256f46b4 eira_bringup/test/test_vision_debug_config.py
+   cb3142771316 eira_bringup/test/test_visualization_markers.py
+   b1882f3bfb88 eira_evaluation/README.md
+   a5ffa9427010 eira_evaluation/package.xml
+   7956d0604bd6 eira_evaluation/setup.cfg
+   bf735fe6f14e eira_evaluation/setup.py
+   1091acd99c44 eira_evaluation/eira_evaluation/__init__.py
+   f001471ad5ee eira_evaluation/eira_evaluation/benchmark.py
+   60c340b429fe eira_evaluation/eira_evaluation/metrics_calculator.py
+   e7cc361119bb eira_evaluation/eira_evaluation/mission_logger.py
+   2da488acaac8 eira_evaluation/eira_evaluation/records.py
+   cafe1e76eb10 eira_evaluation/eira_evaluation/storage.py
+   202912b2dd7b eira_evaluation/test/conftest.py
+   9fb107e81ddd eira_evaluation/test/test_benchmark_logger.py
+   2e1b111884b0 eira_evaluation/test/test_records.py
+   5b01874a78a8 eira_evaluation/test/test_storage_metrics.py
+   3f31a5db2c71 eira_manipulation/package.xml
+   2c47070766a3 eira_manipulation/setup.cfg
+   dec42734c827 eira_manipulation/setup.py
+   27a7071ba39c eira_manipulation/.pytest_cache/README.md
+   65b66f89601d eira_manipulation/eira_manipulation/__init__.py
+   4c4f73b6b739 eira_manipulation/eira_manipulation/grasp_executor.py
+   ddbbac02cbba eira_manipulation/eira_manipulation/grasp_policy.py
+   a4a93dd1becc eira_manipulation/eira_manipulation/pid.py
+   fff6c54a38b7 eira_manipulation/test/conftest.py
+   eb4e71bcfccc eira_manipulation/test/test_console_output.py
+   e3a42b66f393 eira_manipulation/test/test_grasp_integration.py
+   ea36a59aec6f eira_manipulation/test/test_grasp_policy.py
+   01a43e7069fd eira_manipulation/test/test_pid.py
+   d84163419e78 eira_perception/package.xml
+   de3e0a54dba8 eira_perception/setup.cfg
+   8ec372754b81 eira_perception/setup.py
+   27a7071ba39c eira_perception/.pytest_cache/README.md
+   7e5a07ddc8d8 eira_perception/eira_perception/__init__.py
+   2104e7ea4418 eira_perception/eira_perception/depth_geometry.py
+   401164f88c15 eira_perception/eira_perception/gesture_node.py
+   479260e04996 eira_perception/eira_perception/inference_worker.py
+   47e80e8741ed eira_perception/eira_perception/perception_core.py
+   3e848c9b240a eira_perception/eira_perception/tracking_backends.py
+   3f1d99e9f802 eira_perception/eira_perception/vision_manager.py
+   cc25585b17cc eira_perception/test/conftest.py
+   f51ec0070dfc eira_perception/test/test_depth_geometry.py
+   46901b6b14e0 eira_perception/test/test_inference_worker.py
+   21b91921cce6 eira_perception/test/test_perception_core.py
+   14d495c6413e eira_perception/test/test_vision_console.py
+   1e69f9c4dfb5 eira_perception/test/test_vision_depth.py
+   14a01aa880b2 eira_perception/test/test_vision_integration.py
+   9b15c39a77f7 eira_perception/test/test_yolo_worker.py
+   e7230439d278 eira_simulation/README.md
+   7439d0042d10 eira_simulation/package.xml
+   8d0999d115a5 eira_simulation/setup.cfg
+   ad3037cd321c eira_simulation/setup.py
+   5b0d3b43eb2a eira_simulation/behavior_trees/navigate_through_poses.xml
+   e7d32e6190a9 eira_simulation/behavior_trees/navigate_to_pose.xml
+   6d2398d2d263 eira_simulation/config/nav2_params.yaml
+   46a57c41a58d eira_simulation/eira_simulation/__init__.py
+   60ef1b932fdc eira_simulation/eira_simulation/kinematics.py
+   e9107d3a7f69 eira_simulation/eira_simulation/perception_oracle.py
+   387fe4fd81b7 eira_simulation/eira_simulation/robot_description.py
+   8db55f2ec460 eira_simulation/eira_simulation/sensor_noise.py
+   080c21e096c0 eira_simulation/eira_simulation/sim_arm_bridge.py
+   de229b49ad98 eira_simulation/eira_simulation/world_builder.py
+   f98b55afaf58 eira_simulation/launch/sim_bringup.launch.py
+   ede11a45eda7 eira_simulation/maps/map.yaml
+   aed3c1f2f4bf eira_simulation/maps/room.pgm
+   9337dc9bd020 eira_simulation/test/conftest.py
+   1f48d6fd5083 eira_simulation/test/test_oracle.py
+   1bd09c886b22 eira_simulation/test/test_sim_arm.py
+   af996ef527e8 eira_simulation/test/test_sim_launch.py
+   994aa47dfefc eira_simulation/test/test_world.py
+   ff66cb7bd1de eira_simulation/worlds/eira_room.world
+   129 files
+~/NeuroBotics: absent
+~/eira_ws/install: present
+~/eira_ws/results: present
+~/eira_ws/bags: present
+
+### 10 OPTIONAL LIVE ROS GRAPH (runs only with EIRA_LIVE_GRAPH=1)
+skipped. To include it: ssh jetson@<jetson-host> 'EIRA_LIVE_GRAPH=1 bash -s' < jetson_readonly_inventory.sh
+(writes ROS CLI log files under ~/.ros/log; run while the micro-ROS agent is running)
+
+### END

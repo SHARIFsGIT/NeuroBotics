@@ -1,4 +1,8 @@
-from glob import glob
+"""Package E-AIRA perception.
+
+Author: E-AIRA contributors. Hardware target: Jetson Orin NX, ROSMASTER M3 Pro.
+"""
+
 import os
 
 from setuptools import find_packages, setup
@@ -15,6 +19,7 @@ setup(
         (os.path.join('share', package_name), ['package.xml']),
     ],
     install_requires=['setuptools'],
+    tests_require=['pytest'],
     zip_safe=True,
     maintainer='Shariful',
     maintainer_email='shariful@example.com',
@@ -26,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'vision_manager = eira_perception.vision_manager:main',
+            'gesture_recognizer = eira_perception.gesture_node:main',
         ],
     },
 )

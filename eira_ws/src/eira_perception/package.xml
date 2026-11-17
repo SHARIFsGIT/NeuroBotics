@@ -4,14 +4,15 @@
   <name>eira_perception</name>
   <version>0.1.0</version>
   <description>
-    E-AIRA perception layer: YOLOv8 target acquisition fused with a transformer
-    tracker, depth-based 3D centroid estimation in base_link, published on
+    E-AIRA perception layer: YOLOv8 target acquisition with an optional transformer
+    adapter, depth-based 3D centroid estimation in base_link, published on
     /target_pose for the manipulation layer.
   </description>
   <maintainer email="shariful@example.com">Shariful</maintainer>
   <license>MIT</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -19,6 +20,7 @@
   <depend>message_filters</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
+  <exec_depend>eira_brain</exec_depend>
 
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
@@ -26,6 +28,7 @@
        the workspace course files (folders 31/32). -->
   <exec_depend>python3-ultralytics</exec_depend>
 
+  <!-- Optional gesture dependency is installed with pip: mediapipe. -->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

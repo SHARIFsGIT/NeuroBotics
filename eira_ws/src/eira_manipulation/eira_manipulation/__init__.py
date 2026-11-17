@@ -1,4 +1,5 @@
-# E-AIRA manipulation package.
-#
-# pid             : minimal anti-windup PID used for base alignment
-# grasp_executor  : /target_pose → PID align → IK grasp → grasp_done
+"""E-AIRA manipulation package.
+
+Author: E-AIRA maintainers.
+Hardware target: ROSMASTER M3 Pro / Jetson Orin NX.
+"""

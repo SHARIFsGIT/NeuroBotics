@@ -1,100 +1,510 @@
-# =====================================================================
-# E-AIRA node parameters
-# ---------------------------------------------------------------------
-# Every default traces to a value audited from the working course code
-# (folders 22/23/31/32/33 of the NeuroBotics workspace). Change on the
-# robot only after re-verifying with the corresponding course experiment.
-# =====================================================================
-
+# E-AIRA Humble / Python 3.10 / Jetson Orin NX parameters.
+# Author: E-AIRA maintainers. Servo angles: degrees; other geometry: SI.
+# Evaluation and recording are opt-in launch components.
 /**:
   llm_task_planner:
     ros__parameters:
-      # --- local LLM (fully on-edge) --------------------------------
-      ollama_url: "http://localhost:11434"
-      llm_model: "phi3"                 # ollama pull phi3
-      llm_timeout_s: 20.0
-      # --- task database ---------------------------------------------
-      waypoints_file: ""                # empty → use installed default
-      map_frame: "map"
-      # --- action timeouts (s) ----------------------------------------
+      ollama_url: http://localhost:11434
+      llm_model: phi3
+      llm_timeout_s: 30.0
+      llm_log_raw_response: true
+      llm_retries: 1
+      llm_retry_backoff_s: 0.25
+      llm_temperature: 0.1
+      llm_max_tokens: 256
+      waypoints_file: ''
+      waypoints_file_default: ''
+      map_frame: map
+      base_frame: base_link
+      start_pose_max_age_s: 2.0
       nav_timeout_s: 300.0
-      find_timeout_s: 25.0
+      find_timeout_s: 75.0  # Outer budget: cold model startup plus bounded search.
       grasp_timeout_s: 90.0
       misc_timeout_s: 15.0
       action_retries: 1
-      # --- mission queue ------------------------------------------------
-      # Commands arriving while a task is busy are queued (FIFO) instead of
-      # being rejected; 'stop' always preempts and drains the queue.
+      nav_retries: 2
+      nav_settle_s: 3.0
+      nav_retry_delay_s: 10.0
+      amcl_check_enabled: true
+      amcl_xy_variance_max: 0.5
+      amcl_yaw_variance_max: 0.4
+      amcl_pose_timeout_s: 15.0
       mission_queue_len: 4
-      # --- active scan (find behaviour when nothing is in view) -----------
-      scan_enabled: true                # rotate the base to search
-      scan_arc_deg: 60.0                # total rotation per sweep [deg]
-      scan_speed_radps: 0.4             # gentle sweep, mecanum-safe
-      scan_max_sweeps: 3                # alternating direction, then FAIL
-      # --- speech output --------------------------------------------------
-      # Phrases are always published on /eira/speech; when espeak is on
-      # PATH they are additionally spoken through the robot speakers.
+      scan_enabled: true
+      scan_arc_deg: 60.0
+      scan_speed_radps: 0.4
+      scan_max_sweeps: 3
       tts_enabled: true
-
-  safety_monitor:
-    ros__parameters:
-      # Watchdog: if the brain heartbeat (/eira/heartbeat, 2 Hz) goes stale
-      # while motion commands are still flowing, pin cmd_vel to zero.
-      heartbeat_timeout_s: 5.0
-      startup_grace_s: 10.0             # no intervention before this
-      motion_window_s: 2.0              # 'recent motion' definition
-      intervene_rate_hz: 5.0            # zero-Twist rate while intervening
-
+      tts_voice: en-us
+      tts_timeout_s: 15.0
+      sound_feedback: true
+      sound_short_ms: 100
+      sound_long_ms: 600
+      sound_gap_s: 0.15
+      sound_queue_size: 32
+      tick_hz: 10.0
+      heartbeat_hz: 2.0
+      scan_min_speed_radps: 0.05
+      target_republish_s: 1.0
+      grasp_target_refresh_s: 0.5
+      max_plan_steps: 64
+      nav_server_wait_s: 5.0
+      known_object_classes:
+      - person
+      - bicycle
+      - car
+      - motorcycle
+      - airplane
+      - bus
+      - train
+      - truck
+      - boat
+      - traffic light
+      - fire hydrant
+      - stop sign
+      - parking meter
+      - bench
+      - bird
+      - cat
+      - dog
+      - horse
+      - sheep
+      - cow
+      - elephant
+      - bear
+      - zebra
+      - giraffe
+      - backpack
+      - umbrella
+      - handbag
+      - tie
+      - suitcase
+      - frisbee
+      - skis
+      - snowboard
+      - sports ball
+      - kite
+      - baseball bat
+      - baseball glove
+      - skateboard
+      - surfboard
+      - tennis racket
+      - bottle
+      - wine glass
+      - cup
+      - fork
+      - knife
+      - spoon
+      - bowl
+      - banana
+      - apple
+      - sandwich
+      - orange
+      - broccoli
+      - carrot
+      - hot dog
+      - pizza
+      - donut
+      - cake
+      - chair
+      - couch
+      - potted plant
+      - bed
+      - dining table
+      - toilet
+      - tv
+      - laptop
+      - mouse
+      - remote
+      - keyboard
+      - cell phone
+      - microwave
+      - oven
+      - toaster
+      - sink
+      - refrigerator
+      - book
+      - clock
+      - vase
+      - scissors
+      - teddy bear
+      - hair drier
+      - toothbrush
+      supported_target_colors:
+      - red
+      - blue
+      - green
+      - yellow
+      - orange
+      - white
+      - black
   vision_manager:
     ros__parameters:
-      # Model exactly as used by the working folder-31 node.
-      model_path: "/home/jetson/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/yolov8n.pt"
-      target_class: "cup"               # default hunt; /eira/vision_target overrides
-      confidence: 0.4                   # folder-31/32 working threshold
-      target_frame: "base_link"
-      camera_optical_frame: "camera_color_optical_frame"
-      depth_roi_half: 3
-      min_depth_m: 0.10
+      model_path: /home/jetson/yahboomcar_ws/src/yahboom_yolov8/yahboom_yolov8/yolov8/weights/yolov8n.pt
+      # Empty: use installed Ultralytics, or infer the bundled source from model_path.
+      yolo_source_dir: ''
+      # Missions select the object from the user's request; idle has no target.
+      target_class: ''
+      confidence: 0.4
+      color_topic: /camera/color/image_raw
+      depth_topic: /camera/depth/image_raw
+      camera_info_topic: /camera/color/camera_info
+      depth_camera_info_topic: /camera/depth/camera_info
+      target_frame: base_link
+      camera_optical_frame: camera_color_optical_frame
+      sync_slop_s: 2.0  # Maximum color/depth capture-time skew; RGB never waits for depth.
+      depth_roi_half: 10
+      min_depth_m: 0.1
       max_depth_m: 3.0
       find_timeout_s: 20.0
       lost_after_s: 1.5
       tf_timeout_s: 0.15
-
+      camera_stale_s: 1.5
+      max_image_age_s: 5.0
+      image_freshness_s: 5.0
+      # Use measured RGB-D range for arbitrary requested object classes.
+      bbox_depth_enabled: false
+      bbox_depth_class: ''  # Optional class with a measured object-height prior.
+      real_object_height_m: 0.1
+      uint8_depth_scale_m: 0.0
+      depth_debug: false
+      depth_debug_every_n: 10
+      camera_info_max_age_s: 60.0
+      depth_registered: true
+      max_fps: 8.0
+      idle_fps: 2.0
+      continuous_mode: false
+      request_cache_size: 256
+      imgsz: 416
+      device: ''
+      inference_timeout_s: 5.0
+      model_load_timeout_s: 45.0
+      model_retries: 2
+      retry_backoff_s: 2.0
+      smoothing_alpha: 0.65
+      smoothing_max_jump_m: 0.3
+      track_min_iou: 0.3
+      color_min_fraction: 0.25
+      tracking_backend: yolo
+      tracker_factory: ''
+      transformer_model_path: ~/MODELS/tracker/super_track_sim.onnx
+      transformer_refresh_frames: 15
+      volume_thickness_m: 0.0
+      volume_shape: cuboid
+      publish_depth_image: false
+      depth_view_fps: 2.0
+      depth_probe_u: -1
+      depth_probe_v: -1
   grasp_executor:
     ros__parameters:
-      # --- base alignment (SI rescale of folder-32 PID tuning) ---------
-      standoff_dist: 0.19               # pre-grasp range to the target [m]
+      standoff_dist: 0.19
       dist_tol: 0.03
-      yaw_tol: 0.06                     # rad ≈ 3.4°
+      yaw_tol: 0.06
       max_lin_vel: 0.15
       max_rev_vel: 0.08
       max_ang_vel: 1.2
       lin_kp: 0.5
+      lin_ki: 0.0
       lin_kd: 0.1
       ang_kp: 1.2
+      ang_ki: 0.0
       ang_kd: 0.05
       settle_ticks: 3
       align_timeout_s: 45.0
-      target_timeout_s: 1.5             # pose-gap tolerance (Jetson fps dips)
-      stale_grace_ticks: 3              # consecutive stale ticks before abort
-      service_wait_s: 5.0               # IK service availability wait
+      target_timeout_s: 1.5
+      stale_grace_ticks: 3
+      service_wait_s: 5.0
       control_hz: 20.0
-      # --- arm frame --------------------------------------------------
-      # Preferred: name of the arm base frame in the live TF tree
-      # (verify with `ros2 run tf2_tools view_frames`). Empty → the static
-      # mount offset below is used instead.
-      arm_base_frame: ""
-      arm_mount_x: 0.0                  # arm origin in base_link [m]
+      arm_base_frame: ''
+      base_frame: base_link
+      arm_mount_x: 0.0
       arm_mount_y: 0.0
       arm_mount_z: 0.0
       arm_mount_yaw: 0.0
-      # --- grasp (folder-23 conventions) --------------------------------
+      static_mount_calibrated: false
       grasp_x_compensation: -0.015
-      grasp_pitch: 1.3962614348313127   # ≈ 80°, audited value
+      grasp_pitch: 1.3962614348313127
       grasp_joint5: 90
       gripper_open: 90
       gripper_close: 30
       gripper_carry: 115
       arm_runtime_ms: 2000
-      init_joints: [90, 140, 20, 10, 90, 180]   # user-set default home pose
-      transport_joints: [90, 150, 12, 20, 90, 120]  # folder-23 verbatim
+      hold_runtime_ms: 100
+      init_joints:
+      - 90
+      - 140
+      - 20
+      - 10
+      - 90
+      - 180
+      transport_joints:
+      - 90
+      - 150
+      - 12
+      - 20
+      - 90
+      - 120
+      joint_lower_limits:
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      joint_upper_limits:
+      - 180.0
+      - 180.0
+      - 180.0
+      - 180.0
+      - 180.0
+      - 180.0
+      ik_timeout_s: 5.0
+      ik_retries: 1
+      tf_timeout_s: 0.2
+      joint_feedback_timeout_s: 1.0
+      joint_tolerance_deg: 5.0
+      joint_feedback_is_measured: false
+      require_joint_feedback: true
+      arm_step_timeout_s: 6.0
+      sequence_settle_s: 0.5
+      max_pose_age_s: 1.5
+      pose_future_tolerance_s: 0.1
+      rotation_only_bearing: 0.35
+      require_gesture_confirmation: false
+      gesture_timeout_s: 15.0
+      gripper_mode: fixed
+      gripper_width_table: '[]'
+      width_metadata_timeout_s: 5.0
+      sort_poses: '{}'
+      require_actuator_subscribers: true
+      request_cache_size: 32
+      allow_legacy_requests: true
+  voice_input:
+    ros__parameters:
+      model: tiny.en
+      model_dir: ~/.cache/whisper
+      device: cpu
+      language: en
+      microphone_enabled: false
+      record_s: 4.0
+      sample_rate: 16000
+      min_rms: 0.01
+      wake_word: eira
+      model_load_timeout_s: 90.0
+      transcribe_timeout_s: 30.0
+      worker_retries: 1
+      retry_backoff_s: 5.0
+  visual_relocalization:
+    ros__parameters:
+      amcl_topic: /amcl_pose
+      visual_pose_topic: /eira/visual_pose
+      color_topic: /camera/color/image_raw
+      camera_info_topic: /camera/color/camera_info
+      map_frame: map
+      base_frame: base_link
+      marker_map_file: ''
+      aruco_dictionary: DICT_4X4_50
+      marker_size_m: 0.08
+      xy_variance_limit: 0.5
+      yaw_variance_limit: 0.4
+      visual_xy_variance_max: 0.1
+      visual_yaw_variance_max: 0.2
+      measurement_max_age_s: 1.0
+      cooldown_s: 10.0
+      detection_hz: 2.0
+      tf_timeout_s: 0.1
+      max_correction_m: 5.0
+      max_reprojection_error_px: 3.0
+  gesture_recognizer:
+    ros__parameters:
+      color_topic: /camera/color/image_raw
+      max_fps: 4.0
+      stable_frames: 3
+      cooldown_s: 2.0
+      pinch_ratio: 0.3
+      extension_ratio: 1.15
+      max_image_age_s: 1.0
+      min_detection_confidence: 0.6
+      cancel_on_thumb_down: true
+  edge_monitor:
+    ros__parameters:
+      depth_topic: /camera/depth/image_raw
+      camera_info_topic: /camera/color/camera_info
+      target_frame: base_link
+      floor_z_m: 0.0
+      drop_threshold_m: 0.08
+      minimum_points: 30
+      drop_fraction: 0.15
+      corridor_near_m: 0.15
+      corridor_far_m: 0.8
+      corridor_half_width_m: 0.25
+      sample_stride: 12
+      roi_top_fraction: 0.4
+      max_depth_m: 4.0
+      frame_timeout_s: 1.0
+      tf_timeout_s: 0.1
+      processing_hz: 5.0
+      camera_info_max_age_s: 60.0
+      depth_registered: true
+  exercise_skills:
+    ros__parameters:
+      scan_topic: /scan
+      color_topic: /camera/color/image_raw
+      control_hz: 10.0
+      sensor_timeout_s: 0.7
+      max_command_s: 60.0
+      default_command_s: 10.0
+      max_linear: 0.15
+      max_angular: 0.5
+      obstacle_distance_m: 0.35
+      front_half_angle_rad: 0.35
+      side_center_rad: 0.9
+      side_half_angle_rad: 0.35
+      scan_front_angle_rad: 0.0
+      track_half_angle_rad: 0.78
+      track_standoff_m: 0.55
+      track_linear_gain: 0.5
+      track_angular_gain: 1.0
+      track_deadband_m: 0.05
+      line_roi_start: 0.6
+      line_min_pixels: 40
+      line_angular_gain: 0.5
+      line_hsv_lower:
+      - 0
+      - 85
+      - 126
+      line_hsv_upper:
+      - 9
+      - 253
+      - 253
+      line_mirror: false
+      guard_warning_distance_m: 0.55
+      beep_interval_s: 2.0
+      beep_duration_ms: 100
+      request_cache_size: 32
+  voice_activation:
+    ros__parameters:
+      model: tiny.en
+      model_dir: ~/.cache/whisper
+      device: cpu
+      language: en
+      microphone_enabled: false
+      record_s: 4.0
+      sample_rate: 16000
+      min_rms: 0.01
+      wake_word: eira
+      model_load_timeout_s: 90.0
+      transcribe_timeout_s: 30.0
+      worker_retries: 1
+      retry_backoff_s: 5.0
+  safety_monitor:
+    ros__parameters:
+      heartbeat_timeout_s: 5.0
+      startup_grace_s: 10.0
+      motion_window_s: 5.0
+      intervene_rate_hz: 20.0
+  velocity_gate:
+    ros__parameters:
+      command_timeout_s: 0.5
+      heartbeat_timeout_s: 5.0
+      require_heartbeat: true
+      require_edge: false
+      edge_timeout_s: 1.0
+      output_hz: 20.0
+      max_linear_mps: 0.25
+      max_angular_radps: 1.2
+      initial_owner: none
+  mission_logger:
+    ros__parameters:
+      results_dir: ~/eira_ws/results
+      archive_prefix: mission_log
+      flush_interval_s: 1.0
+      environment: hardware
+      random_seed: -1
+  mission_reporter:
+    ros__parameters:
+      results_dir: ~/eira_ws/results
+      terminal_grace_s: 1.0
+      flush_period_s: 0.2
+      max_recent_missions: 128
+      max_message_chars: 65536
+      write_retries: 2
+      write_retry_delay_s: 2.0
+  arm_state_relay:
+    ros__parameters:
+      command_topic: /arm6_joints
+      single_command_topic: /arm_joint
+      joint_state_topic: /joint_states
+      servo_offsets_deg: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      servo_signs: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      max_abs_angle_deg: 360.0
+  visualization_markers:
+    ros__parameters:
+      waypoints_file: ''
+      marker_lifetime_s: 5.0
+      refresh_hz: 2.0
+      pose_stale_s: 5.0
+      heading_stale_s: 15.0
+      future_tolerance_s: 0.1
+      waypoint_diameter_m: 0.18
+      object_diameter_m: 0.10
+      heading_length_m: 0.45
+      heading_width_m: 0.04
+      label_height_m: 0.15
+      label_scale_m: 0.10
+  mission_recorder:
+    ros__parameters:
+      bags_directory: ~/eira_ws/bags
+      topics:
+      - /camera/color/image_raw/compressed
+      - /camera/depth/image_raw
+      - /camera/color/camera_info
+      - /camera/depth/camera_info
+      - /scan
+      - /tf
+      - /tf_static
+      - /cmd_vel
+      - /eira/command
+      - /eira/voice
+      - /eira/plan
+      - /eira/status
+      - /target_pose
+      - /eira/vision_target
+      - /eira/vision/event
+      - /eira/manipulation/request
+      - /eira/manipulation/event
+      - /eira/gesture
+      - /eira/safety/edge
+      - /eira/safety/event
+      - /eira/motion/event
+      - /eira/heartbeat
+      - /arm6_joints
+      - /arm_joint
+      - /Curjoints
+      - /clock
+      - /eira/evaluation/grasp_truth
+      storage_id: sqlite3
+      max_parallel_recorders: 2
+      max_pending_missions: 8
+      boundary_history_size: 4096
+      max_event_chars: 65536
+      discovery_timeout_s: 5.0
+      flush_timeout_s: 10.0
+      terminate_timeout_s: 3.0
+      kill_timeout_s: 2.0
+      post_roll_s: 0.5
+      minimum_capture_s: 1.0
+      poll_period_s: 0.1
+      max_capture_s: 900.0
+      min_free_space_mb: 256.0
+      space_check_period_s: 5.0
+      discovery_topics:
+      - /eira/status
+      - /eira/plan
+      compress_color: true
+      color_topic: /camera/color/image_raw
+      compressed_color_topic: /camera/color/image_raw/compressed
+      jpeg_quality: 75
+      jpeg_max_fps: 5.0
+      environment: hardware
+      random_seed: -1

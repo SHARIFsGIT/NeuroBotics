@@ -11,15 +11,28 @@
   <maintainer email="shariful@example.com">Shariful</maintainer>
   <license>MIT</license>
 
+  <depend>ament_index_python</depend>
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <exec_depend>arm_msgs</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <depend>tf2_ros</depend>
+  <depend>cv_bridge</depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
 
   <!-- E-AIRA nodes -->
   <exec_depend>eira_brain</exec_depend>
+  <exec_depend>eira_evaluation</exec_depend>
   <exec_depend>eira_perception</exec_depend>
   <exec_depend>eira_manipulation</exec_depend>
 
-  <!-- Existing robot stack (all verified present on the robot) -->
+  <!-- External robot packages must be installed and calibrated on the target. -->
   <exec_depend>orbbec_camera</exec_depend>
   <exec_depend>arm_kin</exec_depend>
   <exec_depend>arm_util</exec_depend>
@@ -29,6 +42,21 @@
   <exec_depend>ekf_bringup</exec_depend>
   <exec_depend>M3Pro_navigation</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>M3Pro</exec_depend>
+  <exec_depend>m3pro_bringup</exec_depend>
+  <exec_depend>rosbridge_server</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>nav2_controller</exec_depend>
+  <exec_depend>nav2_smoother</exec_depend>
+  <exec_depend>nav2_planner</exec_depend>
+  <exec_depend>nav2_behaviors</exec_depend>
+  <exec_depend>nav2_bt_navigator</exec_depend>
+  <exec_depend>nav2_waypoint_follower</exec_depend>
+  <exec_depend>nav2_velocity_smoother</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
